@@ -1,0 +1,23 @@
+tic-global-website
+├── src
+│   ├── components
+│   │   ├── common
+│   │   ├── layout
+│   │   └── sections
+│   ├── pages
+│   │   ├── about
+│   │   ├── gaming
+│   │   ├── entertainment
+│   │   ├── esports
+│   │   └── casino
+│   ├── styles
+│   │   └── main.css
+│   ├── utils
+│   │   └── index.ts
+│   └── app.ts
+├── public
+├── tests
+│   └── index.test.ts
+├── package.json
+├── tsconfig.json
+└── README.md

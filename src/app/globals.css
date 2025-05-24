@@ -1,0 +1,377 @@
+/* Import TIC GLOBAL Brand Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Raleway:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --max-width: 1100px;
+  --border-radius: 12px;
+  --font-mono: ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono',
+    'Roboto Mono', 'Oxygen Mono', 'Ubuntu Monospace', 'Source Code Pro',
+    'Fira Mono', 'Droid Sans Mono', 'Courier New', monospace;
+  
+  /* TIC GLOBAL Official Brand Colors */
+  --primary-teal: #14c3cb;
+  --dark-navy: #0c151e;
+  --light-gray: #c0c0c0;
+  --brand-gold: #ffd700;
+  --pure-white: #ffffff;
+  
+  /* Extended Color Palette */
+  --teal-50: #f0fdfe;
+  --teal-100: #ccfbf1;
+  --teal-200: #99f6e4;
+  --teal-300: #5eead4;
+  --teal-400: #2dd4bf;
+  --teal-500: #14c3cb;
+  --teal-600: #0891b2;
+  --teal-700: #0e7490;
+  --teal-800: #155e75;
+  --teal-900: #164e63;
+  
+  --navy-50: #f8fafc;
+  --navy-100: #f1f5f9;
+  --navy-200: #e2e8f0;
+  --navy-300: #cbd5e1;
+  --navy-400: #94a3b8;
+  --navy-500: #64748b;
+  --navy-600: #475569;
+  --navy-700: #334155;
+  --navy-800: #1e293b;
+  --navy-900: #0c151e;
+  
+  /* TIC GLOBAL Brand Fonts */
+  /* Titles: Montserrat Bold */
+  --font-titles: 'Montserrat', sans-serif;
+  /* Headings: Raleway SemiBold */
+  --font-headings: 'Raleway', sans-serif;
+  /* Body Text: Open Sans */
+  --font-body-text: 'Open Sans', sans-serif;
+
+  /* Aliases for easier existing class updates if needed, or direct use of new vars */
+  --font-heading: var(--font-titles); /* Montserrat for main titles */
+  --font-body: var(--font-headings);    /* Raleway for general headings/subtitles */
+  --font-text: var(--font-body-text); /* Open Sans for body text */
+  
+  /* Professional Gradients with Brand Colors */
+  --gradient-primary: linear-gradient(135deg, #14c3cb 0%, #0c151e 100%);
+  --gradient-secondary: linear-gradient(135deg, #ffd700 0%, #14c3cb 100%);
+  --gradient-hero: linear-gradient(135deg, #0c151e 0%, #14c3cb 50%, #ffd700 100%);
+  --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 3px 0 rgba(12, 21, 30, 0.1), 0 1px 2px 0 rgba(12, 21, 30, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(12, 21, 30, 0.1), 0 2px 4px -1px rgba(12, 21, 30, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(12, 21, 30, 0.1), 0 4px 6px -2px rgba(12, 21, 30, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(12, 21, 30, 0.1), 0 10px 10px -5px rgba(12, 21, 30, 0.04);
+  --shadow-teal: 0 10px 25px -5px rgba(20, 195, 203, 0.25);
+  --shadow-gold: 0 10px 25px -5px rgba(255, 215, 0, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  height: 100%;
+  font-family: var(--font-body-text); /* Default body text to Open Sans */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  color: var(--dark-navy);
+  background: var(--pure-white);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+
+/* TIC GLOBAL Professional button styles */
+.btn-primary {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--pure-white);
+  font-family: var(--font-titles); /* Montserrat Bold for primary button text */
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-teal);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+  background: linear-gradient(135deg, #0891b2 0%, #0c151e 100%);
+}
+
+.btn-secondary {
+  background: var(--gradient-secondary);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--dark-navy);
+  font-family: var(--font-titles); /* Montserrat Bold for secondary button text */
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-gold);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Card styles for consistent design */
+.card-professional {
+  background: var(--pure-white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--teal-100);
+  transition: all 0.3s ease;
+}
+
+.card-professional:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-teal);
+  border-color: var(--primary-teal);
+}
+
+/* TIC GLOBAL Gradient text effects */
+.gradient-text-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-titles); /* Montserrat Bold */
+  font-weight: 700;
+}
+
+.gradient-text-secondary {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-titles); /* Montserrat Bold */
+  font-weight: 700;
+}
+
+.gradient-text-hero {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-titles); /* Montserrat Bold (800 was there, 700 is bold) */
+  font-weight: 700; /* Adjusted to standard Bold */
+}
+
+/* Loading animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Professional spacing utilities */
+.section-padding {
+  padding: 80px 0;
+}
+
+.container-professional {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Responsive design breakpoints */
+@media (max-width: 768px) {
+  .section-padding {
+    padding: 60px 0;
+  }
+  
+  .container-professional {
+    padding: 0 16px;
+  }
+}
+
+/* Focus states for accessibility */
+button:focus,
+a:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-blue);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-purple);
+}
+
+/* Professional typography scale */
+.text-hero {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.text-subtitle {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.text-small {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Gaming-themed accents */
+.gaming-glow {
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+}
+
+.gaming-border {
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              var(--gradient-primary) border-box;
+}
+
+/* Professional loading states */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Error and success states */
+.error-state {
+  color: #e53e3e;
+  background-color: #fed7d7;
+  border: 1px solid #feb2b2;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.success-state {
+  color: #38a169;
+  background-color: #c6f6d5;
+  border: 1px solid #9ae6b4;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* TIC GLOBAL Typography scale */
+.text-hero {
+  font-size: clamp(2.5rem, 5vw, 4rem); /* Title */
+  font-family: var(--font-titles);    /* Montserrat */
+  font-weight: 700;                   /* Bold */
+  line-height: 1.1;
+  color: var(--dark-navy);
+}
+
+.text-subtitle {
+  font-size: clamp(1.25rem, 3vw, 1.5rem); /* Heading */
+  font-family: var(--font-headings);      /* Raleway */
+  font-weight: 600;                     /* SemiBold */
+  line-height: 1.4;
+  color: var(--navy-700);
+}
+
+.text-body {
+  font-size: 1rem; /* Body Text */
+  font-family: var(--font-body-text); /* Open Sans */
+  font-weight: 400;                   /* Regular */
+  line-height: 1.6;
+  color: var(--navy-600);
+}
+
+.text-small {
+  font-size: 0.875rem; /* Body Text Small */
+  font-family: var(--font-body-text); /* Open Sans */
+  font-weight: 400;                   /* Regular */
+  line-height: 1.5;
+  color: var(--navy-500);
+}
+
+.text-heading { /* General Titles */
+  font-family: var(--font-titles); /* Montserrat */
+  font-weight: 700;                /* Bold */
+  color: var(--dark-navy);
+}
+
+.text-subheading { /* General Headings */
+  font-family: var(--font-headings); /* Raleway */
+  font-weight: 600;                  /* SemiBold */
+  color: var(--navy-800);
+}
+
+/* Clean logo styles for transparent images */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
