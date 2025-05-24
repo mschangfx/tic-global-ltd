@@ -12,7 +12,13 @@ import {
   Button,
 } from '@chakra-ui/react'
 import { Suspense } from 'react'
-import { Scene } from '@/components/three/Scene'
+import dynamic from 'next/dynamic'
+
+// Dynamically import the Scene component with SSR turned off
+const Scene = dynamic(() => import('@/components/three/Scene').then(mod => mod.Scene), {
+  ssr: false,
+  loading: () => <Box w="100%" h="300px" display="flex" alignItems="center" justifyContent="center"><Text>Loading 3D Experience...</Text></Box>
+})
 
 const GAMING_FEATURES = [
   {
@@ -57,7 +63,7 @@ export default function GamingPage() {
             Discover the future of gaming with our cutting-edge technology and immersive experiences
           </Text>
           <Box w="100%" h="300px" position="relative" bg="gray.900" rounded="lg" overflow="hidden">
-            <Suspense fallback={null}>
+            <Suspense fallback={<Box w="100%" h="300px" display="flex" alignItems="center" justifyContent="center"><Text>Initializing Scene...</Text></Box>}>
               <Scene />
             </Suspense>
           </Box>
