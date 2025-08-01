@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+        .info {
+            margin: 20px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a99;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Loading Test</h1>
+    
+    <div class="info">
+        <h3>Video Information:</h3>
+        <div id="videoInfo">Loading...</div>
+    </div>
+    
+    <div class="video-container">
+        <video 
+            id="testVideo"
+            controls
+            muted
+            preload="metadata"
+            poster="/head.png"
+            style="background: linear-gradient(135deg, #0c151e 0%, #14c3cb 50%, #E0B528 100%);"
+        >
+            <source src="/head.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <div class="controls">
+        <button onclick="playVideo()">Play</button>
+        <button onclick="pauseVideo()">Pause</button>
+        <button onclick="reloadVideo()">Reload</button>
+        <button onclick="checkVideoInfo()">Check Info</button>
+    </div>
+    
+    <div class="info">
+        <h3>Console Log:</h3>
+        <div id="console" style="font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('testVideo');
+        const videoInfo = document.getElementById('videoInfo');
+        const consoleDiv = document.getElementById('console');
+        
+        function log(message) {
+            console.log(message);
+            const time = new Date().toLocaleTimeString();
+            consoleDiv.innerHTML += `<div>${time}: ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        function updateVideoInfo() {
+            const info = `
+                <strong>Source:</strong> ${video.currentSrc || 'Not set'}<br>
+                <strong>Ready State:</strong> ${video.readyState} (${getReadyStateText(video.readyState)})<br>
+                <strong>Network State:</strong> ${video.networkState} (${getNetworkStateText(video.networkState)})<br>
+                <strong>Duration:</strong> ${video.duration || 'Unknown'}<br>
+                <strong>Current Time:</strong> ${video.currentTime}<br>
+                <strong>Paused:</strong> ${video.paused}<br>
+                <strong>Ended:</strong> ${video.ended}<br>
+                <strong>Error:</strong> ${video.error ? `Code ${video.error.code}: ${video.error.message}` : 'None'}
+            `;
+            videoInfo.innerHTML = info;
+        }
+        
+        function getReadyStateText(state) {
+            const states = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'];
+            return states[state] || 'Unknown';
+        }
+        
+        function getNetworkStateText(state) {
+            const states = ['NETWORK_EMPTY', 'NETWORK_IDLE', 'NETWORK_LOADING', 'NETWORK_NO_SOURCE'];
+            return states[state] || 'Unknown';
+        }
+        
+        function playVideo() {
+            video.play().then(() => {
+                log('Video play succeeded');
+            }).catch(error => {
+                log(`Video play failed: ${error.message}`);
+            });
+        }
+        
+        function pauseVideo() {
+            video.pause();
+            log('Video paused');
+        }
+        
+        function reloadVideo() {
+            video.load();
+            log('Video reloaded');
+        }
+        
+        function checkVideoInfo() {
+            updateVideoInfo();
+            log('Video info updated');
+        }
+        
+        // Event listeners
+        video.addEventListener('loadstart', () => log('loadstart'));
+        video.addEventListener('durationchange', () => log('durationchange'));
+        video.addEventListener('loadedmetadata', () => log('loadedmetadata'));
+        video.addEventListener('loadeddata', () => log('loadeddata'));
+        video.addEventListener('progress', () => log('progress'));
+        video.addEventListener('canplay', () => log('canplay'));
+        video.addEventListener('canplaythrough', () => log('canplaythrough'));
+        video.addEventListener('play', () => log('play'));
+        video.addEventListener('playing', () => log('playing'));
+        video.addEventListener('pause', () => log('pause'));
+        video.addEventListener('ended', () => log('ended'));
+        video.addEventListener('error', (e) => {
+            log(`error: ${video.error ? `Code ${video.error.code}: ${video.error.message}` : 'Unknown error'}`);
+        });
+        video.addEventListener('stalled', () => log('stalled'));
+        video.addEventListener('waiting', () => log('waiting'));
+        video.addEventListener('seeking', () => log('seeking'));
+        video.addEventListener('seeked', () => log('seeked'));
+        
+        // Initial info update
+        updateVideoInfo();
+        setInterval(updateVideoInfo, 1000);
+        
+        log('Video test page loaded');
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# VERCEL ENVIRONMENT VARIABLES
+# Copy these to your Vercel dashboard under Settings > Environment Variables
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://clsowgswufspftizyjlc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTQxODAsImV4cCI6MjA2NDI3MDE4MH0.8q5bAO2_-8tMa7WLgVawMhr2SjCyljSxvk6qrHhq08I
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY5NDE4MCwiZXhwIjoyMDY0MjcwMTgwfQ.ZryoITxcPfjWYWXQfou8ymnafpT7EZc7B4Rr0YsGEK8
+
+# NextAuth Configuration (UPDATE THESE AFTER DEPLOYMENT!)
+NEXTAUTH_URL=https://your-vercel-app.vercel.app
+NEXTAUTH_SECRET=tic-global-nextauth-secret-2024-production-key-secure
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# Email Configuration
+SMTP_HOST=mail.privateemail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_EMAIL=your_email@domain.com
+SMTP_PASSWORD=your_email_password
+
+# Resend API
+RESEND_API_KEY=your_resend_api_key
+
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+
+# App URL (UPDATE AFTER DEPLOYMENT!)
+NEXT_PUBLIC_APP_URL=https://your-vercel-app.vercel.app
+
+# Production Optimizations
+NEXT_TELEMETRY_DISABLED=1
+GENERATE_SOURCEMAP=false

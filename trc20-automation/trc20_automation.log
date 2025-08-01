@@ -1,0 +1,112 @@
+2025-07-19 03:56:23,695 - __main__ - INFO - TRC20 Service initialized
+2025-07-19 03:56:23,695 - __main__ - INFO - Main wallet: TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ
+2025-07-19 03:56:23,695 - __main__ - INFO - Monitoring interval: 30 seconds
+2025-07-19 03:56:23,744 - __main__ - INFO - Monitoring wallet: TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ
+2025-07-19 03:56:23,744 - __main__ - INFO - Check interval: 30 seconds
+2025-07-19 03:56:23,744 - __main__ - INFO - Press Ctrl+C to stop
+2025-07-19 03:56:24,186 - __main__ - INFO - Found 1 pending deposits
+2025-07-19 03:56:24,187 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-19 03:56:24,566 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-19 03:56:24,924 - __main__ - INFO - Found 1 pending withdrawals
+2025-07-19 03:56:24,925 - __main__ - INFO - Processing withdrawal 6c029b9c-ff49-48ca-9a9b-faf4f8f0cda1: 30.0 USDT to TXYZabcd1234567890abcdef1234567890
+2025-07-19 03:56:25,305 - __main__ - INFO -    Amount: 30.0 USDT
+2025-07-19 03:56:25,306 - __main__ - INFO -    To: TXYZabcd1234567890abcdef1234567890
+2025-07-19 03:56:25,306 - __main__ - INFO -    Mock TX: mock_tx_6c029b9c-ff49-48ca-9a9b-faf4f8f0cda1_1752868584
+2025-07-19 03:56:59,233 - __main__ - INFO - TRC20 Service initialized
+2025-07-19 03:56:59,234 - __main__ - INFO - Main wallet: TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ
+2025-07-19 03:56:59,234 - __main__ - INFO - Monitoring interval: 30 seconds
+2025-07-19 03:56:59,238 - __main__ - INFO - Monitoring wallet: TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ
+2025-07-19 03:56:59,242 - __main__ - INFO - Check interval: 30 seconds
+2025-07-19 03:56:59,242 - __main__ - INFO - Press Ctrl+C to stop
+2025-07-19 03:56:59,990 - __main__ - INFO - Found 1 pending deposits
+2025-07-19 03:56:59,992 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-19 03:57:00,368 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-19 03:57:00,701 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-19 04:50:56,529 - __main__ - INFO - Using TronGrid API key: 848028a6-6...
+2025-07-19 04:50:56,530 - __main__ - INFO - TRON client initialized successfully
+2025-07-19 04:50:56,530 - __main__ - INFO - TRC20 Service initialized
+2025-07-19 04:50:56,531 - __main__ - INFO - Main wallet: TBpga5zct6vKAenvPecepzUfuK8raGA3Jh
+2025-07-19 04:50:56,531 - __main__ - INFO - Monitoring interval: 30 seconds
+2025-07-19 04:50:56,543 - __main__ - INFO - Monitoring wallet: TBpga5zct6vKAenvPecepzUfuK8raGA3Jh
+2025-07-19 04:50:56,544 - __main__ - INFO - Check interval: 30 seconds
+2025-07-19 04:50:56,544 - __main__ - INFO - Press Ctrl+C to stop
+2025-07-19 04:50:57,011 - __main__ - INFO - Found 1 pending deposits
+2025-07-19 04:50:57,012 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-19 04:50:57,363 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-19 04:50:57,622 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:50:08,269 - __main__ - INFO - Using TronGrid API key: 848028a6-6...
+2025-07-20 03:50:08,269 - __main__ - INFO - TRON client initialized successfully
+2025-07-20 03:50:08,269 - __main__ - INFO - TRC20 Service initialized
+2025-07-20 03:50:08,269 - __main__ - INFO - Main wallet: TBpga5zct6vKAenvPecepzUfuK8raGA3Jh
+2025-07-20 03:50:08,269 - __main__ - INFO - Monitoring interval: 30 seconds
+2025-07-20 03:50:08,327 - __main__ - INFO - Monitoring wallet: TBpga5zct6vKAenvPecepzUfuK8raGA3Jh
+2025-07-20 03:50:08,327 - __main__ - INFO - Check interval: 30 seconds
+2025-07-20 03:50:08,328 - __main__ - INFO - Press Ctrl+C to stop
+2025-07-20 03:50:09,199 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:50:09,200 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:50:09,625 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:50:10,010 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:50:40,416 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:50:40,416 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:50:40,776 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:50:41,140 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:51:11,499 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:51:11,500 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:51:11,909 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:51:12,196 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:51:42,602 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:51:42,650 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:51:43,069 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:51:43,389 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:52:14,055 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:52:14,069 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:52:14,303 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:52:14,578 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:52:45,036 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:52:45,036 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:52:45,386 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:52:45,636 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:53:15,974 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:53:15,976 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:53:16,250 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:53:16,547 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:53:47,338 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:53:47,339 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:53:47,684 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:53:48,026 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:54:18,388 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:54:18,389 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:54:18,653 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:54:18,915 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:54:49,696 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:54:49,696 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:54:50,047 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:54:50,305 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:55:20,643 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:55:20,643 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:55:20,882 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:55:21,204 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:55:52,637 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:55:52,637 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:55:52,919 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:55:53,189 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:56:23,626 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:56:23,627 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:56:23,897 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:56:24,216 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:56:54,506 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:56:54,506 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:56:54,756 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:56:55,003 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:57:25,377 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:57:25,377 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:57:25,620 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:57:25,860 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:57:56,199 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:57:56,199 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:57:56,483 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:57:56,782 - __main__ - INFO - Found 0 pending withdrawals
+2025-07-20 03:58:27,251 - __main__ - INFO - Found 1 pending deposits
+2025-07-20 03:58:27,251 - __main__ - INFO - Processing deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 100.0 USDT
+2025-07-20 03:58:27,531 - __main__ - ERROR - Failed to approve deposit 754e9a59-ce55-40e6-b0ce-30c410b569da: 400
+2025-07-20 03:58:27,805 - __main__ - INFO - Found 0 pending withdrawals

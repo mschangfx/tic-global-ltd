@@ -1,0 +1,519 @@
+/* Fonts are now handled by next/font in app/layout.tsx */
+/* @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:wght@400;700&display=swap'); */
+
+/* Hide browser extension error overlays and notifications */
+[data-extension-error],
+[class*="extension-error"],
+[id*="extension-error"],
+.metamask-error,
+.wallet-error,
+[class*="inpage-error"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Comprehensive Next.js development error overlay suppression */
+[data-nextjs-dialog-overlay],
+[data-nextjs-dialog],
+[data-nextjs-toast],
+#__next-dev-error-overlay,
+[class*="error-overlay"],
+[class*="nextjs-container"],
+[class*="nextjs-toast"],
+[id*="nextjs-error"],
+[data-overlay-error],
+[data-nextjs-dialog-overlay] * {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}
+
+/* Additional suppression for runtime error dialogs */
+div[role="dialog"]:has([data-nextjs]),
+div:has([data-nextjs-dialog]),
+.nextjs-container-errors,
+.nextjs-container-build-error,
+div[role="dialog"]:contains("Unhandled Runtime Error"),
+div:contains("TypeError: Cannot read properties of null"),
+div:contains("chrome-extension://") {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}
+
+/* Nuclear option for extension error overlays */
+*[class*="error"]:contains("chrome-extension"),
+*[class*="dialog"]:contains("TypeError"),
+*[id*="error"]:contains("Cannot read properties") {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Hide any error dialogs or modals */
+div[role="dialog"][data-nextjs],
+div[class*="error"][data-nextjs] {
+  display: none !important;
+}
+
+/* Nuclear option: Hide any element containing error text */
+*:not(script):not(style) {
+  /* This will be overridden by JavaScript for legitimate content */
+}
+
+/* Hide webpack error containers */
+[class*="webpack"],
+[id*="webpack"],
+[data-webpack] {
+  display: none !important;
+}
+
+/* Hide any red error text or backgrounds */
+.error,
+.error-message,
+.error-container,
+[style*="color: red"],
+[style*="background: red"],
+[style*="border: red"] {
+  display: none !important;
+}
+
+:root {
+  --max-width: 1100px;
+  --border-radius: 12px;
+  --font-mono: ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono',
+    'Roboto Mono', 'Oxygen Mono', 'Ubuntu Monospace', 'Source Code Pro',
+    'Fira Mono', 'Droid Sans Mono', 'Courier New', monospace;
+  
+  /* TIC GLOBAL Official Brand Colors */
+  --primary-teal: #14c3cb;
+  --dark-navy: #0c151e; /* This will be overridden for body text */
+  --solid-black: #000000; /* New variable for solid black */
+  --light-gray: #c0c0c0;
+  --brand-gold: #ffd700;
+  --pure-white: #ffffff;
+  
+  /* Extended Color Palette */
+  --teal-50: #f0fdfe;
+  --teal-100: #ccfbf1;
+  --teal-200: #99f6e4;
+  --teal-300: #5eead4;
+  --teal-400: #2dd4bf;
+  --teal-500: #14c3cb;
+  --teal-600: #0891b2;
+  --teal-700: #0e7490;
+  --teal-800: #155e75;
+  --teal-900: #164e63;
+  
+  --navy-50: #f8fafc;
+  --navy-100: #f1f5f9;
+  --navy-200: #e2e8f0;
+  --navy-300: #cbd5e1;
+  --navy-400: #94a3b8;
+  --navy-500: #64748b;
+  --navy-600: #475569;
+  --navy-700: #334155;
+  --navy-800: #1e293b;
+  --navy-900: #0c151e;
+  
+  /* TIC GLOBAL Brand Fonts */
+  /* Titles: Montserrat (Primary) */
+  --font-titles: 'Montserrat', sans-serif;
+  /* Headings: Montserrat (Also Primary for section titles/cards) */
+  --font-headings: 'Montserrat', sans-serif;
+  /* Body Text: DM Sans (Secondary) */
+  --font-body-text: 'DM Sans', sans-serif;
+  /* Accent Font: Playfair Display */
+  --font-accent: 'Playfair Display', serif;
+
+  /* Aliases for easier existing class updates if needed, or direct use of new vars */
+  --font-heading: var(--font-titles);    /* Montserrat for main titles/headlines */
+  --font-body: var(--font-body-text);     /* DM Sans for body text/paragraphs */
+  --font-text: var(--font-body-text);    /* DM Sans for general text content */
+  
+  /* Professional Gradients with Brand Colors */
+  --gradient-primary: linear-gradient(135deg, #14c3cb 0%, #0c151e 100%);
+  --gradient-secondary: linear-gradient(135deg, #ffd700 0%, #14c3cb 100%);
+  --gradient-hero: linear-gradient(135deg, #0c151e 0%, #14c3cb 50%, #ffd700 100%);
+  --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 3px 0 rgba(12, 21, 30, 0.1), 0 1px 2px 0 rgba(12, 21, 30, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(12, 21, 30, 0.1), 0 2px 4px -1px rgba(12, 21, 30, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(12, 21, 30, 0.1), 0 4px 6px -2px rgba(12, 21, 30, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(12, 21, 30, 0.1), 0 10px 10px -5px rgba(12, 21, 30, 0.04);
+  --shadow-teal: 0 10px 25px -5px rgba(20, 195, 203, 0.25);
+  --shadow-gold: 0 10px 25px -5px rgba(255, 215, 0, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden !important; /* Added !important */
+  height: 100%;
+  font-family: var(--font-body-text); /* Default body text to Open Sans */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  color: var(--solid-black); /* Changed default body text to solid black */
+  background: var(--pure-white);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+
+/* TIC GLOBAL Professional button styles */
+.btn-primary {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--pure-white);
+  font-family: var(--font-titles); /* Montserrat Bold for primary button text */
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-teal);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+  background: linear-gradient(135deg, #0891b2 0%, #0c151e 100%);
+}
+
+.btn-secondary {
+  background: var(--gradient-secondary);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--dark-navy);
+  font-family: var(--font-titles); /* Montserrat Bold for secondary button text */
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-gold);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Card styles for consistent design */
+.card-professional {
+  background: var(--pure-white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--teal-100);
+  transition: all 0.3s ease;
+}
+
+.card-professional:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-teal);
+  border-color: var(--primary-teal);
+}
+
+/* TIC GLOBAL Gradient text effects */
+.gradient-text-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-titles); /* Montserrat Bold */
+  font-weight: 700;
+}
+
+.gradient-text-secondary {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-titles); /* Montserrat Bold */
+  font-weight: 700;
+}
+
+.gradient-text-hero {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-titles); /* Montserrat Bold (800 was there, 700 is bold) */
+  font-weight: 700; /* Adjusted to standard Bold */
+}
+
+/* Loading animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Professional spacing utilities */
+.section-padding {
+  padding: 80px 0;
+}
+
+.container-professional {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Responsive design breakpoints */
+@media (max-width: 768px) {
+  .section-padding {
+    padding: 60px 0;
+  }
+  
+  .container-professional {
+    padding: 0 16px;
+  }
+}
+
+/* Focus states for accessibility */
+button:focus,
+a:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-blue);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-purple);
+}
+
+/* Professional typography scale */
+.text-hero {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.text-subtitle {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.text-small {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Gaming-themed accents */
+.gaming-glow {
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+}
+
+.gaming-border {
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              var(--gradient-primary) border-box;
+}
+
+/* Professional loading states */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Error and success states */
+.error-state {
+  color: #e53e3e;
+  background-color: #fed7d7;
+  border: 1px solid #feb2b2;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.success-state {
+  color: #38a169;
+  background-color: #c6f6d5;
+  border: 1px solid #9ae6b4;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* TIC GLOBAL Typography scale */
+.text-hero {
+  font-size: clamp(2.5rem, 5vw, 4rem); /* Title */
+  font-family: var(--font-titles);    /* Montserrat */
+  font-weight: 700;                   /* Bold */
+  line-height: 1.1;
+  color: var(--solid-black); /* Changed to solid black */
+}
+
+.text-subtitle {
+  font-size: clamp(1.25rem, 3vw, 1.5rem); /* Heading */
+  font-family: var(--font-headings);      /* Montserrat */
+  font-weight: 600;                     /* SemiBold */
+  line-height: 1.4;
+  color: var(--solid-black); /* Changed to solid black */
+}
+
+.text-body {
+  font-size: 1rem; /* Body Text */
+  font-family: var(--font-body-text); /* DM Sans */
+  font-weight: 400;                   /* Regular */
+  line-height: 1.6;
+  color: var(--solid-black); /* Changed to solid black */
+}
+
+.text-small {
+  font-size: 0.875rem; /* Body Text Small */
+  font-family: var(--font-body-text); /* DM Sans */
+  font-weight: 400;                   /* Regular */
+  line-height: 1.5;
+  color: var(--solid-black); /* Changed to solid black, consider a dark gray for less emphasis if needed */
+}
+
+.text-heading { /* General Titles */
+  font-family: var(--font-titles); /* Montserrat */
+  font-weight: 700;                /* Bold */
+  color: var(--solid-black); /* Changed to solid black */
+}
+
+.text-subheading { /* General Headings */
+  font-family: var(--font-headings); /* Montserrat */
+  font-weight: 600;                  /* SemiBold */
+  color: var(--solid-black); /* Changed to solid black */
+}
+
+/* Clean logo styles for transparent images */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Glassmorphic Icon Container Style */
+.glass-icon-container {
+  background: rgba(255, 255, 255, 0.15); /* Light, semi-transparent background */
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%); /* For Safari */
+  border-radius: var(--chakra-radii-xl); /* Use Chakra's xl radius */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  /* Padding will be applied by the Chakra Box component */
+  transition: all 0.3s ease-in-out; /* Add transition for smooth hover effect */
+}
+
+.glass-icon-container:hover {
+  background: rgba(255, 255, 255, 0.25); /* Slightly more opaque background */
+  border: 1px solid rgba(255, 255, 255, 0.4); /* Brighter border */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* More pronounced shadow */
+  transform: translateY(-2px) scale(1.02); /* Slight lift and scale */
+}
+
+@keyframes pulseButtonShadow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 195, 203, 0.5); /* var(--primary-teal) with alpha */
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(20, 195, 203, 0); /* var(--primary-teal) with alpha */
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(20, 195, 203, 0); /* var(--primary-teal) with alpha */
+  }
+}
+
+@keyframes pulseButtonGoldShadow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(224, 181, 40, 0.5); /* var(--brand-gold) #E0B528 with alpha */
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(224, 181, 40, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 181, 40, 0);
+  }
+}
+
+/* Floating animation for coin image */
+@keyframes floatAnimation {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px); /* Adjust this value for more or less float */
+  }
+}
+
+.floating-coins {
+  animation: floatAnimation 3s ease-in-out infinite;
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Package",
+  "type": "object",
+  "required": ["name", "version"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the package"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the package"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the package"
+    },
+    "main": {
+      "type": "string",
+      "description": "Main entry point"
+    },
+    "scripts": {
+      "type": "object",
+      "description": "Package scripts",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Package dependencies",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "devDependencies": {
+      "type": "object",
+      "description": "Package development dependencies",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

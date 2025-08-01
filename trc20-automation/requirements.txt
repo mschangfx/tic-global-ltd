@@ -1,0 +1,28 @@
+# TRC20 Automation Service Dependencies
+
+# TRON blockchain interaction
+tronpy==0.4.0
+
+# Database connectivity
+psycopg2-binary==2.9.7
+
+# HTTP requests
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Cryptography for key management
+cryptography==41.0.4
+
+# Async support (optional)
+asyncio==3.4.3
+
+# Logging and utilities
+colorlog==6.7.0
+
+# JSON handling
+ujson==5.8.0
+
+# Date/time utilities
+python-dateutil==2.8.2
