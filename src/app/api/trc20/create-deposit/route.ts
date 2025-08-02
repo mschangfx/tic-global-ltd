@@ -80,14 +80,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ Test deposit created: ${deposit.id} - ${depositAmount} USDT for ${user_email}`);
+    console.log(`✅ Test deposit created: ${deposit.id} - ${depositAmount} USDT for ${user.email}`);
 
     return NextResponse.json({
       success: true,
       message: 'Test deposit created successfully',
       deposit: {
         id: deposit.id,
-        user_email,
+        user_email: user.email,
         amount: depositAmount,
         transaction_hash: txHash,
         status: 'pending',
