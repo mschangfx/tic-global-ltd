@@ -55,11 +55,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate total ranking bonuses earned
-    const totalTicEarned = bonusHistory?.filter(h => h.token_type === 'TIC')
-      .reduce((sum, h) => sum + parseFloat(h.amount), 0) || 0;
-    
-    const totalGicEarned = bonusHistory?.filter(h => h.token_type === 'GIC')
-      .reduce((sum, h) => sum + parseFloat(h.amount), 0) || 0;
+    const totalTicEarned = bonusHistory?.filter((h: any) => h.token_type === 'TIC')
+      .reduce((sum: number, h: any) => sum + parseFloat(h.amount), 0) || 0;
+
+    const totalGicEarned = bonusHistory?.filter((h: any) => h.token_type === 'GIC')
+      .reduce((sum: number, h: any) => sum + parseFloat(h.amount), 0) || 0;
 
     const totalBonusEarned = totalTicEarned + totalGicEarned;
 
