@@ -25,6 +25,7 @@ import { useLanguage, formatCurrency } from '@/contexts/LanguageContext';
 
 interface TokenDistribution {
   id: string;
+  plan_id: string;
   plan_name: string;
   token_amount: number;
   distribution_date: string;

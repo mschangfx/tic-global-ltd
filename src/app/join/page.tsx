@@ -493,7 +493,7 @@ export default function JoinPage() {
                       </Select>
                     </FormControl>
 
-                    <FormControl id="register-email" isRequired isInvalid={!!registerError || (emailValidation.message && !emailValidation.isValid)}>
+                    <FormControl id="register-email" isRequired isInvalid={!!registerError || (!!emailValidation.message && !emailValidation.isValid)}>
                       <FormLabel>Your email address</FormLabel>
                       <InputGroup>
                         <Input
@@ -645,7 +645,7 @@ export default function JoinPage() {
                       </InputGroup>
                     </FormControl> */}
 
-                    <FormControl id="referral-id" isRequired isInvalid={!!registerError || (referralValidation.message && !referralValidation.isValid)}>
+                    <FormControl id="referral-id" isRequired isInvalid={!!registerError || (!!referralValidation.message && !referralValidation.isValid)}>
                       <FormLabel>Referral ID</FormLabel>
                       <InputGroup>
                         <Input
