@@ -47,9 +47,9 @@ export default function DepositStatusPage() {
   const [isRefreshingWallet, setIsRefreshingWallet] = useState(false);
   const [hasProcessedCompletion, setHasProcessedCompletion] = useState(false);
   
-  const depositId = searchParams.get('depositId');
-  const amount = searchParams.get('amount');
-  const method = searchParams.get('method');
+  const depositId = searchParams?.get('depositId');
+  const amount = searchParams?.get('amount');
+  const method = searchParams?.get('method');
   
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const cardBgColor = useColorModeValue('white', 'gray.700');
