@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 // Initialize Supabase admin client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAdmin = createServiceClient(supabaseUrl, supabaseServiceKey);
 
 // Helper to get authenticated user email from both auth methods
 async function getAuthenticatedUserEmail(request: NextRequest): Promise<string | null> {
   try {
     // Method 1: Try Supabase auth (manual login) - this works reliably
     try {
-      const cookieStore = cookies();
-      const supabase = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      });
-
+      const supabase = createClient();
       const { data: { user }, error } = await supabase.auth.getUser();
       if (!error && user?.email) {
         return user.email;
