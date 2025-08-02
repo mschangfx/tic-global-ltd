@@ -221,7 +221,7 @@ export default function DepositPage() {
           fee: '0%', // Will be updated with real-time data
           limits: '10 - 200,000 USD',
           icon: '/img/USDT-TRC20.png',
-          web3Network: 'tron',
+          tronNetwork: 'tron',
           tokenSymbol: 'USDT'
         },
         {
@@ -277,7 +277,7 @@ export default function DepositPage() {
             fee: '0%',
             limits: '10 - 200,000 USD',
             icon: '/img/USDT-TRC20.png',
-            web3Network: 'tron',
+            tronNetwork: 'tron',
             tokenSymbol: 'USDT'
           },
           {
@@ -807,12 +807,12 @@ export default function DepositPage() {
         return;
       }
 
-      // Generate Web3 deposit address using the simplified Web3 API
-      if (!selectedMethod.web3Network || !selectedMethod.tokenSymbol) {
-        throw new Error('Web3 configuration missing for this deposit method');
+      // Generate TronPy deposit address using the TRC20 API
+      if (!selectedMethod.tronNetwork || !selectedMethod.tokenSymbol) {
+        throw new Error('TronPy configuration missing for this deposit method');
       }
 
-      const depositResponse = await fetch(`/api/web3/deposits-simple?action=generate-address&network=${selectedMethod.web3Network}&token=${selectedMethod.tokenSymbol}&userEmail=${encodeURIComponent(user.email)}`);
+      const depositResponse = await fetch(`/api/trc20/create-deposit?network=${selectedMethod.tronNetwork}&token=${selectedMethod.tokenSymbol}&userEmail=${encodeURIComponent(user.email)}`);
       const depositData = await depositResponse.json();
 
       if (!depositData.success) {
@@ -837,8 +837,8 @@ export default function DepositPage() {
       paymentUrl.searchParams.set('method', selectedMethod?.name || 'USDT');
       paymentUrl.searchParams.set('processingTime', depositData?.estimatedConfirmationTime || selectedMethod?.processingTime || '1-3 minutes');
       paymentUrl.searchParams.set('status', 'pending');
-      paymentUrl.searchParams.set('web3', 'true'); // Flag to indicate this is a Web3 deposit
-      paymentUrl.searchParams.set('web3Network', selectedMethod?.web3Network || 'tron');
+      paymentUrl.searchParams.set('tronpy', 'true'); // Flag to indicate this is a TronPy deposit
+      paymentUrl.searchParams.set('tronNetwork', selectedMethod?.tronNetwork || 'tron');
       paymentUrl.searchParams.set('tokenSymbol', selectedMethod?.tokenSymbol || 'USDT');
 
       // Immediate redirect to payment instructions
@@ -1022,7 +1022,7 @@ export default function DepositPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {depositMethods.filter(method => method.web3Network).map((method) => (
+                {depositMethods.filter(method => method.tronNetwork).map((method) => (
                   <Card
                     key={method.id}
                     cursor="pointer"
@@ -1154,7 +1154,7 @@ export default function DepositPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {depositMethods.filter(method => !method.web3Network).map((method) => (
+                {depositMethods.filter(method => !method.tronNetwork).map((method) => (
                   <Card
                     key={method.id}
                     cursor="pointer"

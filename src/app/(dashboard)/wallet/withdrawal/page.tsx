@@ -79,8 +79,8 @@ interface WithdrawalMethod {
   fee: string;
   limits: string;
   icon: string;
-  web3Network?: string; // Add Web3 network mapping
-  tokenSymbol?: string; // Add token symbol for Web3
+  tronNetwork?: string; // Add TRON network mapping
+  tokenSymbol?: string; // Add token symbol for TRC20
 }
 
 export default function WithdrawalPage() {
@@ -142,7 +142,7 @@ export default function WithdrawalPage() {
       fee: '10% gas fee',
       limits: '10 - 1,000,000 USD',
       icon: '/img/USDT-TRC20.png',
-      web3Network: 'tron',
+      tronNetwork: 'tron',
       tokenSymbol: 'USDT'
     },
     {
@@ -680,9 +680,9 @@ export default function WithdrawalPage() {
       const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya';
 
       if (!isManualMethod) {
-        // Validate Web3 configuration for crypto withdrawals
-        if (!selectedMethod || !selectedMethod.web3Network || !selectedMethod.tokenSymbol) {
-          throw new Error('Web3 configuration missing for this withdrawal method');
+        // Validate TronPy configuration for crypto withdrawals
+        if (!selectedMethod || !selectedMethod.tronNetwork || !selectedMethod.tokenSymbol) {
+          throw new Error('TronPy configuration missing for this withdrawal method');
         }
       }
 
@@ -708,21 +708,21 @@ export default function WithdrawalPage() {
           throw new Error(withdrawalData.error || 'Failed to process manual withdrawal');
         }
       } else {
-        // Process Web3 withdrawal
+        // Process TronPy withdrawal
         // First validate the address
-        const validateResponse = await fetch(`/api/web3/withdrawals-simple?action=validate-address&address=${encodeURIComponent(walletAddress)}&network=${selectedMethod.web3Network}`);
+        const validateResponse = await fetch(`/api/wallet/validate-address?address=${encodeURIComponent(walletAddress)}&network=${selectedMethod.tronNetwork}`);
         const validateData = await validateResponse.json();
 
         if (!validateData.success || !validateData.isValid) {
           throw new Error(`Invalid ${selectedMethod.network} address format`);
         }
 
-        // Process Web3 withdrawal using the simplified API
-        const withdrawalResponse = await fetch('/api/web3/withdrawals-simple', {
+        // Process TronPy withdrawal using the TRC20 API
+        const withdrawalResponse = await fetch('/api/trc20/withdraw', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            network: selectedMethod.web3Network,
+            network: selectedMethod.tronNetwork,
             tokenSymbol: selectedMethod.tokenSymbol,
             amount: amount.toString(),
             toAddress: walletAddress
@@ -941,7 +941,7 @@ export default function WithdrawalPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && method.web3Network).map((method) => (
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && method.tronNetwork).map((method) => (
                   <Card
                     key={method.id}
                     cursor="pointer"
@@ -1081,7 +1081,7 @@ export default function WithdrawalPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && !method.web3Network).map((method) => (
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && !method.tronNetwork).map((method) => (
                   <Card
                     key={method.id}
                     cursor="pointer"

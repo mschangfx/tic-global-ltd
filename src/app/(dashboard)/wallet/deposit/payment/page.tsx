@@ -36,8 +36,8 @@ interface DepositDetails {
   method: string;
   processingTime: string;
   status: string;
-  isWeb3?: boolean;
-  web3Network?: string;
+  isTronpy?: boolean;
+  tronNetwork?: string;
   tokenSymbol?: string;
 }
 
@@ -114,11 +114,11 @@ function DepositPaymentContent() {
     const method = searchParams?.get('method');
     const processingTime = searchParams?.get('processingTime');
     const status = searchParams?.get('status');
-    const isWeb3 = searchParams?.get('web3') === 'true';
-    const web3Network = searchParams?.get('web3Network');
+    const isTronpy = searchParams?.get('tronpy') === 'true';
+    const tronNetwork = searchParams?.get('tronNetwork');
     const tokenSymbol = searchParams?.get('tokenSymbol');
 
-    // For Web3 deposits, we don't need a transactionId initially
+    // For TronPy deposits, we don't need a transactionId initially
     if (amount && network && address) {
       const details = {
         transactionId: transactionId || undefined,
@@ -129,8 +129,8 @@ function DepositPaymentContent() {
         method: method || 'USDT',
         processingTime: processingTime || 'Instant - 15 minutes',
         status: status || 'pending',
-        isWeb3,
-        web3Network: web3Network || undefined,
+        isTronpy,
+        tronNetwork: tronNetwork || undefined,
         tokenSymbol: tokenSymbol || undefined
       };
 
@@ -145,13 +145,13 @@ function DepositPaymentContent() {
   useEffect(() => {
     if (!depositDetails || currentStatus !== 'pending') return;
 
-    // For Web3 deposits, we monitor blockchain transactions
-    if (depositDetails.isWeb3) {
-      // Web3 deposits are automatically monitored by the blockchain monitor
+    // For TronPy deposits, we monitor blockchain transactions
+    if (depositDetails.isTronpy) {
+      // TronPy deposits are automatically monitored by the TRC20 automation service
       // We can check for blockchain transactions periodically
       const interval = setInterval(async () => {
         try {
-          const response = await fetch('/api/web3/deposits?action=history');
+          const response = await fetch('/api/trc20/monitor');
           const data = await response.json();
 
           if (data.success && data.deposits.length > 0) {
@@ -172,9 +172,9 @@ function DepositPaymentContent() {
             }
           }
         } catch (error) {
-          console.error('Error checking Web3 deposit status:', error);
+          console.error('Error checking TronPy deposit status:', error);
         }
-      }, 15000); // Check every 15 seconds for Web3
+      }, 15000); // Check every 15 seconds for TronPy
 
       return () => clearInterval(interval);
     } else {
@@ -364,12 +364,12 @@ function DepositPaymentContent() {
           <Alert status="info" borderRadius="md">
             <AlertIcon />
             <Box flex="1">
-              {depositDetails.isWeb3 ? (
+              {depositDetails.isTronpy ? (
                 <>
-                  <AlertTitle>🔗 Blockchain Deposit</AlertTitle>
+                  <AlertTitle>🔗 TRON Blockchain Deposit</AlertTitle>
                   <AlertDescription display="block">
                     Send exactly <strong>{depositDetails.amount} {depositDetails.currency}</strong> to the address below using the {depositDetails.network} network.
-                    Your deposit will be automatically detected and credited once confirmed on the blockchain.
+                    Your deposit will be automatically detected and credited once confirmed on the TRON blockchain.
                   </AlertDescription>
                 </>
               ) : (
@@ -397,11 +397,11 @@ function DepositPaymentContent() {
           <Alert status="error" borderRadius="md">
             <AlertIcon />
             <Box flex="1">
-              {depositDetails.isWeb3 ? (
+              {depositDetails.isTronpy ? (
                 <>
-                  <AlertTitle>❌ Blockchain Deposit Issue</AlertTitle>
+                  <AlertTitle>❌ TRON Blockchain Deposit Issue</AlertTitle>
                   <AlertDescription display="block">
-                    There was an issue with your blockchain deposit. Please contact support for assistance.
+                    There was an issue with your TRON blockchain deposit. Please contact support for assistance.
                   </AlertDescription>
                 </>
               ) : (
@@ -506,8 +506,8 @@ function DepositPaymentContent() {
                       <strong>ONLY send {depositDetails.method} via {depositDetails.network} network to this address.</strong><br/>
                       • Sending any other cryptocurrency will result in permanent loss<br/>
                       • Double-check the network before sending<br/>
-                      {depositDetails.isWeb3 ? (
-                        <>• Your deposit will be automatically detected and credited once confirmed on the blockchain<br/>
+                      {depositDetails.isTronpy ? (
+                        <>• Your deposit will be automatically detected and credited once confirmed on the TRON blockchain<br/>
                         • No admin approval required - fully automated process</>
                       ) : (
                         <>• Your deposit will be credited after admin approval</>
@@ -517,12 +517,12 @@ function DepositPaymentContent() {
                 </Alert>
               )}
 
-              {/* Web3-specific information */}
-              {depositDetails.isWeb3 && currentStatus === 'pending' && (
+              {/* TronPy-specific information */}
+              {depositDetails.isTronpy && currentStatus === 'pending' && (
                 <Alert status="info" borderRadius="md">
                   <AlertIcon />
                   <Box flex="1">
-                    <AlertTitle>🔗 Blockchain Monitoring Active</AlertTitle>
+                    <AlertTitle>🔗 TRON Blockchain Monitoring Active</AlertTitle>
                     <AlertDescription display="block">
                       • Real-time blockchain monitoring is active<br/>
                       • Your deposit will be automatically detected<br/>
