@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
           staking_balance: currentWallet?.staking_balance || 0,
           referral_earnings_balance: currentWallet?.referral_earnings_balance || 0
         },
-        update_error: updateError?.message || null
+        update_error: (updateError as any)?.message || null
       }
     });
 
