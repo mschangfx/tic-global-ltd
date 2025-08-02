@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     // Get rank consistency
     const ranks = maintenanceStatus?.map((m: any) => m.rank_achieved) || [];
-    const uniqueRanks = [...new Set(ranks)];
+    const uniqueRanks = Array.from(new Set(ranks));
     const currentRank = currentQualification?.[0]?.current_rank || 'No Rank';
     
     // Calculate rank stability (months at current rank)
