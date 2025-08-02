@@ -46,7 +46,7 @@ async function testEmailConfiguration(email, password, service = 'gmail') {
       };
     }
 
-    const transporter = nodemailer.createTransporter(transporterConfig);
+    const transporter = nodemailer.createTransport(transporterConfig);
     
     // Verify connection
     await transporter.verify();

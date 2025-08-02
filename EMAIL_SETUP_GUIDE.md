@@ -37,7 +37,7 @@ SMTP_PASSWORD=your-password
 ```
 Update the transporter in `/src/app/api/contact/route.ts`:
 ```javascript
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'hotmail',
   auth: {
     user: process.env.SMTP_EMAIL,
@@ -55,7 +55,7 @@ SMTP_PASSWORD=your-password
 ```
 Update the transporter:
 ```javascript
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false, // true for 465, false for other ports
@@ -147,7 +147,7 @@ Consider adding:
 ### Debug Mode
 To enable debug logging, add to the transporter:
 ```javascript
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   // ... other settings
   debug: true,
   logger: true,

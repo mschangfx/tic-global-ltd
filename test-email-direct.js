@@ -74,7 +74,7 @@ const testEmailDirect = async () => {
     }
 
     console.log('🔧 Creating transporter for:', emailDomain);
-    const transporter = nodemailer.createTransporter(transporterConfig);
+    const transporter = nodemailer.createTransport(transporterConfig);
 
     // Verify connection
     console.log('🔍 Verifying SMTP connection...');
