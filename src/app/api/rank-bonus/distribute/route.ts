@@ -153,7 +153,7 @@ async function processAllUsersBonus(month: string) {
     }
 
     // Get unique referrer emails
-    const uniqueReferrers = [...new Set(usersWithReferrals?.map(r => r.referrer_email) || [])];
+    const uniqueReferrers = Array.from(new Set(usersWithReferrals?.map(r => r.referrer_email) || []));
 
     const results = {
       processed: 0,

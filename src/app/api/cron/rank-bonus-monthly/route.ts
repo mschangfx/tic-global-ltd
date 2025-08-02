@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get unique referrer emails
-    const uniqueReferrers = [...new Set(usersWithReferrals?.map(r => r.referrer_email) || [])];
+    const uniqueReferrers = Array.from(new Set(usersWithReferrals?.map(r => r.referrer_email) || []));
 
     const results = {
       month: currentMonth,
