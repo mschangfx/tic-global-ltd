@@ -97,7 +97,7 @@ async function processSingleUserBonus(userEmail: string, month: string) {
     try {
       await NotificationService.createNotification({
         user_email: userEmail,
-        type: 'rank_bonus',
+        type: 'reward',
         title: 'Rank Bonus Received!',
         message: `Congratulations! You've received your ${userRank} rank bonus of $${bonusAmount.toLocaleString()} (${(bonusAmount/2).toLocaleString()} TIC + ${(bonusAmount/2).toLocaleString()} GIC tokens) for ${month}.`,
         priority: 'high',
