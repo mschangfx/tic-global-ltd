@@ -213,17 +213,17 @@ export async function GET(request: NextRequest) {
     const summary = {
       date,
       total_commissions: commissions?.length || 0,
-      total_amount: commissions?.reduce((sum, c) => sum + parseFloat(c.daily_commission), 0) || 0,
+      total_amount: commissions?.reduce((sum: number, c: any) => sum + parseFloat(c.daily_commission), 0) || 0,
       by_status: {
-        pending: commissions?.filter(c => c.status === 'pending').length || 0,
-        distributed: commissions?.filter(c => c.status === 'distributed').length || 0,
-        failed: commissions?.filter(c => c.status === 'failed').length || 0
+        pending: commissions?.filter((c: any) => c.status === 'pending').length || 0,
+        distributed: commissions?.filter((c: any) => c.status === 'distributed').length || 0,
+        failed: commissions?.filter((c: any) => c.status === 'failed').length || 0
       },
-      by_level: {}
+      by_level: {} as Record<string, { count: number; amount: number }>
     };
 
     // Group by level
-    commissions?.forEach(c => {
+    commissions?.forEach((c: any) => {
       const level = `level_${c.referrer_level}`;
       if (!summary.by_level[level]) {
         summary.by_level[level] = { count: 0, amount: 0 };
