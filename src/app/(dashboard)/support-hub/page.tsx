@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -208,7 +208,7 @@ const faqData: FAQItem[] = [
   }
 ];
 
-export default function SupportHubPage() {
+function SupportHubPageContent() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FAQItem[]>([]);
@@ -699,5 +699,13 @@ export default function SupportHubPage() {
 
 
     </Box>
+  );
+}
+
+export default function SupportHubPage() {
+  return (
+    <Suspense fallback={<Box p={8}><Text>Loading...</Text></Box>}>
+      <SupportHubPageContent />
+    </Suspense>
   );
 }

@@ -14,8 +14,26 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  debug: true, // Enable debug for production too
+  logger: {
+    error(code, metadata) {
+      console.error('❌ NextAuth Error:', code, metadata)
+    },
+    warn(code) {
+      console.warn('⚠️ NextAuth Warning:', code)
+    },
+    debug(code, metadata) {
+      console.log('🔍 NextAuth Debug:', code, metadata)
+    }
+  },
   callbacks: {
     async signIn({ user, account, profile }: { user: any; account: any; profile?: any }) {
+      console.log('🔍 SignIn callback triggered:', {
+        provider: account?.provider,
+        userEmail: user?.email,
+        userName: user?.name
+      })
+
       if (account?.provider === 'google') {
         try {
           // Check if user exists in Supabase
@@ -26,12 +44,13 @@ export const authOptions: NextAuthOptions = {
             .single()
 
           if (fetchError && fetchError.code !== 'PGRST116') {
-            console.error('Error fetching user:', fetchError)
+            console.error('❌ Error fetching user:', fetchError)
             return false
           }
 
           // If user doesn't exist, create them
           if (!existingUser) {
+            console.log('✅ Creating new user for:', user.email)
             const { error: insertError } = await supabase
               .from('users')
               .insert([
@@ -47,9 +66,12 @@ export const authOptions: NextAuthOptions = {
               ])
 
             if (insertError) {
-              console.error('Error creating user:', insertError)
+              console.error('❌ Error creating user:', insertError)
               return false
             }
+            console.log('✅ User created successfully')
+          } else {
+            console.log('✅ Existing user found:', existingUser.email)
           }
 
           return true

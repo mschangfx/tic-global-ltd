@@ -34,7 +34,7 @@ import {
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { FaEye, FaEyeSlash, FaGoogle, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import { signIn, getSession } from 'next-auth/react'
 import CallToActionBanner from '@/components/ui/CallToActionBanner'
@@ -47,7 +47,7 @@ declare global {
   }
 }
 
-export default function JoinPage() {
+function JoinPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showPassword, setShowPassword] = useState(false)
@@ -756,4 +756,12 @@ export default function JoinPage() {
       />
     </Box>
   )
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<Box p={8}><Text>Loading...</Text></Box>}>
+      <JoinPageContent />
+    </Suspense>
+  );
 }

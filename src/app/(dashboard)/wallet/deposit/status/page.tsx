@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Box,
@@ -35,7 +35,7 @@ interface DepositStatus {
   admin_notes?: string;
 }
 
-export default function DepositStatusPage() {
+function DepositStatusPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const toast = useToast();
@@ -346,5 +346,13 @@ export default function DepositStatusPage() {
         </Card>
       </VStack>
     </Box>
+  );
+}
+
+export default function DepositStatusPage() {
+  return (
+    <Suspense fallback={<Box p={8}><Text>Loading...</Text></Box>}>
+      <DepositStatusPageContent />
+    </Suspense>
   );
 }

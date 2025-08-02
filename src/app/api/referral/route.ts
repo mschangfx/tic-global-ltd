@@ -3,6 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 // Commission structure based on your requirements - Complete 15 Level Structure
 const COMMISSION_STRUCTURE = {
   1: { rate: 10, description: "10% x $0.44=$0.044 daily bonus" },

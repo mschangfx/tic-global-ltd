@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import '@/styles/page-transitions.css';
 import {
   Box,
@@ -70,7 +70,7 @@ const INVESTMENT_TIERS_DATA = [
 //   { id: 'wallet', name: 'Wallet Balance', icon: FaWallet, description: 'Pay from your TIC wallet balance' },
 // ];
 
-export default function BillingPage() {
+function BillingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId = searchParams?.get('plan') || 'vip';
@@ -510,5 +510,13 @@ export default function BillingPage() {
         </SimpleGrid>
       </VStack>
     </Box>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={<Box p={8}><Text>Loading...</Text></Box>}>
+      <BillingPageContent />
+    </Suspense>
   );
 }

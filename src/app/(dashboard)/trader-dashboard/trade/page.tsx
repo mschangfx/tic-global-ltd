@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Box,
@@ -47,7 +47,7 @@ interface TradeCalculation {
   errorMessage?: string;
 }
 
-export default function GICTradePage() {
+function GICTradePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
@@ -521,5 +521,13 @@ export default function GICTradePage() {
         </VStack>
       </Container>
     </Box>
+  );
+}
+
+export default function GICTradePage() {
+  return (
+    <Suspense fallback={<Box p={8}><Text>Loading...</Text></Box>}>
+      <GICTradePageContent />
+    </Suspense>
   );
 }
