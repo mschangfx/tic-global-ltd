@@ -393,7 +393,11 @@ export default function TransactionHistoryPage() {
                  : new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
               </Text>
               <VStack spacing={3} align="stretch" divider={<StackDivider borderColor={borderColor} />}>
-                {dateTransactions.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((tx) => ( // Sort by actual timestamp for accuracy
+                {dateTransactions.sort((a,b) => {
+                  const dateTimeA = new Date(`${a.date} ${a.time}`).getTime();
+                  const dateTimeB = new Date(`${b.date} ${b.time}`).getTime();
+                  return dateTimeB - dateTimeA;
+                }).map((tx) => ( // Sort by actual timestamp for accuracy
                   <Flex key={tx.id} p={4} bg={cardBgColor} borderRadius="md" boxShadow="sm" alignItems="center">
                     <Icon as={tx.icon} boxSize={6} color={tx.type.includes('Reward') ? 'yellow.500' : tx.amount.startsWith('+') ? 'green.500' : 'red.500'} mr={4}/>
                     <VStack align="start" spacing={0} flex={1}>
