@@ -232,11 +232,11 @@ function WithdrawalStatusContent() {
             <>
               <Icon as={FaCheck} boxSize={10} color="green.500" />
               <Heading as="h1" size="xl" color={textColor}>
-                {withdrawalDetails.isWeb3 ? 'Blockchain Withdrawal Confirmed!' : 'Withdrawal Completed!'}
+                {withdrawalDetails.isTronpy ? 'TRON Blockchain Withdrawal Confirmed!' : 'Withdrawal Completed!'}
               </Heading>
               <Text fontSize="lg" color={subtleTextColor}>
-                {withdrawalDetails.isWeb3
-                  ? 'Your withdrawal has been confirmed on the blockchain'
+                {withdrawalDetails.isTronpy
+                  ? 'Your withdrawal has been confirmed on the TRON blockchain'
                   : 'Your withdrawal has been processed successfully'
                 }
               </Text>
@@ -260,9 +260,9 @@ function WithdrawalStatusContent() {
           <Alert status="info" borderRadius="md">
             <AlertIcon />
             <Box flex="1">
-              {withdrawalDetails.isWeb3 ? (
+              {withdrawalDetails.isTronpy ? (
                 <>
-                  <AlertTitle>🔗 Blockchain Transaction</AlertTitle>
+                  <AlertTitle>🔗 TRON Blockchain Transaction</AlertTitle>
                   <AlertDescription display="block">
                     Your withdrawal of <strong>{withdrawalDetails.amount} {withdrawalDetails.currency}</strong> has been broadcasted to the {withdrawalDetails.network} blockchain.
                     {withdrawalDetails.transactionHash && (
@@ -288,9 +288,9 @@ function WithdrawalStatusContent() {
           <Alert status="success" borderRadius="md">
             <AlertIcon />
             <Box flex="1">
-              {withdrawalDetails.isWeb3 ? (
+              {withdrawalDetails.isTronpy ? (
                 <>
-                  <AlertTitle>✅ Blockchain Withdrawal Confirmed</AlertTitle>
+                  <AlertTitle>✅ TRON Blockchain Withdrawal Confirmed</AlertTitle>
                   <AlertDescription display="block">
                     Your withdrawal of <strong>{withdrawalDetails.amount} {withdrawalDetails.currency}</strong> has been confirmed on the {withdrawalDetails.network} blockchain and sent to your wallet!
                     {withdrawalDetails.transactionHash && (
