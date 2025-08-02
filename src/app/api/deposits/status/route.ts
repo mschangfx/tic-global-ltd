@@ -137,11 +137,11 @@ export async function GET(request: NextRequest) {
         id: deposit.id,
         status: deposit.status,
         amount: deposit.amount,
-        currency: deposit.currency,
-        network: deposit.network,
+        currency: (deposit as any).currency || null,
+        network: (deposit as any).network || null,
         admin_notes: deposit.admin_notes,
-        approved_by: deposit.approved_by,
-        approved_at: deposit.approved_at,
+        approved_by: (deposit as any).approved_by || null,
+        approved_at: (deposit as any).approved_at || null,
         created_at: deposit.created_at,
         updated_at: deposit.updated_at
       }
