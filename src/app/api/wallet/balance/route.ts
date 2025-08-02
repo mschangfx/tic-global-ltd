@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
             total_balance: 0,
             tic_balance: 0,
             gic_balance: 0,
-            staking_balance: 0
+            staking_balance: 0,
+            partner_wallet_balance: 0
           })
           .select()
           .single();

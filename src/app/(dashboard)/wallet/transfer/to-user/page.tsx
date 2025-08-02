@@ -125,6 +125,7 @@ export default function ToUserTransferPage() {
               tic: balanceData.balance.tic_balance,
               gic: balanceData.balance.gic_balance,
               staking: balanceData.balance.staking_balance,
+              partner_wallet: balanceData.balance.partner_wallet || 0,
               lastUpdated: new Date(balanceData.balance.last_updated)
             };
             setWalletBalance(balance);
