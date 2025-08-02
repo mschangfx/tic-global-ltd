@@ -77,9 +77,11 @@ const fallbackMockTransactions: Transaction[] = [
 
 // Helper to group transactions by date with proper sorting
 const groupTransactionsByDate = (transactions: Transaction[]) => {
-  // First, sort all transactions by created_at timestamp (most recent first)
+  // First, sort all transactions by date and time (most recent first)
   const sortedTransactions = transactions.sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    const dateTimeA = new Date(`${a.date} ${a.time}`).getTime();
+    const dateTimeB = new Date(`${b.date} ${b.time}`).getTime();
+    return dateTimeB - dateTimeA;
   });
 
   return sortedTransactions.reduce((acc, transaction) => {
