@@ -95,13 +95,14 @@ async function processSingleUserBonus(userEmail: string, month: string) {
 
     // Send notification to user
     try {
-      const notificationService = new NotificationService();
-      await notificationService.createNotification(
-        userEmail,
-        'rank_bonus',
-        'Rank Bonus Received!',
-        `Congratulations! You've received your ${userRank} rank bonus of $${bonusAmount.toLocaleString()} (${(bonusAmount/2).toLocaleString()} TIC + ${(bonusAmount/2).toLocaleString()} GIC tokens) for ${month}.`,
-        {
+      await NotificationService.createNotification({
+        user_email: userEmail,
+        type: 'rank_bonus',
+        title: 'Rank Bonus Received!',
+        message: `Congratulations! You've received your ${userRank} rank bonus of $${bonusAmount.toLocaleString()} (${(bonusAmount/2).toLocaleString()} TIC + ${(bonusAmount/2).toLocaleString()} GIC tokens) for ${month}.`,
+        priority: 'high',
+        action_url: '/dashboard/wallet/history',
+        metadata: {
           rank: userRank,
           bonusAmount,
           ticAmount: bonusAmount / 2,
@@ -109,7 +110,7 @@ async function processSingleUserBonus(userEmail: string, month: string) {
           month,
           totalReferrals
         }
-      );
+      });
     } catch (notificationError) {
       console.error('Failed to send rank bonus notification:', notificationError);
       // Don't fail the distribution if notification fails
