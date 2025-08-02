@@ -67,12 +67,12 @@ export async function GET(request: NextRequest) {
 
     // Calculate maintenance statistics
     const totalMonths = maintenanceStatus?.length || 0;
-    const qualifiedMonths = maintenanceStatus?.filter(m => m.qualifies_for_bonus).length || 0;
-    const bonusesDistributed = maintenanceStatus?.filter(m => m.bonus_distributed).length || 0;
-    const totalBonusesEarned = maintenanceStatus?.reduce((sum, m) => sum + (m.bonus_distributed ? parseFloat(m.bonus_amount) : 0), 0) || 0;
+    const qualifiedMonths = maintenanceStatus?.filter((m: any) => m.qualifies_for_bonus).length || 0;
+    const bonusesDistributed = maintenanceStatus?.filter((m: any) => m.bonus_distributed).length || 0;
+    const totalBonusesEarned = maintenanceStatus?.reduce((sum: number, m: any) => sum + (m.bonus_distributed ? parseFloat(m.bonus_amount) : 0), 0) || 0;
 
     // Get rank consistency
-    const ranks = maintenanceStatus?.map(m => m.rank_achieved) || [];
+    const ranks = maintenanceStatus?.map((m: any) => m.rank_achieved) || [];
     const uniqueRanks = [...new Set(ranks)];
     const currentRank = currentQualification?.[0]?.current_rank || 'No Rank';
     
