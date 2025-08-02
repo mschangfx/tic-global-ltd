@@ -99,16 +99,16 @@ function WithdrawalStatusContent() {
 
   useEffect(() => {
     // Get withdrawal details from URL parameters
-    const transactionId = searchParams.get('transactionId');
-    const transactionHash = searchParams.get('transactionHash');
-    const amount = searchParams.get('amount');
-    const currency = searchParams.get('currency');
-    const method = searchParams.get('method');
-    const destinationAddress = searchParams.get('destinationAddress');
-    const status = searchParams.get('status');
-    const processingTime = searchParams.get('processingTime');
-    const isTronpy = searchParams.get('tronpy') === 'true';
-    const network = searchParams.get('network');
+    const transactionId = searchParams?.get('transactionId');
+    const transactionHash = searchParams?.get('transactionHash');
+    const amount = searchParams?.get('amount');
+    const currency = searchParams?.get('currency');
+    const method = searchParams?.get('method');
+    const destinationAddress = searchParams?.get('destinationAddress');
+    const status = searchParams?.get('status');
+    const processingTime = searchParams?.get('processingTime');
+    const isTronpy = searchParams?.get('tronpy') === 'true';
+    const network = searchParams?.get('network');
 
     if (transactionId && amount && method && destinationAddress) {
       const details = {

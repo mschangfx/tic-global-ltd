@@ -97,7 +97,7 @@ export default function JoinPage() {
 
   // Auto-populate referral code from URL parameters
   useEffect(() => {
-    const refCode = searchParams.get('ref');
+    const refCode = searchParams?.get('ref');
     if (refCode) {
       setPartnerCode(refCode);
     }
