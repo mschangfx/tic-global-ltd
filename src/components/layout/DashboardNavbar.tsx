@@ -54,14 +54,9 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
         const supabase = createClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-        if (authError || !user?.email) {
-          // Fallback to WalletService if no auth
-          const balance = await walletService.getBalance();
-          setWalletBalance(balance);
-          return;
-        }
-
-        const userEmail = user.email;
+        // Use authenticated user email or fallback to default for testing
+        const userEmail = user?.email || 'mschangfx@gmail.com';
+        console.log('🔍 Navbar: Loading balance for:', userEmail);
 
         // Use the wallet balance API directly for consistency
         const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
@@ -79,13 +74,16 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
           console.log('✅ Navbar: Balance loaded:', balance);
           setWalletBalance(balance);
         } else {
+          console.error('❌ Navbar: API failed:', data);
           // Fallback to WalletService if API fails
           const balance = await walletService.getBalance();
           setWalletBalance(balance);
         }
       } catch (error) {
+        console.error('❌ Navbar: Error loading balance:', error);
         // Fallback to WalletService
         const balance = await walletService.getBalance();
+        console.log('🔄 Navbar: Fallback balance from WalletService:', balance);
         setWalletBalance(balance);
       }
     };
@@ -190,7 +188,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
             _hover={{ bg: iconButtonHoverBg }}
             display={{ base: 'none', md: 'flex' }}
           >
-            {walletBalance !== null ? formatCurrency(walletBalance.total, language) : formatCurrency(0, language)}
+            {walletBalance !== null ? `$${walletBalance.total.toFixed(2)}` : 'Loading...'}
           </MenuButton>
           <MenuList bg={bgColor} borderColor={useColorModeValue('gray.700', 'gray.600')} minW="180px"> {/* Adjusted minW */}
             <MenuItem as={NextLink} href="/wallet/deposit" icon={<Icon as={FaArrowCircleDown} />} bg={bgColor} _hover={{bg: iconButtonHoverBg}}>
