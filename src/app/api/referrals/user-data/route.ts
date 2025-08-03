@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate referral link
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:8000';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://ticgloballtd.com';
     const referralLink = `${baseUrl}/join?ref=${referralCode}`;
 
     // Get referral statistics

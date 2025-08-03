@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       case 'create-test-user':
         // Create a test user with referral code
         const referralCode = `TEST${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        const referralLink = `https://ticglobal.com/join?ref=${referralCode}`;
+        const referralLink = `https://ticgloballtd.com/join?ref=${referralCode}`;
 
         const { data: newUser, error: userError } = await supabase
           .from('user_referral_codes')

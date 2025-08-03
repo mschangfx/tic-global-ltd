@@ -329,7 +329,7 @@ export default function ReferralPage() {
       // Create a referral code using the current user's email
       const userEmail = session.user.email;
       const referralCode = `TIC${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const referralLink = `https://ticglobal.com/join?ref=${referralCode}`;
+      const referralLink = `https://ticgloballtd.com/join?ref=${referralCode}`;
 
       const response = await fetch('/api/referral', {
         method: 'POST',

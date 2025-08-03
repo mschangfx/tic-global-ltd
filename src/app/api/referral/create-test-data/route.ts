@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // First, ensure the user has a referral code
     const referralCode = `TIC${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const referralLink = `https://ticglobal.com/join?ref=${referralCode}`;
+    const referralLink = `https://ticgloballtd.com/join?ref=${referralCode}`;
 
     const { data: userReferralCode, error: codeError } = await supabase
       .from('user_referral_codes')

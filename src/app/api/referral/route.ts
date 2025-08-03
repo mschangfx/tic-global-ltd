@@ -183,7 +183,7 @@ async function getReferralData(supabase: any, userEmail: string) {
     // If no referral data exists, create it
     if (!existingReferral) {
       const referralCode = generateReferralCode();
-      const referralLink = `https://ticglobal.com/join?ref=${referralCode}`;
+      const referralLink = `https://ticgloballtd.com/join?ref=${referralCode}`;
 
       const { data: newReferral, error: insertError } = await supabase
         .from('user_referral_codes')
