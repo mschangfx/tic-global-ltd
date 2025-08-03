@@ -19,7 +19,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     const userEmail = formData.get('userEmail') as string;
     const amount = formData.get('amount') as string;
     const currency = formData.get('currency') as string;
@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
     const accountNumber = formData.get('accountNumber') as string;
     const accountName = formData.get('accountName') as string;
     const receiptFile = formData.get('receipt') as File;
+
+
 
     // Validate required fields
     if (!userEmail || !amount || !currency || !paymentMethod || !receiptFile) {
@@ -107,26 +109,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Create deposit record
+
+
     const { data: deposit, error: depositError } = await supabase
       .from('deposits')
       .insert({
         user_email: userEmail,
-        transaction_id: `manual_${uuidv4()}`,
+        transaction_hash: `manual_${uuidv4()}`,
         method_id: paymentMethod,
+        method_name: (paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
+          ? `USDT (${paymentMethod.split('-')[1].toUpperCase()})`
+          : paymentMethod.toUpperCase(),
         amount: usdAmount, // Store in USD
-        original_amount: depositAmount, // Store original amount
         currency: 'USD', // Final currency
-        original_currency: originalCurrency, // Original currency
         network: network,
+        deposit_address: accountNumber, // The address/account number where payment was sent
         status: 'pending',
-        receipt_url: receiptPath,
-        payment_details: {
+        request_metadata: {
+          receiptUrl: receiptPath,
           accountNumber,
           accountName,
           paymentMethod,
           originalAmount: depositAmount,
           originalCurrency: originalCurrency,
-          conversionRate: conversionRate
+          conversionRate: conversionRate,
+          isManualDeposit: true
         },
         admin_notes: (paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
           ? `Manual USDT (${paymentMethod.split('-')[1].toUpperCase()}) deposit - requires blockchain verification`
@@ -191,7 +198,7 @@ export async function POST(request: NextRequest) {
         amount: usdAmount,
         originalAmount: depositAmount,
         currency: 'USD',
-        originalCurrency: currency,
+        originalCurrency: originalCurrency,
         status: 'pending',
         paymentMethod,
         receiptUrl: receiptPath
