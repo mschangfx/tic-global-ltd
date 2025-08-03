@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
@@ -28,7 +28,7 @@ import {
   Divider
 } from '@chakra-ui/react';
 
-export default function DepositUploadPage() {
+function DepositUploadPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -38,10 +38,10 @@ export default function DepositUploadPage() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   
   // Get parameters from URL
-  const amount = searchParams.get('amount') || '';
-  const method = searchParams.get('method') || '';
-  const address = searchParams.get('address') || '';
-  const methodId = searchParams.get('methodId') || '';
+  const amount = searchParams?.get('amount') || '';
+  const method = searchParams?.get('method') || '';
+  const address = searchParams?.get('address') || '';
+  const methodId = searchParams?.get('methodId') || '';
 
   // Method configurations
   const methodConfig = {
@@ -380,5 +380,19 @@ export default function DepositUploadPage() {
         </Card>
       </VStack>
     </Container>
+  );
+}
+
+export default function DepositUploadPage() {
+  return (
+    <Suspense fallback={
+      <Container maxW="4xl" py={8}>
+        <VStack spacing={8} align="stretch">
+          <Text textAlign="center">Loading...</Text>
+        </VStack>
+      </Container>
+    }>
+      <DepositUploadPageContent />
+    </Suspense>
   );
 }
