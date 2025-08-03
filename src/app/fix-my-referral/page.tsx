@@ -102,7 +102,7 @@ export default function FixMyReferralPage() {
             This will update your referral link from ticglobal.com to ticgloballtd.com
           </Text>
           <Text fontSize="sm" color="gray.500" mt={2}>
-            Logged in as: <Badge>{session.user.email}</Badge>
+            Logged in as: <Badge>{session.user?.email}</Badge>
           </Text>
         </Box>
 
