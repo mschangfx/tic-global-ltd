@@ -46,12 +46,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate minimum amount for manual methods (500 PHP)
-    if (depositAmount < 500) {
-      return NextResponse.json(
-        { success: false, message: 'Minimum deposit amount is ₱500 for digital wallet payments' },
-        { status: 400 }
-      );
+    // Validate minimum amount based on payment method
+    if (paymentMethod === 'usdt-trc20') {
+      // USDT minimum is $10
+      if (depositAmount < 10) {
+        return NextResponse.json(
+          { success: false, message: 'Minimum USDT deposit amount is $10' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // PHP methods minimum is 500 PHP
+      if (depositAmount < 500) {
+        return NextResponse.json(
+          { success: false, message: 'Minimum deposit amount is ₱500 for digital wallet payments' },
+          { status: 400 }
+        );
+      }
     }
 
     // Save receipt file
@@ -78,8 +89,22 @@ export async function POST(request: NextRequest) {
       receiptPath = `/uploads/receipts/${fileName}`;
     }
 
-    // Convert PHP to USD (approximate rate: 1 PHP = 0.018 USD)
-    const usdAmount = depositAmount * 0.018;
+    // Handle currency conversion
+    let usdAmount: number;
+    let originalCurrency: string;
+    let conversionRate: number;
+
+    if (paymentMethod === 'usdt-trc20') {
+      // USDT is already in USD
+      usdAmount = depositAmount;
+      originalCurrency = 'USD';
+      conversionRate = 1;
+    } else {
+      // Convert PHP to USD (approximate rate: 1 PHP = 0.018 USD)
+      usdAmount = depositAmount * 0.018;
+      originalCurrency = currency;
+      conversionRate = 0.018;
+    }
 
     // Create deposit record
     const { data: deposit, error: depositError } = await supabase
@@ -89,9 +114,9 @@ export async function POST(request: NextRequest) {
         transaction_id: `manual_${uuidv4()}`,
         method_id: paymentMethod,
         amount: usdAmount, // Store in USD
-        original_amount: depositAmount, // Store original PHP amount
+        original_amount: depositAmount, // Store original amount
         currency: 'USD', // Final currency
-        original_currency: currency, // Original currency (PHP)
+        original_currency: originalCurrency, // Original currency
         network: network,
         status: 'pending',
         receipt_url: receiptPath,
@@ -100,10 +125,12 @@ export async function POST(request: NextRequest) {
           accountName,
           paymentMethod,
           originalAmount: depositAmount,
-          originalCurrency: currency,
-          conversionRate: 0.018
+          originalCurrency: originalCurrency,
+          conversionRate: conversionRate
         },
-        admin_notes: `Manual ${paymentMethod.toUpperCase()} deposit - requires verification`,
+        admin_notes: paymentMethod === 'usdt-trc20'
+          ? `Manual USDT (TRC20) deposit - requires blockchain verification`
+          : `Manual ${paymentMethod.toUpperCase()} deposit - requires verification`,
         created_at: new Date().toISOString()
       })
       .select()
@@ -142,7 +169,9 @@ export async function POST(request: NextRequest) {
       .insert({
         user_email: userEmail,
         title: 'Deposit Request Submitted',
-        message: `Your ${paymentMethod.toUpperCase()} deposit request of ₱${depositAmount.toLocaleString()} has been submitted and is pending verification.`,
+        message: paymentMethod === 'usdt-trc20'
+          ? `Your USDT deposit request of $${depositAmount.toLocaleString()} has been submitted and is pending verification.`
+          : `Your ${paymentMethod.toUpperCase()} deposit request of ₱${depositAmount.toLocaleString()} has been submitted and is pending verification.`,
         type: 'deposit',
         priority: 'medium',
         metadata: {

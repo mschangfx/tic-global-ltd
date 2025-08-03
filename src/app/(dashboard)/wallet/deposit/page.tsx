@@ -217,12 +217,10 @@ export default function DepositPage() {
           symbol: 'USDT',
           network: 'TRC20',
           address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
-          processingTime: '1-3 minutes', // Will be updated with real-time data
-          fee: '0%', // Will be updated with real-time data
+          processingTime: '5-30 minutes',
+          fee: 'Free',
           limits: '10 - 200,000 USD',
-          icon: '/img/USDT-TRC20.png',
-          tronNetwork: 'tron',
-          tokenSymbol: 'USDT'
+          icon: '/img/USDT-TRC20.png'
         },
         {
           id: 'gcash',
@@ -273,12 +271,10 @@ export default function DepositPage() {
             symbol: 'USDT',
             network: 'TRC20',
             address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
-            processingTime: '1-3 minutes',
-            fee: '0%',
+            processingTime: '5-30 minutes',
+            fee: 'Free',
             limits: '10 - 200,000 USD',
-            icon: '/img/USDT-TRC20.png',
-            tronNetwork: 'tron',
-            tokenSymbol: 'USDT'
+            icon: '/img/USDT-TRC20.png'
           },
           {
             id: 'gcash',
@@ -785,20 +781,28 @@ export default function DepositPage() {
         throw new Error('No deposit method selected');
       }
 
-      // Check if this is a manual method (GCash/PayMaya)
-      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya';
+      // Check if this is a manual method (GCash/PayMaya/USDT)
+      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20';
 
       if (isManualMethod) {
         // For manual methods, show payment instructions and generate QR code
         setShowPaymentInstructions(true);
-        setSuccessMessage(`Please send ₱${(amount * 55.5).toLocaleString()} to ${selectedMethod.name} account: ${selectedMethod.address}. After payment, upload your receipt for verification.`);
 
-        // Generate QR code for the payment details
-        await generateManualQRCode(selectedMethod.address, depositAmount, selectedMethod.name);
+        if (selectedMethod.id === 'usdt-trc20') {
+          setSuccessMessage(`Please send $${amount} USDT (TRC20) to the address: ${selectedMethod.address}. After payment, upload your transaction screenshot for verification.`);
+          // Generate QR code for USDT address
+          await generateDepositQR();
+        } else {
+          setSuccessMessage(`Please send ₱${(amount * 55.5).toLocaleString()} to ${selectedMethod.name} account: ${selectedMethod.address}. After payment, upload your receipt for verification.`);
+          // Generate QR code for the payment details
+          await generateManualQRCode(selectedMethod.address, depositAmount, selectedMethod.name);
+        }
 
         toast({
           title: 'Payment Instructions Generated',
-          description: `Send payment to ${selectedMethod.name} account and upload receipt for verification.`,
+          description: selectedMethod.id === 'usdt-trc20'
+            ? `Send USDT to the address and upload transaction screenshot for verification.`
+            : `Send payment to ${selectedMethod.name} account and upload receipt for verification.`,
           status: 'info',
           duration: 8000,
           isClosable: true,
@@ -807,42 +811,8 @@ export default function DepositPage() {
         return;
       }
 
-      // Generate TronPy deposit address using the TRC20 API
-      if (!selectedMethod.tronNetwork || !selectedMethod.tokenSymbol) {
-        throw new Error('TronPy configuration missing for this deposit method');
-      }
-
-      const depositResponse = await fetch(`/api/trc20/create-deposit?network=${selectedMethod.tronNetwork}&token=${selectedMethod.tokenSymbol}&userEmail=${encodeURIComponent(user.email)}`);
-      const depositData = await depositResponse.json();
-
-      if (!depositData.success) {
-        throw new Error(depositData.error || 'Failed to generate deposit address');
-      }
-
-      // Show success toast
-      toast({
-        title: 'Deposit Address Generated',
-        description: `Redirecting to payment instructions...`,
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
-      });
-
-      // Redirect to payment page with Web3 deposit details
-      const paymentUrl = new URL('/wallet/deposit/payment', window.location.origin);
-      paymentUrl.searchParams.set('amount', amount.toString());
-      paymentUrl.searchParams.set('currency', selectedMethod?.tokenSymbol || 'USDT');
-      paymentUrl.searchParams.set('network', selectedMethod?.network || 'TRC20');
-      paymentUrl.searchParams.set('address', depositData?.depositAddress || '');
-      paymentUrl.searchParams.set('method', selectedMethod?.name || 'USDT');
-      paymentUrl.searchParams.set('processingTime', depositData?.estimatedConfirmationTime || selectedMethod?.processingTime || '1-3 minutes');
-      paymentUrl.searchParams.set('status', 'pending');
-      paymentUrl.searchParams.set('tronpy', 'true'); // Flag to indicate this is a TronPy deposit
-      paymentUrl.searchParams.set('tronNetwork', selectedMethod?.tronNetwork || 'tron');
-      paymentUrl.searchParams.set('tokenSymbol', selectedMethod?.tokenSymbol || 'USDT');
-
-      // Immediate redirect to payment instructions
-      router.push(paymentUrl.pathname + paymentUrl.search);
+      // For non-manual methods (if any exist in the future)
+      throw new Error('This deposit method is not supported yet.');
 
     } catch (e: any) {
       console.error("Error during deposit:", e);
@@ -1010,151 +980,22 @@ export default function DepositPage() {
               </Text>
             </VStack>
 
-            {/* Cryptocurrency Methods */}
-            <VStack spacing={6} align="stretch">
-              <VStack spacing={2}>
-                <Heading as="h2" size="md" color={textColor} textAlign="center">
-                  Cryptocurrency
-                </Heading>
-                <Text fontSize="sm" color={subtleTextColor} textAlign="center">
-                  Instant deposits with blockchain verification
-                </Text>
-              </VStack>
 
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {depositMethods.filter(method => method.tronNetwork).map((method) => (
-                  <Card
-                    key={method.id}
-                    cursor="pointer"
-                    onClick={() => handleMethodSelect(method)}
-                    bg={cardBgColor}
-                    border="2px solid"
-                    borderColor="gray.200"
-                    borderRadius="xl"
-                    _hover={{
-                      borderColor: accentColor,
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                    }}
-                    transition="all 0.3s ease-in-out"
-                    position="relative"
-                    overflow="hidden"
-                  >
-                    <CardBody p={6} textAlign="center">
-                      <VStack spacing={5}>
-                        {/* Icon with background circle */}
-                        <Box
-                          bg="green.50"
-                          borderRadius="full"
-                          p={4}
-                          position="relative"
-                        >
-                          <Image
-                            src={method?.icon || '/img/default-crypto.png'}
-                            alt={`${method?.network || 'Crypto'} logo`}
-                            boxSize="64px"
-                            objectFit="contain"
-                          />
-                          {/* Network badge */}
-                          <Box
-                            position="absolute"
-                            bottom="-2px"
-                            right="-2px"
-                            bg="green.500"
-                            color="white"
-                            borderRadius="full"
-                            w="24px"
-                            h="24px"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            fontSize="xs"
-                            fontWeight="bold"
-                          >
-                            T
-                          </Box>
-                        </Box>
 
-                        {/* Title and Network */}
-                        <VStack spacing={2}>
-                          <Heading as="h3" size="lg" color={textColor} fontWeight="bold">
-                            {method?.name || 'Unknown'}
-                          </Heading>
-                          <Text
-                            fontSize="xl"
-                            fontWeight="bold"
-                            color="green.500"
-                            bg="green.50"
-                            px={4}
-                            py={2}
-                            borderRadius="full"
-                          >
-                            {method?.network || 'Unknown'}
-                          </Text>
-                        </VStack>
-
-                        {/* Details */}
-                        <VStack spacing={3} w="full">
-                          <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
-                              Processing:
-                            </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
-                              {method?.processingTime || '1-3 minutes'}
-                            </Text>
-                          </HStack>
-                          <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
-                              Fee:
-                            </Text>
-                            <Text fontSize="sm" color="green.500" fontWeight="bold">
-                              {method?.fee || '0%'}
-                            </Text>
-                          </HStack>
-                          <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
-                              Limits:
-                            </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
-                              {method?.limits || '10 - 200,000 USD'}
-                            </Text>
-                          </HStack>
-                        </VStack>
-
-                        {/* Select Button */}
-                        <Button
-                          colorScheme="green"
-                          size="lg"
-                          w="full"
-                          borderRadius="xl"
-                          fontWeight="bold"
-                          _hover={{
-                            transform: 'translateY(-2px)',
-                          }}
-                          transition="all 0.2s"
-                        >
-                          Select {method?.network || 'Method'}
-                        </Button>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                ))}
-              </SimpleGrid>
-            </VStack>
 
             {/* Manual Payment Methods */}
             <VStack spacing={6} align="stretch">
               <VStack spacing={2}>
                 <Heading as="h2" size="md" color={textColor} textAlign="center">
-                  Digital Wallets (Philippines)
+                  Manual Deposit Methods
                 </Heading>
                 <Text fontSize="sm" color={subtleTextColor} textAlign="center">
-                  Fast and secure digital wallet deposits
+                  Upload receipt for verification after payment
                 </Text>
               </VStack>
 
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {depositMethods.filter(method => !method.tronNetwork).map((method) => (
+              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} maxW="1000px" mx="auto">
+                {depositMethods.map((method) => (
                   <Card
                     key={method.id}
                     cursor="pointer"
@@ -1401,14 +1242,17 @@ export default function DepositPage() {
                 </Button>
               </HStack>
 
-              {showPaymentInstructions && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') && (
+              {showPaymentInstructions && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') && (
                 <VStack spacing={4} align="stretch">
                   <Alert status="info" borderRadius="md">
                     <AlertIcon />
                     <Box flex="1">
                       <AlertTitle>Payment Instructions</AlertTitle>
                       <AlertDescription display="block">
-                        Send ₱{(parseFloat(depositAmount) * 55.5).toLocaleString()} to the {selectedMethod.name} account below.
+                        {selectedMethod.id === 'usdt-trc20'
+                          ? `Send $${depositAmount} USDT (TRC20) to the address below.`
+                          : `Send ₱${(parseFloat(depositAmount) * 55.5).toLocaleString()} to the ${selectedMethod.name} account below.`
+                        }
                       </AlertDescription>
                     </Box>
                   </Alert>
@@ -1462,7 +1306,7 @@ export default function DepositPage() {
                         <Text fontWeight="bold" color="gray.800" textAlign="center">
                           Scan QR Code
                         </Text>
-                        {manualQrCodeDataUrl ? (
+                        {(manualQrCodeDataUrl || (selectedMethod.id === 'usdt-trc20' && qrCodeDataUrl)) ? (
                           <Box
                             bg="white"
                             p={3}
@@ -1471,7 +1315,7 @@ export default function DepositPage() {
                             borderColor="gray.300"
                           >
                             <Image
-                              src={manualQrCodeDataUrl}
+                              src={selectedMethod.id === 'usdt-trc20' ? qrCodeDataUrl : manualQrCodeDataUrl}
                               alt={`${selectedMethod.name} QR Code`}
                               boxSize="160px"
                               objectFit="contain"
@@ -1506,9 +1350,19 @@ export default function DepositPage() {
                     <Box flex="1">
                       <AlertTitle>Next Steps:</AlertTitle>
                       <AlertDescription display="block">
-                        1. Send the exact amount using the account details or scan the QR code<br/>
-                        2. Take a screenshot of your payment receipt for future reference<br/>
-                        3. Click confirm deposit and wait for verification (5-30 minutes)
+                        {selectedMethod.id === 'usdt-trc20' ? (
+                          <>
+                            1. Send exactly ${depositAmount} USDT (TRC20) to the address above<br/>
+                            2. Take a screenshot of your transaction confirmation<br/>
+                            3. Click confirm deposit and wait for verification (5-30 minutes)
+                          </>
+                        ) : (
+                          <>
+                            1. Send the exact amount using the account details or scan the QR code<br/>
+                            2. Take a screenshot of your payment receipt for future reference<br/>
+                            3. Click confirm deposit and wait for verification (5-30 minutes)
+                          </>
+                        )}
                       </AlertDescription>
                     </Box>
                   </Alert>
@@ -1579,9 +1433,15 @@ export default function DepositPage() {
                         console.log('API Response data:', data);
 
                         if (data.success) {
-                          console.log('Redirecting to status page...');
-                          // Redirect to status page
-                          router.push(`/wallet/deposit/status?depositId=${data.depositId}&amount=${depositAmount}&method=${selectedMethod.name}`);
+                          console.log('Redirecting to upload page...');
+                          // Redirect to upload page for manual methods
+                          const uploadUrl = new URL('/wallet/deposit/upload', window.location.origin);
+                          uploadUrl.searchParams.set('amount', depositAmount);
+                          uploadUrl.searchParams.set('method', selectedMethod.name);
+                          uploadUrl.searchParams.set('address', selectedMethod.address);
+                          uploadUrl.searchParams.set('methodId', selectedMethod.id);
+
+                          router.push(uploadUrl.pathname + uploadUrl.search);
                         } else {
                           throw new Error(data.error || 'Failed to create deposit');
                         }
@@ -1606,7 +1466,7 @@ export default function DepositPage() {
                 </VStack>
               )}
 
-              {isSuccess && !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') && (
+              {isSuccess && !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') && (
                 <Alert status="success" borderRadius="md" mb={4}>
                   <AlertIcon />
                   <Box flex="1">
@@ -1619,7 +1479,7 @@ export default function DepositPage() {
               )}
 
               {/* Step 1: Amount Input (for manual methods) or Direct Form (for crypto methods) */}
-              {(!showPaymentInstructions || !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya')) && (
+              {(!showPaymentInstructions || !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20')) && (
                 <>
                   <FormControl isInvalid={!!error} mt={4}>
                     <FormLabel htmlFor="depositAmount" color={textColor}>
@@ -1629,13 +1489,24 @@ export default function DepositPage() {
                           Enter amount in USD (will be converted to PHP for payment)
                         </Text>
                       )}
+                      {selectedMethod.id === 'usdt-trc20' && (
+                        <Text fontSize="xs" color="gray.500" fontWeight="normal">
+                          Enter amount in USD (you will send USDT equivalent)
+                        </Text>
+                      )}
                     </FormLabel>
                     <InputGroup>
                       <InputLeftAddon>$</InputLeftAddon>
                       <Input
                         id="depositAmount"
                         type="number"
-                        placeholder={selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ? "e.g., 10 (≈₱555)" : "e.g., 100"}
+                        placeholder={
+                          selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+                            ? "e.g., 10 (≈₱555)"
+                            : selectedMethod.id === 'usdt-trc20'
+                            ? "e.g., 100 (≈100 USDT)"
+                            : "e.g., 100"
+                        }
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                       />
@@ -1645,18 +1516,25 @@ export default function DepositPage() {
                         You will pay: ₱{(parseFloat(depositAmount) * 55.5).toLocaleString()} to {selectedMethod.name}
                       </FormHelperText>
                     )}
+                    {selectedMethod.id === 'usdt-trc20' && depositAmount && (
+                      <FormHelperText color="green.500">
+                        You will send: ${depositAmount} USDT (TRC20) to the address
+                      </FormHelperText>
+                    )}
                     {error && <FormHelperText color="red.500">{error}</FormHelperText>}
                   </FormControl>
 
                   <Text fontSize="sm" color={subtleTextColor} mt={2}>
                     {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
                       ? 'After payment confirmation, funds will be credited to your wallet balance in USD.'
+                      : selectedMethod.id === 'usdt-trc20'
+                      ? 'After transaction confirmation, funds will be credited to your wallet balance in USD.'
                       : 'Funds will be credited to your wallet balance.'
                     }
                   </Text>
 
                   <Button
-                    colorScheme={isSuccess ? "green" : (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') ? "blue" : "blue"}
+                    colorScheme={isSuccess ? "green" : (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') ? "blue" : "blue"}
                     onClick={handleDepositSubmit}
                     isLoading={isSubmitting}
                     loadingText="Processing..."
@@ -1665,7 +1543,7 @@ export default function DepositPage() {
                     w="full"
                   >
                     {isSuccess ? "Deposit Successful - Redirecting..." :
-                     (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') ?
+                     (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') ?
                      "Continue" :
                      `Confirm Deposit (${selectedMethod?.network || 'Method'})`}
                   </Button>
