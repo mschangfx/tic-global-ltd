@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate minimum amount based on payment method
-    if (paymentMethod === 'usdt-trc20') {
+    if (paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
       // USDT minimum is $10
       if (depositAmount < 10) {
         return NextResponse.json(
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     let originalCurrency: string;
     let conversionRate: number;
 
-    if (paymentMethod === 'usdt-trc20') {
+    if (paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
       // USDT is already in USD
       usdAmount = depositAmount;
       originalCurrency = 'USD';
@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
           originalCurrency: originalCurrency,
           conversionRate: conversionRate
         },
-        admin_notes: paymentMethod === 'usdt-trc20'
-          ? `Manual USDT (TRC20) deposit - requires blockchain verification`
+        admin_notes: (paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
+          ? `Manual USDT (${paymentMethod.split('-')[1].toUpperCase()}) deposit - requires blockchain verification`
           : `Manual ${paymentMethod.toUpperCase()} deposit - requires verification`,
         created_at: new Date().toISOString()
       })
@@ -169,8 +169,8 @@ export async function POST(request: NextRequest) {
       .insert({
         user_email: userEmail,
         title: 'Deposit Request Submitted',
-        message: paymentMethod === 'usdt-trc20'
-          ? `Your USDT deposit request of $${depositAmount.toLocaleString()} has been submitted and is pending verification.`
+        message: (paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
+          ? `Your USDT (${paymentMethod.split('-')[1].toUpperCase()}) deposit request of $${depositAmount.toLocaleString()} has been submitted and is pending verification.`
           : `Your ${paymentMethod.toUpperCase()} deposit request of ₱${depositAmount.toLocaleString()} has been submitted and is pending verification.`,
         type: 'deposit',
         priority: 'medium',

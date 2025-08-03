@@ -59,6 +59,34 @@ export default function DepositUploadPage() {
       uploadLabel: 'Upload Transaction Screenshot',
       uploadHint: 'Upload a clear screenshot of your USDT transaction confirmation'
     },
+    'usdt-bep20': {
+      name: 'USDT (BEP20)',
+      symbol: 'USD',
+      icon: '/img/USDT-BEP20-1.png',
+      color: 'yellow',
+      instructions: [
+        `Send exactly $${amount} USDT (BEP20) to the address below`,
+        'Take a screenshot of your transaction confirmation',
+        'Upload the screenshot below for verification',
+        'Wait for admin approval (usually within 5-30 minutes)'
+      ],
+      uploadLabel: 'Upload Transaction Screenshot',
+      uploadHint: 'Upload a clear screenshot of your USDT transaction confirmation'
+    },
+    'usdt-polygon': {
+      name: 'USDT (Polygon)',
+      symbol: 'USD',
+      icon: '/img/USDT-Polygon.png',
+      color: 'purple',
+      instructions: [
+        `Send exactly $${amount} USDT (Polygon) to the address below`,
+        'Take a screenshot of your transaction confirmation',
+        'Upload the screenshot below for verification',
+        'Wait for admin approval (usually within 5-30 minutes)'
+      ],
+      uploadLabel: 'Upload Transaction Screenshot',
+      uploadHint: 'Upload a clear screenshot of your USDT transaction confirmation'
+    },
     'gcash': {
       name: 'GCash',
       symbol: 'PHP',
@@ -141,9 +169,11 @@ export default function DepositUploadPage() {
       formData.append('amount', amount);
       formData.append('currency', config.symbol);
       formData.append('paymentMethod', methodId);
-      formData.append('network', methodId === 'usdt-trc20' ? 'TRC20' : 'Digital Wallet');
+      formData.append('network', (methodId === 'usdt-trc20' || methodId === 'usdt-bep20' || methodId === 'usdt-polygon') ?
+        methodId.split('-')[1].toUpperCase() : 'Digital Wallet');
       formData.append('accountNumber', address);
-      formData.append('accountName', methodId === 'usdt-trc20' ? 'USDT Wallet' : 'TIC Global');
+      formData.append('accountName', (methodId === 'usdt-trc20' || methodId === 'usdt-bep20' || methodId === 'usdt-polygon') ?
+        'USDT Wallet' : 'TIC Global');
       formData.append('receipt', receiptFile);
 
       const response = await fetch('/api/deposits/manual', {
@@ -202,7 +232,8 @@ export default function DepositUploadPage() {
             <VStack spacing={1} align="start">
               <Heading size="lg">{config.name} Deposit</Heading>
               <Badge colorScheme={config.color} size="lg">
-                {methodId === 'usdt-trc20' ? `$${amount} USD` : `₱${(parseFloat(amount) * 55.5).toLocaleString()} PHP`}
+                {(methodId === 'usdt-trc20' || methodId === 'usdt-bep20' || methodId === 'usdt-polygon') ?
+                  `$${amount} USD` : `₱${(parseFloat(amount) * 55.5).toLocaleString()} PHP`}
               </Badge>
             </VStack>
           </HStack>
@@ -220,7 +251,8 @@ export default function DepositUploadPage() {
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                 <VStack spacing={3} align="start">
                   <Text fontWeight="bold" color="gray.700">
-                    {methodId === 'usdt-trc20' ? 'USDT Address (TRC20)' : `${config.name} Number`}
+                    {(methodId === 'usdt-trc20' || methodId === 'usdt-bep20' || methodId === 'usdt-polygon') ?
+                      `USDT Address (${methodId.split('-')[1].toUpperCase()})` : `${config.name} Number`}
                   </Text>
                   <Box
                     p={4}
@@ -264,10 +296,11 @@ export default function DepositUploadPage() {
                     w="full"
                   >
                     <Text fontSize="xl" fontWeight="bold" textAlign="center" color={`${config.color}.700`}>
-                      {methodId === 'usdt-trc20' ? `$${amount} USDT` : `₱${(parseFloat(amount) * 55.5).toLocaleString()}`}
+                      {(methodId === 'usdt-trc20' || methodId === 'usdt-bep20' || methodId === 'usdt-polygon') ?
+                        `$${amount} USDT` : `₱${(parseFloat(amount) * 55.5).toLocaleString()}`}
                     </Text>
                   </Box>
-                  {methodId !== 'usdt-trc20' && (
+                  {!(methodId === 'usdt-trc20' || methodId === 'usdt-bep20' || methodId === 'usdt-polygon') && (
                     <Text fontSize="sm" color="gray.600" textAlign="center" w="full">
                       (≈ ${amount} USD)
                     </Text>

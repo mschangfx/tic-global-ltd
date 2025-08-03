@@ -213,7 +213,7 @@ export default function DepositPage() {
       const initialMethods: DepositMethod[] = [
         {
           id: 'usdt-trc20',
-          name: 'USDT',
+          name: 'USDT (TRC20)',
           symbol: 'USDT',
           network: 'TRC20',
           address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
@@ -221,6 +221,28 @@ export default function DepositPage() {
           fee: 'Free',
           limits: '10 - 200,000 USD',
           icon: '/img/USDT-TRC20.png'
+        },
+        {
+          id: 'usdt-bep20',
+          name: 'USDT (BEP20)',
+          symbol: 'USDT',
+          network: 'BEP20',
+          address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+          processingTime: '5-30 minutes',
+          fee: 'Free',
+          limits: '10 - 200,000 USD',
+          icon: '/img/USDT-BEP20-1.png'
+        },
+        {
+          id: 'usdt-polygon',
+          name: 'USDT (Polygon)',
+          symbol: 'USDT',
+          network: 'Polygon',
+          address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+          processingTime: '5-30 minutes',
+          fee: 'Free',
+          limits: '10 - 200,000 USD',
+          icon: '/img/USDT-Polygon.png'
         },
         {
           id: 'gcash',
@@ -267,7 +289,7 @@ export default function DepositPage() {
         setDepositMethods([
           {
             id: 'usdt-trc20',
-            name: 'USDT',
+            name: 'USDT (TRC20)',
             symbol: 'USDT',
             network: 'TRC20',
             address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
@@ -275,6 +297,28 @@ export default function DepositPage() {
             fee: 'Free',
             limits: '10 - 200,000 USD',
             icon: '/img/USDT-TRC20.png'
+          },
+          {
+            id: 'usdt-bep20',
+            name: 'USDT (BEP20)',
+            symbol: 'USDT',
+            network: 'BEP20',
+            address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+            processingTime: '5-30 minutes',
+            fee: 'Free',
+            limits: '10 - 200,000 USD',
+            icon: '/img/USDT-BEP20-1.png'
+          },
+          {
+            id: 'usdt-polygon',
+            name: 'USDT (Polygon)',
+            symbol: 'USDT',
+            network: 'Polygon',
+            address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+            processingTime: '5-30 minutes',
+            fee: 'Free',
+            limits: '10 - 200,000 USD',
+            icon: '/img/USDT-Polygon.png'
           },
           {
             id: 'gcash',
@@ -781,15 +825,18 @@ export default function DepositPage() {
         throw new Error('No deposit method selected');
       }
 
-      // Check if this is a manual method (GCash/PayMaya/USDT)
-      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20';
+      // Check if this is a manual method (GCash/PayMaya/USDT variants)
+      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                             selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' ||
+                             selectedMethod.id === 'usdt-polygon';
 
       if (isManualMethod) {
         // For manual methods, show payment instructions and generate QR code
         setShowPaymentInstructions(true);
 
-        if (selectedMethod.id === 'usdt-trc20') {
-          setSuccessMessage(`Please send $${amount} USDT (TRC20) to the address: ${selectedMethod.address}. After payment, upload your transaction screenshot for verification.`);
+        if (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') {
+          const networkName = selectedMethod.network;
+          setSuccessMessage(`Please send $${amount} USDT (${networkName}) to the address: ${selectedMethod.address}. After payment, upload your transaction screenshot for verification.`);
           // Generate QR code for USDT address
           await generateDepositQR();
         } else {
@@ -800,7 +847,7 @@ export default function DepositPage() {
 
         toast({
           title: 'Payment Instructions Generated',
-          description: selectedMethod.id === 'usdt-trc20'
+          description: (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
             ? `Send USDT to the address and upload transaction screenshot for verification.`
             : `Send payment to ${selectedMethod.name} account and upload receipt for verification.`,
           status: 'info',
@@ -1242,15 +1289,16 @@ export default function DepositPage() {
                 </Button>
               </HStack>
 
-              {showPaymentInstructions && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') && (
+              {showPaymentInstructions && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
                 <VStack spacing={4} align="stretch">
                   <Alert status="info" borderRadius="md">
                     <AlertIcon />
                     <Box flex="1">
                       <AlertTitle>Payment Instructions</AlertTitle>
                       <AlertDescription display="block">
-                        {selectedMethod.id === 'usdt-trc20'
-                          ? `Send $${depositAmount} USDT (TRC20) to the address below.`
+                        {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                          ? `Send $${depositAmount} USDT (${selectedMethod.network}) to the address below.`
                           : `Send ₱${(parseFloat(depositAmount) * 55.5).toLocaleString()} to the ${selectedMethod.name} account below.`
                         }
                       </AlertDescription>
@@ -1306,7 +1354,7 @@ export default function DepositPage() {
                         <Text fontWeight="bold" color="gray.800" textAlign="center">
                           Scan QR Code
                         </Text>
-                        {(manualQrCodeDataUrl || (selectedMethod.id === 'usdt-trc20' && qrCodeDataUrl)) ? (
+                        {(manualQrCodeDataUrl || ((selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && qrCodeDataUrl)) ? (
                           <Box
                             bg="white"
                             p={3}
@@ -1315,7 +1363,7 @@ export default function DepositPage() {
                             borderColor="gray.300"
                           >
                             <Image
-                              src={selectedMethod.id === 'usdt-trc20' ? qrCodeDataUrl : manualQrCodeDataUrl}
+                              src={(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? qrCodeDataUrl : manualQrCodeDataUrl}
                               alt={`${selectedMethod.name} QR Code`}
                               boxSize="160px"
                               objectFit="contain"
@@ -1350,9 +1398,9 @@ export default function DepositPage() {
                     <Box flex="1">
                       <AlertTitle>Next Steps:</AlertTitle>
                       <AlertDescription display="block">
-                        {selectedMethod.id === 'usdt-trc20' ? (
+                        {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? (
                           <>
-                            1. Send exactly ${depositAmount} USDT (TRC20) to the address above<br/>
+                            1. Send exactly ${depositAmount} USDT ({selectedMethod.network}) to the address above<br/>
                             2. Take a screenshot of your transaction confirmation<br/>
                             3. Click confirm deposit and wait for verification (5-30 minutes)
                           </>
@@ -1466,7 +1514,8 @@ export default function DepositPage() {
                 </VStack>
               )}
 
-              {isSuccess && !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') && (
+              {isSuccess && !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
                 <Alert status="success" borderRadius="md" mb={4}>
                   <AlertIcon />
                   <Box flex="1">
@@ -1479,7 +1528,8 @@ export default function DepositPage() {
               )}
 
               {/* Step 1: Amount Input (for manual methods) or Direct Form (for crypto methods) */}
-              {(!showPaymentInstructions || !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20')) && (
+              {(!showPaymentInstructions || !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')) && (
                 <>
                   <FormControl isInvalid={!!error} mt={4}>
                     <FormLabel htmlFor="depositAmount" color={textColor}>
@@ -1489,7 +1539,7 @@ export default function DepositPage() {
                           Enter amount in USD (will be converted to PHP for payment)
                         </Text>
                       )}
-                      {selectedMethod.id === 'usdt-trc20' && (
+                      {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
                         <Text fontSize="xs" color="gray.500" fontWeight="normal">
                           Enter amount in USD (you will send USDT equivalent)
                         </Text>
@@ -1503,7 +1553,7 @@ export default function DepositPage() {
                         placeholder={
                           selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
                             ? "e.g., 10 (≈₱555)"
-                            : selectedMethod.id === 'usdt-trc20'
+                            : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
                             ? "e.g., 100 (≈100 USDT)"
                             : "e.g., 100"
                         }
@@ -1516,9 +1566,9 @@ export default function DepositPage() {
                         You will pay: ₱{(parseFloat(depositAmount) * 55.5).toLocaleString()} to {selectedMethod.name}
                       </FormHelperText>
                     )}
-                    {selectedMethod.id === 'usdt-trc20' && depositAmount && (
+                    {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && depositAmount && (
                       <FormHelperText color="green.500">
-                        You will send: ${depositAmount} USDT (TRC20) to the address
+                        You will send: ${depositAmount} USDT ({selectedMethod.network}) to the address
                       </FormHelperText>
                     )}
                     {error && <FormHelperText color="red.500">{error}</FormHelperText>}
@@ -1527,14 +1577,15 @@ export default function DepositPage() {
                   <Text fontSize="sm" color={subtleTextColor} mt={2}>
                     {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
                       ? 'After payment confirmation, funds will be credited to your wallet balance in USD.'
-                      : selectedMethod.id === 'usdt-trc20'
+                      : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
                       ? 'After transaction confirmation, funds will be credited to your wallet balance in USD.'
                       : 'Funds will be credited to your wallet balance.'
                     }
                   </Text>
 
                   <Button
-                    colorScheme={isSuccess ? "green" : (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') ? "blue" : "blue"}
+                    colorScheme={isSuccess ? "green" : (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                      selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? "blue" : "blue"}
                     onClick={handleDepositSubmit}
                     isLoading={isSubmitting}
                     loadingText="Processing..."
@@ -1543,7 +1594,8 @@ export default function DepositPage() {
                     w="full"
                   >
                     {isSuccess ? "Deposit Successful - Redirecting..." :
-                     (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'usdt-trc20') ?
+                     (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                      selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ?
                      "Continue" :
                      `Confirm Deposit (${selectedMethod?.network || 'Method'})`}
                   </Button>
