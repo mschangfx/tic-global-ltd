@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
 
     // Try multiple approaches to fix the referral link
     const results = {
-      user_referral_codes: null,
-      user_profiles: null,
-      errors: []
+      user_referral_codes: null as any,
+      user_profiles: null as any,
+      errors: [] as string[]
     };
 
     // Approach 1: Update user_referral_codes table
