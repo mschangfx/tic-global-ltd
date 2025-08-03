@@ -28,12 +28,20 @@ export async function POST(request: NextRequest) {
     // If no data exists, create it with the correct domain
     if (fetchError && fetchError.code === 'PGRST116') {
       // No data found, create new referral data
+      // Generate a new referral code for this user
+      const generateReferralCode = () => {
+        const emailPrefix = userEmail.split('@')[0].toUpperCase();
+        const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+        return `TIC${emailPrefix.substring(0, 3)}${randomSuffix}`;
+      };
+
+      const newReferralCode = generateReferralCode();
       const { data: newData, error: createError } = await supabase
         .from('user_referral_codes')
         .insert({
           user_email: userEmail,
-          referral_code: 'TICAEQRB2',
-          referral_link: 'https://ticgloballtd.com/join?ref=TICAEQRB2',
+          referral_code: newReferralCode,
+          referral_link: `https://ticgloballtd.com/join?ref=${newReferralCode}`,
           total_referrals: 0,
           total_earnings: 0,
           created_at: new Date().toISOString(),
@@ -55,7 +63,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Referral data created successfully with correct domain',
         user_email: userEmail,
-        new_link: 'https://ticgloballtd.com/join?ref=TICAEQRB2',
+        new_link: `https://ticgloballtd.com/join?ref=${newReferralCode}`,
         created_data: newData
       });
     }

@@ -20,7 +20,7 @@ BEGIN
     VALUES (
         user_email_param,
         COALESCE((SELECT referral_code FROM user_referral_codes WHERE user_email = user_email_param), 'TEMP' || EXTRACT(EPOCH FROM NOW())::TEXT),
-        COALESCE((SELECT referral_link FROM user_referral_codes WHERE user_email = user_email_param), 'https://ticglobal.com/join?ref=TEMP'),
+        COALESCE((SELECT referral_link FROM user_referral_codes WHERE user_email = user_email_param), 'https://ticgloballtd.com/join?ref=TEMP'),
         COALESCE((SELECT total_referrals FROM user_referral_codes WHERE user_email = user_email_param), 0),
         amount_param,
         NOW(),
