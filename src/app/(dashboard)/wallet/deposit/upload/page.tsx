@@ -201,7 +201,7 @@ function DepositUploadPageContent() {
       console.error('Error submitting deposit:', error);
       toast({
         title: 'Submission Failed',
-        description: error instanceof Error ? error.message : 'Failed to submit deposit request',
+        description: error instanceof Error ? error.message : 'Internal server error',
         status: 'error',
         duration: 5000,
         isClosable: true,

@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
 
 
 
+
+
     // Validate required fields
     if (!userEmail || !amount || !currency || !paymentMethod || !receiptFile) {
       return NextResponse.json(
@@ -72,19 +74,20 @@ export async function POST(request: NextRequest) {
     if (receiptFile) {
       const bytes = await receiptFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
+
       // Create unique filename
       const fileExtension = receiptFile.name.split('.').pop() || 'jpg';
       const fileName = `${uuidv4()}.${fileExtension}`;
-      
+
       // Create uploads directory if it doesn't exist
       const uploadsDir = join(process.cwd(), 'public', 'uploads', 'receipts');
+
       try {
         await mkdir(uploadsDir, { recursive: true });
       } catch (error) {
         // Directory might already exist
       }
-      
+
       // Save file
       const filePath = join(uploadsDir, fileName);
       await writeFile(filePath, buffer);
@@ -206,7 +209,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in manual deposit API:', error);
+    console.error('❌ Error in manual deposit API:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
