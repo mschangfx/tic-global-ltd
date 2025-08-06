@@ -84,6 +84,30 @@ export default function AdminPanel() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+
+  // Use hash-based navigation to avoid routing conflicts
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && ['dashboard', 'deposits', 'withdrawals', 'users'].includes(hash)) {
+        console.log('Hash changed to:', hash);
+        setActiveSection(hash);
+      }
+    };
+
+    // Set initial section from hash
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Function to change section using hash
+  const changeSection = (section: string) => {
+    console.log('Changing section to:', section);
+    window.location.hash = section;
+    setActiveSection(section);
+  };
   const [stats, setStats] = useState({
     pendingWithdrawals: 0,
     pendingDeposits: 0,
@@ -541,8 +565,8 @@ export default function AdminPanel() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Switching to section:', item.id);
-                    setActiveSection(item.id);
+                    console.log('Sidebar button clicked for section:', item.id);
+                    changeSection(item.id);
                   }}
                   _hover={{
                     bg: activeSection === item.id ? undefined : `${item.color}.50`
@@ -579,10 +603,10 @@ export default function AdminPanel() {
                 <Text>Current Section: <strong>{activeSection}</strong></Text>
                 <HStack spacing={2}>
                   <Text fontSize="sm">Quick Test:</Text>
-                  <Button size="xs" onClick={() => setActiveSection('dashboard')}>Dashboard</Button>
-                  <Button size="xs" onClick={() => setActiveSection('deposits')}>Deposits</Button>
-                  <Button size="xs" onClick={() => setActiveSection('withdrawals')}>Withdrawals</Button>
-                  <Button size="xs" onClick={() => setActiveSection('users')}>Users</Button>
+                  <Button size="xs" onClick={() => changeSection('dashboard')}>Dashboard</Button>
+                  <Button size="xs" onClick={() => changeSection('deposits')}>Deposits</Button>
+                  <Button size="xs" onClick={() => changeSection('withdrawals')}>Withdrawals</Button>
+                  <Button size="xs" onClick={() => changeSection('users')}>Users</Button>
                 </HStack>
               </VStack>
             </Alert>
