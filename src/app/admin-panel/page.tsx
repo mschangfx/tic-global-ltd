@@ -41,7 +41,7 @@ import {
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { FaArrowUp, FaArrowDown, FaUsers, FaSync, FaEye } from 'react-icons/fa';
-import { useAdminPanel } from './layout';
+import { useAdminPanel } from '@/contexts/AdminPanelContext';
 
 interface Transaction {
   id: string;

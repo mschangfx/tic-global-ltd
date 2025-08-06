@@ -14,7 +14,6 @@ import {
   Divider,
   Badge
 } from '@chakra-ui/react';
-import { useState, createContext, useContext } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   FaShieldAlt,
@@ -24,17 +23,7 @@ import {
   FaUsers,
   FaSignOutAlt
 } from 'react-icons/fa';
-
-// Create context for admin panel state
-const AdminPanelContext = createContext<{
-  activeSection: string;
-  setActiveSection: (section: string) => void;
-}>({
-  activeSection: 'dashboard',
-  setActiveSection: () => {}
-});
-
-export const useAdminPanel = () => useContext(AdminPanelContext);
+import { AdminPanelProvider, useAdminPanel } from '@/contexts/AdminPanelContext';
 
 // Allowed admin accounts
 const ALLOWED_ADMIN_ACCOUNTS = [
@@ -49,9 +38,9 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+function AdminLayoutContent({ children }: AdminLayoutProps) {
   const { data: session, status } = useSession();
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const { activeSection, setActiveSection } = useAdminPanel();
   
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const sidebarBg = useColorModeValue('white', 'gray.800');
@@ -113,9 +102,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ];
 
   return (
-    <AdminPanelContext.Provider value={{ activeSection, setActiveSection }}>
-      <Box bg={bgColor} minH="100vh">
-        <Flex>
+    <Box bg={bgColor} minH="100vh">
+      <Flex>
         {/* Sidebar */}
         <Box
           w="280px"
@@ -184,8 +172,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {children}
           </Container>
         </Box>
-        </Flex>
-      </Box>
-    </AdminPanelContext.Provider>
+      </Flex>
+    </Box>
+  );
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  return (
+    <AdminPanelProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminPanelProvider>
   );
 }
