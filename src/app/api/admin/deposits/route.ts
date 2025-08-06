@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { DepositService } from '@/lib/services/depositService';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // GET - Get all deposit transactions with filtering and pagination
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authentication
+    const authResult = await requireAdmin(request);
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
     const network = searchParams.get('network') || 'all';

@@ -146,6 +146,30 @@ export default function WithdrawalPage() {
       tokenSymbol: 'USDT'
     },
     {
+      id: 'usdt-bep20',
+      name: 'USDT',
+      symbol: 'USDT',
+      network: 'BEP20',
+      processingTime: '3-5 minutes',
+      fee: '10% gas fee',
+      limits: '10 - 750,000 USD',
+      icon: '/img/USDT-BEP20-1.png',
+      tronNetwork: 'bsc',
+      tokenSymbol: 'USDT'
+    },
+    {
+      id: 'usdt-polygon',
+      name: 'USDT',
+      symbol: 'USDT',
+      network: 'Polygon',
+      processingTime: '2-3 minutes',
+      fee: '10% gas fee',
+      limits: '10 - 500,000 USD',
+      icon: '/img/USDT-Polygon.png',
+      tronNetwork: 'polygon',
+      tokenSymbol: 'USDT'
+    },
+    {
       id: 'gcash',
       name: 'GCash',
       symbol: 'PHP',
@@ -232,16 +256,6 @@ export default function WithdrawalPage() {
     ];
 
     const initialAvailableSoonMethods = [
-      {
-        id: 'usdt-bep20',
-        name: 'USDT',
-        symbol: 'USDT',
-        network: 'BEP20',
-        processingTime: '3-5 minutes',
-        fee: '0%',
-        limits: '10 - 750,000 USD',
-        icon: '/img/USDT-BEP20-1.png'
-      },
       {
         id: 'usdt-erc20',
         name: 'USDT',
@@ -334,7 +348,8 @@ export default function WithdrawalPage() {
             const networkMapping: Record<string, string[]> = {
               'tron': ['trc20', 'tron'],
               'ethereum': ['erc20', 'ethereum', 'eth'],
-              'bsc': ['bep20', 'bsc', 'bnb']
+              'bsc': ['bep20', 'bsc', 'bnb'],
+              'polygon': ['polygon', 'matic', 'poly']
             };
 
             const methodIndex = updatedMethods.findIndex(method => {
@@ -677,10 +692,12 @@ export default function WithdrawalPage() {
 
     try {
       // Handle different withdrawal types
-      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya';
+      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                             selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon';
+      const isTronPyMethod = selectedMethod.id === 'usdt-trc20';
 
-      if (!isManualMethod) {
-        // Validate TronPy configuration for crypto withdrawals
+      if (isTronPyMethod) {
+        // Validate TronPy configuration for TRC20 withdrawals
         if (!selectedMethod || !selectedMethod.tronNetwork || !selectedMethod.tokenSymbol) {
           throw new Error('TronPy configuration missing for this withdrawal method');
         }
@@ -689,7 +706,7 @@ export default function WithdrawalPage() {
       let withdrawalData;
 
       if (isManualMethod) {
-        // Process manual withdrawal (GCash/PayMaya)
+        // Process manual withdrawal (GCash/PayMaya/BEP20/Polygon)
         const withdrawalResponse = await fetch('/api/withdrawals/manual', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -697,7 +714,7 @@ export default function WithdrawalPage() {
             method: selectedMethod.id,
             accountNumber: walletAddress,
             amount: amount,
-            currency: 'USD', // Convert from USD to PHP
+            currency: selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ? 'USD' : 'USD', // All use USD
             network: selectedMethod.network
           })
         });
@@ -707,7 +724,7 @@ export default function WithdrawalPage() {
         if (!withdrawalData.success) {
           throw new Error(withdrawalData.error || 'Failed to process manual withdrawal');
         }
-      } else {
+      } else if (isTronPyMethod) {
         // Process TronPy withdrawal
         // First validate the address
         const validateResponse = await fetch(`/api/wallet/validate-address?address=${encodeURIComponent(walletAddress)}&network=${selectedMethod.tronNetwork}`);
@@ -740,17 +757,21 @@ export default function WithdrawalPage() {
       setIsSuccess(true);
 
       if (isManualMethod) {
-        setSuccessMessage(`Manual withdrawal request of $${amount} to ${selectedMethod.name} account ${walletAddress} has been submitted successfully! 10% gas fee applied. Your request is pending admin approval.`);
+        const isPhpMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya';
+        const addressLabel = isPhpMethod ? 'account' : 'wallet address';
+        const methodDescription = isPhpMethod ? selectedMethod.name : `${selectedMethod.name} (${selectedMethod.network})`;
+
+        setSuccessMessage(`Manual withdrawal request of $${amount} to ${methodDescription} ${addressLabel} ${walletAddress} has been submitted successfully! 10% gas fee applied. Your request is pending admin approval.`);
 
         // Show success toast for manual withdrawal
         toast({
           title: 'Withdrawal Request Submitted!',
-          description: `Your ${selectedMethod.name} withdrawal request has been submitted with 10% gas fee applied and is pending admin approval.`,
+          description: `Your ${methodDescription} withdrawal request has been submitted with 10% gas fee applied and is pending admin approval.`,
           status: 'success',
           duration: 7000,
           isClosable: true,
         });
-      } else {
+      } else if (isTronPyMethod) {
         setSuccessMessage(`Web3 withdrawal of ${amount} ${selectedMethod.tokenSymbol || 'tokens'} on ${selectedMethod.network} has been processed successfully! Transaction Hash: ${withdrawalData.transactionHash?.slice(0, 10)}...`);
 
         // Show success toast for Web3 withdrawal

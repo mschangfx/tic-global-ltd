@@ -42,7 +42,7 @@ class WalletService {
   }
 
   // Helper method to get authenticated user email from both auth methods
-  private async getAuthenticatedUserEmail(): Promise<string | null> {
+  async getAuthenticatedUserEmail(): Promise<string | null> {
     try {
       // Method 1: Try NextAuth session (Google OAuth)
       const nextAuthSession = await getSession();

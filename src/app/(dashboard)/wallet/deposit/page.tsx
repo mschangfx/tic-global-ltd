@@ -1305,115 +1305,321 @@ export default function DepositPage() {
                     </Box>
                   </Alert>
 
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
                     {/* Payment Details */}
-                    <Box p={4} bg="blue.50" borderRadius="md" border="1px" borderColor="blue.200">
-                      <VStack spacing={3} align="stretch">
-                        <Text fontWeight="bold" color="blue.800">
-                          {selectedMethod.name} Payment Details:
-                        </Text>
-                        <HStack justify="space-between">
-                          <Text fontWeight="medium">Account Number:</Text>
-                          <HStack>
-                            <Text fontFamily="mono" fontSize="lg" fontWeight="bold">
-                              {selectedMethod.address}
-                            </Text>
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(selectedMethod.address);
-                                toast({
-                                  title: 'Copied!',
-                                  description: 'Account number copied to clipboard',
-                                  status: 'success',
-                                  duration: 2000,
-                                  isClosable: true,
-                                });
-                              }}
-                            >
-                              Copy
-                            </Button>
-                          </HStack>
-                        </HStack>
-                        <HStack justify="space-between">
-                          <Text fontWeight="medium">Account Name:</Text>
-                          <Text fontWeight="bold">Patricia Marie Joble</Text>
-                        </HStack>
-                        <HStack justify="space-between">
-                          <Text fontWeight="medium">Amount to Send:</Text>
-                          <Text fontWeight="bold" fontSize="lg" color="green.600">
-                            ₱{(parseFloat(depositAmount) * 55.5).toLocaleString()}
-                          </Text>
-                        </HStack>
-                      </VStack>
-                    </Box>
+                    <Card>
+                      <CardBody>
+                        <VStack spacing={4} align="stretch">
+                          <Heading size="md" color="blue.600">
+                            Payment Details
+                          </Heading>
+
+                          <VStack spacing={3} align="stretch">
+                            <Box>
+                              <Text fontSize="sm" color="gray.600" mb={1}>
+                                {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                                  ? `USDT Address (${selectedMethod.network})`
+                                  : 'Account Number'
+                                }
+                              </Text>
+                              <HStack spacing={2}>
+                                <Box
+                                  p={3}
+                                  bg="gray.50"
+                                  borderRadius="md"
+                                  border="1px"
+                                  borderColor="gray.200"
+                                  flex="1"
+                                >
+                                  <Text
+                                    fontFamily="mono"
+                                    fontSize="sm"
+                                    fontWeight="bold"
+                                    wordBreak="break-all"
+                                  >
+                                    {selectedMethod.address}
+                                  </Text>
+                                </Box>
+                                <Button
+                                  size="sm"
+                                  colorScheme="blue"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(selectedMethod.address);
+                                    toast({
+                                      title: 'Copied!',
+                                      description: 'Address copied to clipboard',
+                                      status: 'success',
+                                      duration: 2000,
+                                      isClosable: true,
+                                    });
+                                  }}
+                                >
+                                  Copy Address
+                                </Button>
+                              </HStack>
+                            </Box>
+
+                            {!(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
+                              <Box>
+                                <Text fontSize="sm" color="gray.600" mb={1}>Account Name</Text>
+                                <Text fontWeight="bold" fontSize="lg">Patricia Marie Joble</Text>
+                              </Box>
+                            )}
+
+                            <Box>
+                              <Text fontSize="sm" color="gray.600" mb={1}>Amount to Send</Text>
+                              <Box
+                                p={3}
+                                bg="green.50"
+                                borderRadius="md"
+                                border="1px"
+                                borderColor="green.200"
+                              >
+                                <Text fontWeight="bold" fontSize="xl" color="green.600" textAlign="center">
+                                  {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                                    ? `$${depositAmount} USDT`
+                                    : `₱${(parseFloat(depositAmount) * 55.5).toLocaleString()}`
+                                  }
+                                </Text>
+                              </Box>
+                            </Box>
+                          </VStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
 
                     {/* QR Code */}
-                    <Box p={4} bg="gray.50" borderRadius="md" border="1px" borderColor="gray.200">
-                      <VStack spacing={3} align="center">
-                        <Text fontWeight="bold" color="gray.800" textAlign="center">
-                          Scan QR Code
-                        </Text>
-                        {(manualQrCodeDataUrl || ((selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && qrCodeDataUrl)) ? (
-                          <Box
-                            bg="white"
-                            p={3}
-                            borderRadius="md"
-                            border="1px"
-                            borderColor="gray.300"
-                          >
-                            <Image
-                              src={(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? qrCodeDataUrl : manualQrCodeDataUrl}
-                              alt={`${selectedMethod.name} QR Code`}
-                              boxSize="160px"
-                              objectFit="contain"
-                            />
-                          </Box>
-                        ) : (
-                          <Box
-                            bg="white"
-                            p={3}
-                            borderRadius="md"
-                            border="1px"
-                            borderColor="gray.300"
-                            boxSize="160px"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                          >
-                            <Text fontSize="sm" color="gray.500" textAlign="center">
-                              Generating QR Code...
-                            </Text>
-                          </Box>
-                        )}
-                        <Text fontSize="xs" color="gray.600" textAlign="center">
-                          Scan with your {selectedMethod.name} app
-                        </Text>
-                      </VStack>
-                    </Box>
+                    <Card>
+                      <CardBody>
+                        <VStack spacing={4} align="center">
+                          <Heading size="md" color="gray.700">
+                            Scan QR Code
+                          </Heading>
+
+                          {(manualQrCodeDataUrl || ((selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && qrCodeDataUrl)) ? (
+                            <Box
+                              bg="white"
+                              p={4}
+                              borderRadius="lg"
+                              border="2px"
+                              borderColor="gray.200"
+                              shadow="sm"
+                            >
+                              <Image
+                                src={(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? qrCodeDataUrl : manualQrCodeDataUrl}
+                                alt={`${selectedMethod.name} QR Code`}
+                                boxSize="200px"
+                                objectFit="contain"
+                              />
+                            </Box>
+                          ) : (
+                            <Box
+                              bg="gray.50"
+                              p={4}
+                              borderRadius="lg"
+                              border="2px"
+                              borderColor="gray.200"
+                              boxSize="200px"
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="center"
+                            >
+                              <VStack spacing={2}>
+                                <Spinner size="lg" color="blue.500" />
+                                <Text fontSize="sm" color="gray.500" textAlign="center">
+                                  Generating QR Code...
+                                </Text>
+                              </VStack>
+                            </Box>
+                          )}
+
+                          <Text fontSize="sm" color="gray.600" textAlign="center" maxW="200px">
+                            Scan with your {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                              ? `USDT (${selectedMethod.network})`
+                              : selectedMethod.name
+                            } app
+                          </Text>
+                        </VStack>
+                      </CardBody>
+                    </Card>
                   </SimpleGrid>
 
-                  <Alert status="warning" borderRadius="md">
-                    <AlertIcon />
-                    <Box flex="1">
-                      <AlertTitle>Next Steps:</AlertTitle>
-                      <AlertDescription display="block">
-                        {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? (
-                          <>
-                            1. Send exactly ${depositAmount} USDT ({selectedMethod.network}) to the address above<br/>
-                            2. Take a screenshot of your transaction confirmation<br/>
-                            3. Click confirm deposit and wait for verification (5-30 minutes)
-                          </>
-                        ) : (
-                          <>
-                            1. Send the exact amount using the account details or scan the QR code<br/>
-                            2. Take a screenshot of your payment receipt for future reference<br/>
-                            3. Click confirm deposit and wait for verification (5-30 minutes)
-                          </>
-                        )}
-                      </AlertDescription>
-                    </Box>
-                  </Alert>
+                  <Card bg="blue.50" borderColor="blue.200" borderWidth="1px">
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <HStack>
+                          <Icon as={FaQrcode} color="blue.500" />
+                          <Heading size="md" color="blue.700">
+                            Instructions:
+                          </Heading>
+                        </HStack>
+
+                        <VStack spacing={3} align="stretch">
+                          {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? (
+                            <>
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  1
+                                </Box>
+                                <Text>
+                                  Send exactly <Text as="span" fontWeight="bold" color="green.600">${depositAmount} USDT ({selectedMethod.network})</Text> to the address below
+                                </Text>
+                              </HStack>
+
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  2
+                                </Box>
+                                <Text>Take a screenshot of your transaction confirmation</Text>
+                              </HStack>
+
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  3
+                                </Box>
+                                <Text>Upload the screenshot below for verification</Text>
+                              </HStack>
+
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  4
+                                </Box>
+                                <Text>Wait for admin approval (usually within 5-30 minutes)</Text>
+                              </HStack>
+                            </>
+                          ) : (
+                            <>
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  1
+                                </Box>
+                                <Text>
+                                  Send exactly <Text as="span" fontWeight="bold" color="green.600">₱{(parseFloat(depositAmount) * 55.5).toLocaleString()}</Text> using the account details or scan the QR code
+                                </Text>
+                              </HStack>
+
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  2
+                                </Box>
+                                <Text>Take a screenshot of your payment receipt</Text>
+                              </HStack>
+
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  3
+                                </Box>
+                                <Text>Upload the receipt below for verification</Text>
+                              </HStack>
+
+                              <HStack align="flex-start">
+                                <Box
+                                  bg="blue.500"
+                                  color="white"
+                                  borderRadius="full"
+                                  w="24px"
+                                  h="24px"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontSize="sm"
+                                  fontWeight="bold"
+                                  flexShrink={0}
+                                >
+                                  4
+                                </Box>
+                                <Text>Wait for admin approval (usually within 5-30 minutes)</Text>
+                              </HStack>
+                            </>
+                          )}
+                        </VStack>
+                      </VStack>
+                    </CardBody>
+                  </Card>
 
                   <Button
                     colorScheme="green"

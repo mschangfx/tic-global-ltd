@@ -1,10 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import NotificationService from '@/lib/services/notificationService';
+import { requireAdmin } from '@/lib/admin-auth';
+
+// Use service role key for admin operations
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 // GET - Get all withdrawal requests with filtering and pagination
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authentication
+    const authResult = await requireAdmin(request);
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
     const method = searchParams.get('method') || 'all';
@@ -13,21 +35,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     const userEmail = searchParams.get('userEmail');
-
-    const supabase = createClient();
     
-    // Build query for withdrawal requests
+    // Build query for withdrawal requests (without join for now)
     let query = supabase
       .from('withdrawal_requests')
-      .select(`
-        *,
-        payment_methods (
-          name,
-          network,
-          symbol,
-          processing_time
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -57,7 +69,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching withdrawals:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch withdrawals' },
+        { error: 'Failed to fetch withdrawals', details: error.message },
         { status: 500 }
       );
     }
@@ -124,7 +136,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    // Use the same supabase instance defined at the top
     const results = [];
 
     for (let i = 0; i < withdrawalIds.length; i++) {
@@ -299,7 +311,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    // Use the same supabase instance defined at the top
 
     if (action === 'approve' || action === 'complete') {
       // Use database function to approve withdrawal
@@ -338,6 +350,7 @@ export async function PUT(request: NextRequest) {
           );
         } catch (notificationError) {
           console.error('Error creating withdrawal completion notification:', notificationError);
+          // Don't fail the request if notification fails
         }
       }
 
@@ -449,7 +462,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating withdrawal:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

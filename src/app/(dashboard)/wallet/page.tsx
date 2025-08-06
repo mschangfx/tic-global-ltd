@@ -154,17 +154,30 @@ export default function MyWalletPage() {
 
         // Try to get recent transactions
         try {
-          const walletService = WalletService.getInstance();
-          const recentTransactions = await walletService.getWalletTransactions(10);
+          // Get user email for API call
+          const userEmail = await getAuthenticatedUserEmail();
+          if (!userEmail) {
+            if (isMounted) setTransactions([]);
+            return;
+          }
+
+          // Call the transactions API
+          const response = await fetch(`/api/wallet/transactions?email=${encodeURIComponent(userEmail)}&limit=10`);
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            console.warn('Could not load transactions:', data.message);
+            if (isMounted) setTransactions([]);
+            return;
+          }
 
           if (!isMounted) return; // Check again before setting state
 
           // Deduplicate transactions by transaction_id to prevent duplicates
-          const uniqueTransactions = recentTransactions.filter((transaction, index, self) =>
+          const uniqueTransactions = data.transactions.filter((transaction: any, index: number, self: any[]) =>
             index === self.findIndex(t => t.transaction_id === transaction.transaction_id)
           );
 
-          console.log(`📊 Loaded ${uniqueTransactions.length} unique transactions (${recentTransactions.length} total)`);
           setTransactions(uniqueTransactions);
         } catch (transactionError) {
           console.warn('Could not load transactions:', transactionError);
