@@ -330,6 +330,29 @@ export default function AdminDashboard() {
                 >
                   Retry Loading Stats
                 </Button>
+                <Button
+                  colorScheme="gray"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/admin/test-auth');
+                      const data = await response.json();
+                      console.log('Auth test result:', data);
+                      toast({
+                        title: data.authenticated ? 'Auth Success' : 'Auth Failed',
+                        description: data.message || data.error || 'Check console for details',
+                        status: data.authenticated ? 'success' : 'error',
+                        duration: 5000,
+                        isClosable: true,
+                      });
+                    } catch (error) {
+                      console.error('Auth test error:', error);
+                    }
+                  }}
+                >
+                  Test Auth
+                </Button>
               </VStack>
             </CardBody>
           </Card>
