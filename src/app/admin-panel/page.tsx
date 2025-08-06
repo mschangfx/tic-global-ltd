@@ -85,28 +85,11 @@ export default function AdminPanel() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
 
-  // Use hash-based navigation to avoid routing conflicts
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash && ['dashboard', 'deposits', 'withdrawals', 'users'].includes(hash)) {
-        console.log('Hash changed to:', hash);
-        setActiveSection(hash);
-      }
-    };
-
-    // Set initial section from hash
-    handleHashChange();
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Function to change section using hash
+  // Simple direct section management - no routing
   const changeSection = (section: string) => {
-    console.log('Changing section to:', section);
-    window.location.hash = section;
+    console.log('DIRECT: Changing section to:', section);
     setActiveSection(section);
+    console.log('DIRECT: Active section set to:', section);
   };
   const [stats, setStats] = useState({
     pendingWithdrawals: 0,
@@ -114,8 +97,15 @@ export default function AdminPanel() {
     totalUsers: 0,
     totalTransactions: 0
   });
+  const [forceRender, setForceRender] = useState(0);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+
+  // Force re-render when section changes
+  useEffect(() => {
+    console.log('EFFECT: Active section changed to:', activeSection);
+    setForceRender(prev => prev + 1);
+  }, [activeSection]);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const sidebarBg = useColorModeValue('white', 'gray.800');
@@ -506,17 +496,55 @@ export default function AdminPanel() {
     );
   };
 
-  // Render based on active section
+  // Render based on active section with clear debugging
   const renderContent = () => {
+    console.log('RENDER: Rendering content for section:', activeSection);
+
     switch (activeSection) {
       case 'deposits':
-        return renderDeposits();
+        console.log('RENDER: Showing deposits section');
+        return (
+          <VStack spacing={6} align="stretch">
+            <Alert status="success">
+              <AlertIcon />
+              <Text><strong>DEPOSITS SECTION LOADED</strong> - This is the Manage Deposits page</Text>
+            </Alert>
+            {renderDeposits()}
+          </VStack>
+        );
       case 'withdrawals':
-        return renderWithdrawals();
+        console.log('RENDER: Showing withdrawals section');
+        return (
+          <VStack spacing={6} align="stretch">
+            <Alert status="warning">
+              <AlertIcon />
+              <Text><strong>WITHDRAWALS SECTION LOADED</strong> - This is the Manage Withdrawals page</Text>
+            </Alert>
+            {renderWithdrawals()}
+          </VStack>
+        );
       case 'users':
-        return renderUsers();
+        console.log('RENDER: Showing users section');
+        return (
+          <VStack spacing={6} align="stretch">
+            <Alert status="info">
+              <AlertIcon />
+              <Text><strong>USERS SECTION LOADED</strong> - This is the Manage Users page</Text>
+            </Alert>
+            {renderUsers()}
+          </VStack>
+        );
       default:
-        return renderDashboard();
+        console.log('RENDER: Showing dashboard section');
+        return (
+          <VStack spacing={6} align="stretch">
+            <Alert status="success">
+              <AlertIcon />
+              <Text><strong>DASHBOARD SECTION LOADED</strong> - This is the Admin Dashboard</Text>
+            </Alert>
+            {renderDashboard()}
+          </VStack>
+        );
     }
   };
 
