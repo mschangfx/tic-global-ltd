@@ -135,8 +135,8 @@ export default function AdminDashboard() {
       if (withdrawalResponse.ok) {
         const withdrawalData = await withdrawalResponse.json();
         console.log('Withdrawal data:', withdrawalData);
-        if (withdrawalData.stats && withdrawalData.stats.length > 0) {
-          const stats = withdrawalData.stats[0];
+        if (withdrawalData.stats) {
+          const stats = withdrawalData.stats;
           withdrawalStats = {
             total: stats.total_withdrawals || 0,
             pending: stats.pending_withdrawals || 0,
@@ -171,8 +171,8 @@ export default function AdminDashboard() {
       if (depositResponse.ok) {
         const depositData = await depositResponse.json();
         console.log('Deposit data:', depositData);
-        if (depositData.stats && depositData.stats.length > 0) {
-          const stats = depositData.stats[0];
+        if (depositData.stats) {
+          const stats = depositData.stats;
           depositStats = {
             total: stats.total_deposits || 0,
             pending: stats.pending_deposits || 0,
