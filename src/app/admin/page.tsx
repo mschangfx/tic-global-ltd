@@ -16,17 +16,39 @@ import {
   Alert,
   AlertIcon,
   Container,
-  Divider
+  Divider,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Badge,
+  Input,
+  Textarea,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState('');
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<any>(null);
+  const [adminNotes, setAdminNotes] = useState('');
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const router = useRouter();
   const toast = useToast();
-  
+
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBgColor = useColorModeValue('white', 'gray.800');
 
@@ -63,22 +85,60 @@ export default function AdminPage() {
     }
   };
 
-  const testWithdrawals = async () => {
-    setStatus('Testing withdrawals...');
+  const loadWithdrawals = async () => {
+    setStatus('Loading withdrawals...');
     try {
-      const response = await fetch('/api/admin/withdrawals?limit=5', {
+      const response = await fetch('/api/simple-admin?action=pending&limit=20', {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
-        setStatus(`✅ Found ${data.withdrawals?.length || 0} withdrawals`);
-        console.log('Withdrawal data:', data);
+        setWithdrawals(data.withdrawals || []);
+        setStatus(`✅ Loaded ${data.withdrawals?.length || 0} pending withdrawals`);
       } else {
-        setStatus(`❌ Withdrawals API failed: ${response.status}`);
+        setStatus(`❌ Failed to load withdrawals: ${response.status}`);
       }
     } catch (error) {
       setStatus(`❌ Error: ${error}`);
+    }
+  };
+
+  const handleWithdrawalAction = async (action: 'approve' | 'reject') => {
+    if (!selectedWithdrawal) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/simple-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action,
+          withdrawalId: selectedWithdrawal.id,
+          adminNotes
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStatus(`✅ Withdrawal ${action}d successfully`);
+        toast({
+          title: 'Success',
+          description: data.message,
+          status: 'success',
+          duration: 3000,
+        });
+        onClose();
+        loadWithdrawals(); // Reload the list
+      } else {
+        const errorData = await response.json();
+        setStatus(`❌ Failed to ${action}: ${errorData.error}`);
+      }
+    } catch (error) {
+      setStatus(`❌ Error: ${error}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -133,10 +193,10 @@ export default function AdminPage() {
               <VStack spacing={3}>
                 <Button
                   colorScheme="blue"
-                  onClick={testWithdrawals}
+                  onClick={loadWithdrawals}
                   w="full"
                 >
-                  Test Withdrawal System
+                  Load Pending Withdrawals
                 </Button>
                 <Button
                   colorScheme="green"
@@ -267,6 +327,119 @@ export default function AdminPage() {
               </VStack>
             </CardBody>
           </Card>
+
+          {/* Withdrawal Management Table */}
+          {withdrawals.length > 0 && (
+            <Card bg={cardBgColor} w="full">
+              <CardHeader>
+                <Heading size="md">Pending Withdrawals ({withdrawals.length})</Heading>
+              </CardHeader>
+              <CardBody>
+                <TableContainer>
+                  <Table variant="simple" size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>User</Th>
+                        <Th>Amount</Th>
+                        <Th>Currency</Th>
+                        <Th>Method</Th>
+                        <Th>Date</Th>
+                        <Th>Status</Th>
+                        <Th>Actions</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {withdrawals.map((withdrawal) => (
+                        <Tr key={withdrawal.id}>
+                          <Td>{withdrawal.user_email}</Td>
+                          <Td>${withdrawal.amount}</Td>
+                          <Td>{withdrawal.currency}</Td>
+                          <Td>{withdrawal.method_id}</Td>
+                          <Td>{new Date(withdrawal.created_at).toLocaleDateString()}</Td>
+                          <Td>
+                            <Badge colorScheme={withdrawal.status === 'pending' ? 'yellow' : 'gray'}>
+                              {withdrawal.status}
+                            </Badge>
+                          </Td>
+                          <Td>
+                            <HStack spacing={2}>
+                              <Button
+                                size="xs"
+                                colorScheme="green"
+                                onClick={() => {
+                                  setSelectedWithdrawal(withdrawal);
+                                  setAdminNotes('');
+                                  onOpen();
+                                }}
+                              >
+                                Review
+                              </Button>
+                            </HStack>
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Withdrawal Action Modal */}
+          <Modal isOpen={isOpen} onClose={onClose}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Review Withdrawal</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                {selectedWithdrawal && (
+                  <VStack spacing={4} align="stretch">
+                    <Box>
+                      <Text fontWeight="bold">User:</Text>
+                      <Text>{selectedWithdrawal.user_email}</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold">Amount:</Text>
+                      <Text>${selectedWithdrawal.amount} {selectedWithdrawal.currency}</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold">Destination:</Text>
+                      <Text fontSize="sm">{selectedWithdrawal.destination_address}</Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold">Admin Notes:</Text>
+                      <Textarea
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        placeholder="Add notes for this action..."
+                      />
+                    </Box>
+                  </VStack>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <HStack spacing={3}>
+                  <Button
+                    colorScheme="green"
+                    onClick={() => handleWithdrawalAction('approve')}
+                    isLoading={isLoading}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    colorScheme="red"
+                    onClick={() => handleWithdrawalAction('reject')}
+                    isLoading={isLoading}
+                  >
+                    Reject
+                  </Button>
+                  <Button variant="ghost" onClick={onClose}>
+                    Cancel
+                  </Button>
+                </HStack>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
         </VStack>
       </Container>
     </Box>
