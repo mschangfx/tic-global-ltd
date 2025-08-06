@@ -58,6 +58,9 @@ interface Transaction {
 export default function AdminPanel() {
   const { activeSection } = useAdminPanel();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Debug logging
+  console.log('AdminPanel rendered with activeSection:', activeSection);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
@@ -402,6 +405,12 @@ export default function AdminPanel() {
 
   return (
     <>
+      {/* Debug Section Indicator */}
+      <Alert status="info" mb={4}>
+        <AlertIcon />
+        <Text>Current Section: <strong>{activeSection}</strong></Text>
+      </Alert>
+
       {renderContent()}
 
       {/* Transaction Review Modal */}

@@ -142,10 +142,16 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
                   colorScheme={activeSection === item.id ? item.color : 'gray'}
                   justifyContent="flex-start"
                   size="lg"
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('Switching to section:', item.id);
+                    setActiveSection(item.id);
+                  }}
                   _hover={{
                     bg: activeSection === item.id ? undefined : `${item.color}.50`
                   }}
+                  as="button"
+                  type="button"
                 >
                   {item.label}
                 </Button>
