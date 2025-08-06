@@ -41,6 +41,7 @@ import {
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { FaArrowUp, FaArrowDown, FaUsers, FaSync, FaEye } from 'react-icons/fa';
+import { useAdminPanel } from './layout';
 
 interface Transaction {
   id: string;
@@ -54,11 +55,8 @@ interface Transaction {
   type: 'withdrawal' | 'deposit';
 }
 
-interface AdminPanelProps {
-  activeSection?: string;
-}
-
-export default function AdminPanel({ activeSection = 'dashboard' }: AdminPanelProps) {
+export default function AdminPanel() {
+  const { activeSection } = useAdminPanel();
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);

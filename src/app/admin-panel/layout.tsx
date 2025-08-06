@@ -14,16 +14,27 @@ import {
   Divider,
   Badge
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-  FaShieldAlt, 
-  FaTachometerAlt, 
-  FaArrowDown, 
-  FaArrowUp, 
+import {
+  FaShieldAlt,
+  FaTachometerAlt,
+  FaArrowDown,
+  FaArrowUp,
   FaUsers,
-  FaSignOutAlt 
+  FaSignOutAlt
 } from 'react-icons/fa';
+
+// Create context for admin panel state
+const AdminPanelContext = createContext<{
+  activeSection: string;
+  setActiveSection: (section: string) => void;
+}>({
+  activeSection: 'dashboard',
+  setActiveSection: () => {}
+});
+
+export const useAdminPanel = () => useContext(AdminPanelContext);
 
 // Allowed admin accounts
 const ALLOWED_ADMIN_ACCOUNTS = [
@@ -102,8 +113,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ];
 
   return (
-    <Box bg={bgColor} minH="100vh">
-      <Flex>
+    <AdminPanelContext.Provider value={{ activeSection, setActiveSection }}>
+      <Box bg={bgColor} minH="100vh">
+        <Flex>
         {/* Sidebar */}
         <Box
           w="280px"
@@ -169,11 +181,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Main Content */}
         <Box flex="1" p={6}>
           <Container maxW="full">
-            {/* Pass active section to children */}
-            {React.cloneElement(children as React.ReactElement, { activeSection })}
+            {children}
           </Container>
         </Box>
-      </Flex>
-    </Box>
+        </Flex>
+      </Box>
+    </AdminPanelContext.Provider>
   );
 }
