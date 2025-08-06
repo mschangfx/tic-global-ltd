@@ -56,7 +56,7 @@ interface Transaction {
 }
 
 export default function AdminPanel() {
-  const { activeSection } = useAdminPanel();
+  const { activeSection, setActiveSection } = useAdminPanel();
   const [isLoading, setIsLoading] = useState(false);
 
   // Debug logging
@@ -167,10 +167,16 @@ export default function AdminPanel() {
 
   // Load initial data
   useEffect(() => {
+    console.log('useEffect triggered, activeSection:', activeSection);
     loadStats();
     if (activeSection !== 'dashboard') {
       loadTransactions('all');
     }
+  }, [activeSection]);
+
+  // Force re-render when activeSection changes
+  useEffect(() => {
+    console.log('Active section changed to:', activeSection);
   }, [activeSection]);
 
   // Dashboard Section
@@ -408,7 +414,16 @@ export default function AdminPanel() {
       {/* Debug Section Indicator */}
       <Alert status="info" mb={4}>
         <AlertIcon />
-        <Text>Current Section: <strong>{activeSection}</strong></Text>
+        <VStack align="start" spacing={2}>
+          <Text>Current Section: <strong>{activeSection}</strong></Text>
+          <HStack spacing={2}>
+            <Text fontSize="sm">Quick Test:</Text>
+            <Button size="xs" onClick={() => setActiveSection('dashboard')}>Dashboard</Button>
+            <Button size="xs" onClick={() => setActiveSection('deposits')}>Deposits</Button>
+            <Button size="xs" onClick={() => setActiveSection('withdrawals')}>Withdrawals</Button>
+            <Button size="xs" onClick={() => setActiveSection('users')}>Users</Button>
+          </HStack>
+        </VStack>
       </Alert>
 
       {renderContent()}
