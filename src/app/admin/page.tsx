@@ -41,7 +41,7 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState('✅ Admin page loaded successfully - no automatic statistics loading');
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
@@ -51,6 +51,38 @@ export default function AdminPage() {
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBgColor = useColorModeValue('white', 'gray.800');
+
+  // Add error boundary effect
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Admin page error caught:', event.error);
+      setStatus(`❌ Error caught: ${event.error?.message || 'Unknown error'}`);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Admin page promise rejection:', event.reason);
+      setStatus(`❌ Promise rejection: ${event.reason?.message || 'Unknown error'}`);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
+  // Debug function to check what's causing the error
+  const debugSystem = () => {
+    console.log('=== ADMIN DEBUG INFO ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Page state:', { isLoading, status, withdrawals: withdrawals.length });
+    console.log('Local Storage:', localStorage);
+    console.log('Session Storage:', sessionStorage);
+    console.log('Cookies:', document.cookie);
+    setStatus('🔍 Debug info logged to console - check browser developer tools');
+  };
 
   const handleAdminLogin = async () => {
     setIsLoading(true);
@@ -160,11 +192,55 @@ export default function AdminPage() {
 
           {/* Status */}
           {status && (
-            <Alert status={status.includes('✅') ? 'success' : 'error'}>
+            <Alert status={status.includes('✅') ? 'success' : status.includes('❌') ? 'error' : 'info'}>
               <AlertIcon />
               {status}
             </Alert>
           )}
+
+          {/* Debug Section */}
+          <Card bg={cardBgColor} w="full" borderColor="purple.200" borderWidth="1px">
+            <CardHeader>
+              <Heading size="md" color="purple.600">🔍 Debug & Troubleshooting</Heading>
+            </CardHeader>
+            <CardBody>
+              <VStack spacing={3}>
+                <Text fontSize="sm" color="gray.600" textAlign="center">
+                  If you're seeing any errors, use these debug tools to identify the issue
+                </Text>
+                <HStack spacing={3}>
+                  <Button
+                    colorScheme="purple"
+                    variant="outline"
+                    onClick={debugSystem}
+                    size="sm"
+                  >
+                    Show Debug Info
+                  </Button>
+                  <Button
+                    colorScheme="gray"
+                    variant="outline"
+                    onClick={() => {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      setStatus('🧹 Browser storage cleared - refresh page if needed');
+                    }}
+                    size="sm"
+                  >
+                    Clear Cache
+                  </Button>
+                  <Button
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={() => window.location.reload()}
+                    size="sm"
+                  >
+                    Refresh Page
+                  </Button>
+                </HStack>
+              </VStack>
+            </CardBody>
+          </Card>
 
           {/* Login Section */}
           <Card bg={cardBgColor} w="full">
