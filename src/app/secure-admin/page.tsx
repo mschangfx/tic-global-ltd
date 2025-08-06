@@ -71,11 +71,36 @@ export default function SecureAdminPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [error, setError] = useState<string>('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
-  
+
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBgColor = useColorModeValue('white', 'gray.800');
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Admin page error:', event.error);
+      setError(`JavaScript Error: ${event.error?.message || 'Unknown error'}`);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Admin page promise rejection:', event.reason);
+      // Don't show extension-related errors to user
+      if (!event.reason?.message?.includes('Extension')) {
+        setError(`Promise Error: ${event.reason?.message || 'Unknown error'}`);
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   // Check if current user is allowed admin
   const isAllowedAdmin = session?.user?.email && ALLOWED_ADMIN_ACCOUNTS.includes(session.user.email);
@@ -85,11 +110,33 @@ export default function SecureAdminPage() {
     setIsLoading(true);
     try {
       // Load withdrawals
-      const withdrawalResponse = await fetch('/api/secure-admin?type=withdrawals&status=pending');
+      const withdrawalResponse = await fetch('/api/secure-admin?type=withdrawals&status=pending', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!withdrawalResponse.ok) {
+        throw new Error(`Withdrawal API failed: ${withdrawalResponse.status}`);
+      }
+
       const withdrawalData = await withdrawalResponse.json();
-      
-      // Load deposits  
-      const depositResponse = await fetch('/api/secure-admin?type=deposits&status=pending');
+
+      // Load deposits
+      const depositResponse = await fetch('/api/secure-admin?type=deposits&status=pending', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!depositResponse.ok) {
+        throw new Error(`Deposit API failed: ${depositResponse.status}`);
+      }
+
       const depositData = await depositResponse.json();
 
       const allTransactions = [
@@ -108,9 +155,9 @@ export default function SecureAdminPage() {
       console.error('Error loading transactions:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load transactions',
+        description: `Failed to load transactions: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
@@ -298,30 +345,82 @@ export default function SecureAdminPage() {
             </CardHeader>
           </Card>
 
+          {/* Error Display */}
+          {error && (
+            <Alert status="error">
+              <AlertIcon />
+              <VStack align="start" spacing={1}>
+                <Text fontWeight="bold">Admin Dashboard Error:</Text>
+                <Text fontSize="sm">{error}</Text>
+                <Button
+                  size="xs"
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={() => setError('')}
+                >
+                  Dismiss
+                </Button>
+              </VStack>
+            </Alert>
+          )}
+
           {/* Quick Actions */}
           <Card bg={cardBgColor} w="full">
             <CardHeader>
               <Heading size="md">Quick Actions</Heading>
             </CardHeader>
             <CardBody>
-              <HStack spacing={4}>
-                <Button
-                  leftIcon={<FaArrowUp />}
-                  colorScheme="red"
-                  onClick={loadPendingTransactions}
-                  isLoading={isLoading}
-                >
-                  Load Pending Withdrawals
-                </Button>
-                <Button
-                  leftIcon={<FaArrowDown />}
-                  colorScheme="green"
-                  onClick={loadPendingTransactions}
-                  isLoading={isLoading}
-                >
-                  Load Pending Deposits
-                </Button>
-              </HStack>
+              <VStack spacing={4}>
+                <HStack spacing={4}>
+                  <Button
+                    leftIcon={<FaArrowUp />}
+                    colorScheme="red"
+                    onClick={loadPendingTransactions}
+                    isLoading={isLoading}
+                  >
+                    Load Pending Withdrawals
+                  </Button>
+                  <Button
+                    leftIcon={<FaArrowDown />}
+                    colorScheme="green"
+                    onClick={loadPendingTransactions}
+                    isLoading={isLoading}
+                  >
+                    Load Pending Deposits
+                  </Button>
+                  <Button
+                    leftIcon={<FaSync />}
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/secure-admin?type=withdrawals&status=pending');
+                        const data = await response.json();
+                        console.log('API Test Response:', data);
+                        toast({
+                          title: 'API Test',
+                          description: `Status: ${response.status}, Success: ${data.success}`,
+                          status: response.ok ? 'success' : 'error',
+                          duration: 3000,
+                        });
+                      } catch (error) {
+                        console.error('API Test Error:', error);
+                        toast({
+                          title: 'API Test Failed',
+                          description: error instanceof Error ? error.message : 'Unknown error',
+                          status: 'error',
+                          duration: 3000,
+                        });
+                      }
+                    }}
+                  >
+                    Test API Connection
+                  </Button>
+                </HStack>
+                <Text fontSize="sm" color="gray.500" textAlign="center">
+                  Use "Test API Connection" first if you're seeing 404 errors
+                </Text>
+              </VStack>
             </CardBody>
           </Card>
 
