@@ -13,6 +13,7 @@ const supabase = createClient(
 const ALLOWED_ADMIN_ACCOUNTS = [
   'admin@ticgloballtd.com',
   'support@ticgloballtd.com',
+  'mschangfx@gmail.com',
   // Add your client's actual email addresses here
   'client@ticgloballtd.com',
   'manager@ticgloballtd.com'
