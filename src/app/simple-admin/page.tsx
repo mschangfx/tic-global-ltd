@@ -164,7 +164,7 @@ export default function SimpleAdmin() {
       backgroundColor: 'white',
       borderRadius: '8px',
       border: '1px solid #e2e8f0',
-      borderCollapse: 'collapse'
+      borderCollapse: 'collapse' as const
     },
     th: {
       padding: '12px',

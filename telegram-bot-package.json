@@ -1,0 +1,27 @@
+{
+  "name": "tic-global-admin-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for TIC Global admin approval of deposits and withdrawals",
+  "main": "telegram-admin-bot.js",
+  "scripts": {
+    "start": "node telegram-admin-bot.js",
+    "dev": "nodemon telegram-admin-bot.js",
+    "pm2": "pm2 start telegram-admin-bot.js --name tic-admin-bot"
+  },
+  "dependencies": {
+    "telegraf": "^4.15.6",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "admin",
+    "approval",
+    "supabase"
+  ],
+  "author": "TIC Global",
+  "license": "MIT"
+}
