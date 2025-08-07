@@ -10,6 +10,24 @@ const supabase = createClient(
 // Simple admin key for API access (you can call this from Postman, curl, etc.)
 const ADMIN_API_KEY = 'admin_key_2024_tic_global';
 
+// Helper function to format transaction data
+function formatTransaction(transaction: any, type: string) {
+  return {
+    id: transaction.id,
+    user_email: transaction.user_email,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    method_id: transaction.method_id,
+    destination_address: transaction.destination_address,
+    status: transaction.status,
+    created_at: transaction.created_at,
+    updated_at: transaction.updated_at,
+    admin_notes: transaction.admin_notes,
+    processed_at: transaction.processed_at,
+    type: type
+  };
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const apiKey = searchParams.get('key');
@@ -23,29 +41,45 @@ export async function GET(request: NextRequest) {
   try {
     switch (action) {
       case 'pending-deposits':
-        const { data: deposits } = await supabase
+        const { data: deposits, error: depositsError } = await supabase
           .from('deposits')
           .select('*')
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
-        
+
+        if (depositsError) {
+          console.error('Deposits query error:', depositsError);
+          return NextResponse.json({ error: 'Failed to fetch deposits' }, { status: 500 });
+        }
+
+        const formattedDeposits = (deposits || []).map(d => formatTransaction(d, 'deposit'));
+
         return NextResponse.json({
           success: true,
-          data: deposits,
-          count: deposits?.length || 0
+          data: formattedDeposits,
+          count: formattedDeposits.length,
+          message: `Found ${formattedDeposits.length} pending deposits`
         });
 
       case 'pending-withdrawals':
-        const { data: withdrawals } = await supabase
+        const { data: withdrawals, error: withdrawalsError } = await supabase
           .from('withdrawal_requests')
           .select('*')
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
-        
+
+        if (withdrawalsError) {
+          console.error('Withdrawals query error:', withdrawalsError);
+          return NextResponse.json({ error: 'Failed to fetch withdrawals' }, { status: 500 });
+        }
+
+        const formattedWithdrawals = (withdrawals || []).map(w => formatTransaction(w, 'withdrawal'));
+
         return NextResponse.json({
           success: true,
-          data: withdrawals,
-          count: withdrawals?.length || 0
+          data: formattedWithdrawals,
+          count: formattedWithdrawals.length,
+          message: `Found ${formattedWithdrawals.length} pending withdrawals`
         });
 
       case 'stats':

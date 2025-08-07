@@ -1,0 +1,178 @@
+{
+  "info": {
+    "name": "TIC Global Admin API",
+    "description": "Complete API collection for managing deposits and withdrawals",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://tic-global-1ytc74imf-changs-projects-b6f8a2cc.vercel.app",
+      "type": "string"
+    },
+    {
+      "key": "admin_key",
+      "value": "admin_key_2024_tic_global",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "📊 Get Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions?key={{admin_key}}&action=stats",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"],
+          "query": [
+            {
+              "key": "key",
+              "value": "{{admin_key}}"
+            },
+            {
+              "key": "action",
+              "value": "stats"
+            }
+          ]
+        },
+        "description": "Get overall statistics including pending deposits, withdrawals, and user counts"
+      }
+    },
+    {
+      "name": "💰 Get Pending Deposits",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions?key={{admin_key}}&action=pending-deposits",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"],
+          "query": [
+            {
+              "key": "key",
+              "value": "{{admin_key}}"
+            },
+            {
+              "key": "action",
+              "value": "pending-deposits"
+            }
+          ]
+        },
+        "description": "Get all pending deposits that need admin approval"
+      }
+    },
+    {
+      "name": "💸 Get Pending Withdrawals",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions?key={{admin_key}}&action=pending-withdrawals",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"],
+          "query": [
+            {
+              "key": "key",
+              "value": "{{admin_key}}"
+            },
+            {
+              "key": "action",
+              "value": "pending-withdrawals"
+            }
+          ]
+        },
+        "description": "Get all pending withdrawals that need admin approval"
+      }
+    },
+    {
+      "name": "✅ Approve Deposit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{admin_key}}\",\n  \"action\": \"update-transaction\",\n  \"transactionId\": \"REPLACE_WITH_ACTUAL_DEPOSIT_ID\",\n  \"transactionType\": \"deposit\",\n  \"status\": \"approved\",\n  \"adminNotes\": \"Approved via Postman API\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"]
+        },
+        "description": "Approve a specific deposit by ID. Replace REPLACE_WITH_ACTUAL_DEPOSIT_ID with the real deposit ID from the pending deposits list."
+      }
+    },
+    {
+      "name": "❌ Reject Deposit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{admin_key}}\",\n  \"action\": \"update-transaction\",\n  \"transactionId\": \"REPLACE_WITH_ACTUAL_DEPOSIT_ID\",\n  \"transactionType\": \"deposit\",\n  \"status\": \"rejected\",\n  \"adminNotes\": \"Rejected via Postman API - insufficient documentation\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"]
+        },
+        "description": "Reject a specific deposit by ID. Replace REPLACE_WITH_ACTUAL_DEPOSIT_ID with the real deposit ID from the pending deposits list."
+      }
+    },
+    {
+      "name": "✅ Approve Withdrawal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{admin_key}}\",\n  \"action\": \"update-transaction\",\n  \"transactionId\": \"REPLACE_WITH_ACTUAL_WITHDRAWAL_ID\",\n  \"transactionType\": \"withdrawal\",\n  \"status\": \"approved\",\n  \"adminNotes\": \"Approved via Postman API\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"]
+        },
+        "description": "Approve a specific withdrawal by ID. Replace REPLACE_WITH_ACTUAL_WITHDRAWAL_ID with the real withdrawal ID from the pending withdrawals list."
+      }
+    },
+    {
+      "name": "❌ Reject Withdrawal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{admin_key}}\",\n  \"action\": \"update-transaction\",\n  \"transactionId\": \"REPLACE_WITH_ACTUAL_WITHDRAWAL_ID\",\n  \"transactionType\": \"withdrawal\",\n  \"status\": \"rejected\",\n  \"adminNotes\": \"Rejected via Postman API - insufficient balance verification\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin-actions",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin-actions"]
+        },
+        "description": "Reject a specific withdrawal by ID. Replace REPLACE_WITH_ACTUAL_WITHDRAWAL_ID with the real withdrawal ID from the pending withdrawals list."
+      }
+    }
+  ]
+}
