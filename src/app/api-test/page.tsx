@@ -8,10 +8,10 @@ export default function ApiTest() {
 
   const ADMIN_KEY = 'admin_key_2024_tic_global';
 
-  const testApi = async (endpoint, method = 'GET', body = null) => {
+  const testApi = async (endpoint: string, method: string = 'GET', body: any = null) => {
     setLoading(true);
     try {
-      const options = {
+      const options: RequestInit = {
         method,
         headers: {
           'Content-Type': 'application/json'
