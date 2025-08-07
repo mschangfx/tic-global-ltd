@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 
 export default function SimpleAdmin() {
   const [activeView, setActiveView] = useState('dashboard');
-  const [deposits, setDeposits] = useState([]);
-  const [withdrawals, setWithdrawals] = useState([]);
-  const [stats, setStats] = useState({ pendingDeposits: 0, pendingWithdrawals: 0, totalUsers: 0 });
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({ pendingDeposits: 0, pendingWithdrawals: 0, totalUsers: 0 });
   const [loading, setLoading] = useState(false);
 
   const ADMIN_KEY = 'admin_key_2024_tic_global';
@@ -43,7 +43,7 @@ export default function SimpleAdmin() {
   };
 
   // Handle transaction action
-  const handleTransaction = async (transactionId, transactionType, status) => {
+  const handleTransaction = async (transactionId: string, transactionType: string, status: string) => {
     if (!confirm(`${status} this ${transactionType}?`)) return;
 
     try {
@@ -68,7 +68,7 @@ export default function SimpleAdmin() {
         alert('Error: ' + result.error);
       }
     } catch (error) {
-      alert('Error: ' + error.message);
+      alert('Error: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
