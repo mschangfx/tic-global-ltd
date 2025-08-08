@@ -268,7 +268,7 @@ async function approveTransaction(type: string, txnId: string, chatId: string, c
   } catch (error) {
     console.error('Error approving transaction:', error);
     await answerCallbackQuery(callbackQueryId, '❌ Error approving transaction');
-    await sendTelegramMessage(chatId, `❌ Error approving ${type}: ${error.message}`);
+    await sendTelegramMessage(chatId, `❌ Error approving ${type}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -319,7 +319,7 @@ async function rejectTransaction(type: string, txnId: string, chatId: string, ca
   } catch (error) {
     console.error('Error rejecting transaction:', error);
     await answerCallbackQuery(callbackQueryId, '❌ Error rejecting transaction');
-    await sendTelegramMessage(chatId, `❌ Error rejecting ${type}: ${error.message}`);
+    await sendTelegramMessage(chatId, `❌ Error rejecting ${type}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
