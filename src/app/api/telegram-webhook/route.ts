@@ -46,17 +46,16 @@ async function answerCallbackQuery(callbackQueryId: string, text: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Verify webhook secret (optional security)
-    const secret = request.headers.get('x-telegram-secret');
-    if (secret !== WEBHOOK_SECRET) {
-      return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
-    }
+
+    // Log incoming webhook for debugging
+    console.log('Telegram webhook received:', JSON.stringify(body, null, 2));
 
     // Handle different types of updates
     if (body.message) {
+      console.log('Processing message:', body.message);
       await handleMessage(body.message);
     } else if (body.callback_query) {
+      console.log('Processing callback query:', body.callback_query);
       await handleCallbackQuery(body.callback_query);
     }
 
@@ -323,19 +322,12 @@ async function rejectTransaction(type: string, txnId: string, chatId: string, ca
   }
 }
 
-// GET endpoint to manually trigger notifications (for testing)
+// GET endpoint for testing webhook status
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get('secret');
-  
-  if (secret !== WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
-  }
-
-  try {
-    await handlePendingCommand(ADMIN_TELEGRAM_ID);
-    return NextResponse.json({ message: 'Notifications sent' });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to send notifications' }, { status: 500 });
-  }
+  return NextResponse.json({
+    status: 'Telegram webhook is active',
+    timestamp: new Date().toISOString(),
+    bot_configured: !!BOT_TOKEN,
+    admin_id: ADMIN_TELEGRAM_ID
+  });
 }
