@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // Configuration - Add these to your Vercel environment variables
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
-const ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID!;
-const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || 'your-secret-key';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8251984612:AAH4YKXCFnlxQsULco-CNmG3DbekrRY-YmA';
+const ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID || '829590330';
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || 'tic-admin-secret-2024';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,6 +49,13 @@ export async function POST(request: NextRequest) {
 
     // Log incoming webhook for debugging
     console.log('Telegram webhook received:', JSON.stringify(body, null, 2));
+
+    // Optional: Verify webhook secret token if provided
+    const secretToken = request.headers.get('x-telegram-bot-api-secret-token');
+    if (secretToken && secretToken !== WEBHOOK_SECRET) {
+      console.log('Invalid secret token received:', secretToken);
+      return NextResponse.json({ error: 'Invalid secret token' }, { status: 401 });
+    }
 
     // Handle different types of updates
     if (body.message) {
@@ -324,10 +331,15 @@ async function rejectTransaction(type: string, txnId: string, chatId: string, ca
 
 // GET endpoint for testing webhook status
 export async function GET(request: NextRequest) {
+  console.log('GET request to telegram webhook endpoint');
+
   return NextResponse.json({
     status: 'Telegram webhook is active',
     timestamp: new Date().toISOString(),
-    bot_configured: !!BOT_TOKEN,
-    admin_id: ADMIN_TELEGRAM_ID
+    bot_token_configured: !!BOT_TOKEN,
+    bot_token_length: BOT_TOKEN?.length || 0,
+    admin_id: ADMIN_TELEGRAM_ID,
+    webhook_secret_configured: !!WEBHOOK_SECRET,
+    environment: process.env.NODE_ENV || 'development'
   });
 }
