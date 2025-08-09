@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIC Global - Deposit Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 TIC Global - Deposit System Test</h1>
+        <p>This tool tests the deposit system to identify and fix issues.</p>
+        
+        <div>
+            <button onclick="testDepositAPI()">🔗 Test Deposit API</button>
+            <button onclick="testManualAPI()">💰 Test Manual Deposit API</button>
+            <button onclick="testDebugAPI()">🐛 Test Debug API</button>
+            <button onclick="simulateDeposit()">⚡ Simulate Full Deposit</button>
+            <button onclick="clearResults()">🧹 Clear Results</button>
+        </div>
+
+        <div class="form-group">
+            <label>Website URL:</label>
+            <input type="text" id="websiteUrl" value="https://tic-global-1ytc74imf-changs-projects-b6f8a2cc.vercel.app" placeholder="Enter your website URL">
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function getWebsiteUrl() {
+            return document.getElementById('websiteUrl').value.trim();
+        }
+
+        async function testDepositAPI() {
+            const baseUrl = getWebsiteUrl();
+            addResult('🔄 Testing main deposit API...', 'info');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/deposits/test`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    addResult('✅ SUCCESS: Main deposit API is working!', 'success');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    addResult(`❌ ERROR: Deposit API failed - ${response.status}`, 'error');
+                    addResult(`📝 Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: Network error - ${error.message}`, 'error');
+            }
+        }
+
+        async function testManualAPI() {
+            const baseUrl = getWebsiteUrl();
+            addResult('🔄 Testing manual deposit API...', 'info');
+            
+            try {
+                // Test with a simple form data
+                const formData = new FormData();
+                formData.append('userEmail', 'test@ticglobal.com');
+                formData.append('amount', '100');
+                formData.append('currency', 'USDT');
+                formData.append('paymentMethod', 'usdt_trc20');
+                formData.append('network', 'TRC20');
+                formData.append('accountNumber', 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh');
+                formData.append('accountName', 'USDT Wallet');
+
+                const response = await fetch(`${baseUrl}/api/deposits/manual`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    addResult('✅ SUCCESS: Manual deposit API is working!', 'success');
+                    addResult(`📊 Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    addResult(`❌ ERROR: Manual deposit API failed - ${response.status}`, 'error');
+                    addResult(`📝 Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: Network error - ${error.message}`, 'error');
+            }
+        }
+
+        async function testDebugAPI() {
+            const baseUrl = getWebsiteUrl();
+            addResult('🔄 Testing debug API...', 'info');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/deposits/debug`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    addResult('✅ SUCCESS: Debug API is working!', 'success');
+                    addResult(`📊 Environment: ${JSON.stringify(data.environment, null, 2)}`, 'info');
+                } else {
+                    addResult(`❌ ERROR: Debug API failed - ${response.status}`, 'error');
+                    addResult(`📝 Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: Network error - ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateDeposit() {
+            const baseUrl = getWebsiteUrl();
+            addResult('🔄 Simulating full crypto deposit with receipt...', 'info');
+            
+            try {
+                // Create a test file
+                const testFile = new File(['test receipt content'], 'test-receipt.txt', { type: 'text/plain' });
+                
+                const formData = new FormData();
+                formData.append('userEmail', 'user@ticglobal.com');
+                formData.append('amount', '123');
+                formData.append('currency', 'USDT');
+                formData.append('paymentMethod', 'usdt_trc20');
+                formData.append('network', 'TRC20');
+                formData.append('accountNumber', 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh');
+                formData.append('accountName', 'USDT TRC20 Wallet');
+                formData.append('receipt', testFile);
+
+                const response = await fetch(`${baseUrl}/api/deposits/manual`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    addResult('✅ SUCCESS: Full deposit simulation worked!', 'success');
+                    addResult(`📊 Deposit ID: ${data.deposit?.id}`, 'info');
+                    addResult(`💰 Amount: $${data.deposit?.amount}`, 'info');
+                    addResult(`📝 Status: ${data.deposit?.status}`, 'info');
+                } else {
+                    addResult(`❌ ERROR: Deposit simulation failed - ${response.status}`, 'error');
+                    addResult(`📝 Error: ${data.message || 'Unknown error'}`, 'error');
+                    if (data.details) {
+                        addResult(`🔍 Details: ${JSON.stringify(data.details, null, 2)}`, 'error');
+                    }
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: Simulation failed - ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic test
+        window.addEventListener('load', function() {
+            setTimeout(testDepositAPI, 1000);
+        });
+    </script>
+</body>
+</html>

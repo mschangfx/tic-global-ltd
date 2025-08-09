@@ -99,6 +99,8 @@ export class DepositService {
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
     };
 
+    console.log('🔄 Attempting to create deposit with data:', depositRecord);
+
     const { data, error } = await this.supabase
       .from('deposits')
       .insert([depositRecord])
@@ -106,8 +108,14 @@ export class DepositService {
       .single();
 
     if (error) {
-      console.error('Error creating deposit:', error);
-      throw new Error(`Failed to create deposit: ${error.message}`);
+      console.error('❌ Error creating deposit:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Failed to create deposit: ${error.message} (Code: ${error.code})`);
     }
 
     console.log('✅ Deposit created successfully:', data.id);

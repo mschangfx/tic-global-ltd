@@ -282,11 +282,8 @@ export default function DepositPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userEmail: 'user@ticglobal.com', // Temporary user email
-              amount: parseFloat(amount),
-              currency: selectedMethod.symbol,
-              paymentMethod: selectedMethod.id,
-              walletAddress: selectedMethod.address,
-              network: selectedMethod.network
+              methodId: selectedMethod.id,
+              amount: parseFloat(amount)
             })
           });
 
