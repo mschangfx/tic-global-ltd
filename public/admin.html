@@ -241,19 +241,8 @@
         }
 
         async function loadTransactions() {
-            try {
-                const response = await fetch('/api/admin/transactions');
-                if (response.ok) {
-                    const data = await response.json();
-                    displayTransactions(data.transactions || []);
-                } else {
-                    // Fallback: Direct Supabase call
-                    await loadTransactionsDirectly();
-                }
-            } catch (error) {
-                console.error('Error loading transactions:', error);
-                await loadTransactionsDirectly();
-            }
+            // Always use direct Supabase calls for reliability
+            await loadTransactionsDirectly();
         }
 
         async function loadTransactionsDirectly() {
@@ -363,22 +352,55 @@
             }
 
             try {
-                const response = await fetch('/api/admin/transactions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, action, type }),
-                });
-
-                if (response.ok) {
-                    alert(`✅ Transaction ${action}d successfully!`);
-                    loadTransactions();
-                } else {
-                    const error = await response.json();
-                    alert(`❌ Error: ${error.error || 'Unknown error'}`);
-                }
+                await handleTransactionDirectly(id, action, type);
             } catch (error) {
                 console.error(`Error ${action}ing transaction:`, error);
                 alert(`❌ Network error. Please try again.`);
+            }
+        }
+
+        async function handleTransactionDirectly(id, action, type) {
+            const timestamp = new Date().toISOString();
+            const adminEmail = 'admin@ticgloballtd.com';
+
+            const updateData = {
+                status: action === 'approve' ? 'approved' : 'rejected',
+                admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via admin panel at ${timestamp}`,
+                updated_at: timestamp,
+                ...(action === 'approve' ? {
+                    approved_by: adminEmail,
+                    approved_at: timestamp
+                } : {
+                    rejected_by: adminEmail,
+                    rejected_at: timestamp
+                })
+            };
+
+            if (type === 'withdrawal') {
+                updateData.processed_by = adminEmail;
+                updateData.processed_at = timestamp;
+            }
+
+            const tableName = type === 'deposit' ? 'deposits' : 'withdrawal_requests';
+
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                alert(`✅ Transaction ${action}d successfully!`);
+                loadTransactions();
+            } else {
+                const error = await response.text();
+                console.error('Supabase error:', error);
+                alert(`❌ Error: Failed to ${action} transaction`);
             }
         }
 
