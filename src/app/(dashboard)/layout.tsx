@@ -6,9 +6,8 @@ import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import DashboardNavbar from '@/components/layout/DashboardNavbar';
 import ThemeToggle from '@/components/ThemeToggle';
-import { FaChartLine, FaGamepad, FaLifeRing, FaUserCheck, FaTachometerAlt, FaHome, FaArrowCircleDown, FaArrowCircleUp, FaHistory, FaShieldAlt, FaUsers, FaCog } from 'react-icons/fa';
+import { FaChartLine, FaGamepad, FaLifeRing, FaUserCheck, FaTachometerAlt, FaHome, FaArrowCircleDown, FaArrowCircleUp, FaHistory } from 'react-icons/fa';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useSession } from 'next-auth/react';
 
 // Move this inside the component to access the translation function
 // const dashboardNavItems will be defined inside DashboardLayout
@@ -22,12 +21,6 @@ export default function DashboardLayout({
   const sidebarBg = useColorModeValue('white', 'gray.700');
   const bgColor = useColorModeValue('gray.100', 'gray.800');
   const { t } = useLanguage();
-  const { data: session } = useSession();
-
-  // Check if user is admin (you can customize this logic)
-  const isAdmin = session?.user?.email === 'admin@ticgloballtd.com' ||
-                  session?.user?.email === 'mschangfx@gmail.com' ||
-                  session?.user?.email?.includes('admin');
 
   const dashboardNavItems = [
     { icon: FaHome, label: t('navbar.overview'), href: '/dashboard' },
@@ -39,14 +32,6 @@ export default function DashboardLayout({
     { icon: FaGamepad, label: t('navbar.games'), href: '/games' },
     { icon: FaUserCheck, label: t('navbar.partnership'), href: '/referrals' },
     { icon: FaLifeRing, label: t('navbar.supportHub'), href: '/support-hub' },
-  ];
-
-  // Admin navigation items
-  const adminNavItems = [
-    { icon: FaShieldAlt, label: 'Admin Dashboard', href: '/admin' },
-    { icon: FaArrowCircleDown, label: 'Manage Deposits', href: '/admin/deposits' },
-    { icon: FaArrowCircleUp, label: 'Manage Withdrawals', href: '/admin/withdrawals' },
-    { icon: FaUsers, label: 'Manage Users', href: '/admin/users' },
   ];
 
   return (
@@ -107,65 +92,7 @@ export default function DashboardLayout({
               );
             })}
 
-            {/* Admin Section */}
-            {isAdmin && (
-              <>
-                <Divider my={4} />
-                <Text
-                  fontSize="xs"
-                  fontWeight="bold"
-                  color="red.500"
-                  textTransform="uppercase"
-                  px={3}
-                  display={{ base: 'none', md: 'block' }}
-                >
-                  🛡️ Admin Panel
-                </Text>
-                {adminNavItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <React.Fragment key={item.label}>
-                      <NextLink href={item.href} passHref legacyBehavior>
-                        <ChakraLink _hover={{ textDecoration: 'none' }}>
-                          <Box
-                            p={3}
-                            _hover={{
-                              bg: useColorModeValue('red.100', 'red.900'),
-                              transform: 'scale(1.05)',
-                              transition: 'all 0.2s ease-in-out'
-                            }}
-                            borderRadius="md"
-                            transition="all 0.2s ease-in-out"
-                            cursor="pointer"
-                            color="red.600"
-                            bg={isActive ? 'red.500' : 'transparent'}
-                            boxShadow={isActive ? 'lg' : 'none'}
-                            borderLeft={isActive ? '4px solid #E53E3E' : 'none'}
-                          >
-                            <HStack>
-                              <Icon
-                                as={item.icon}
-                                mr={{ base: 0, md: 3 }}
-                                fontSize={{ base: "xl", md: "md"}}
-                                color={isActive ? 'white' : 'red.600'}
-                              />
-                              <Text
-                                display={{ base: 'none', md: 'inline' }}
-                                color={isActive ? 'white' : 'red.600'}
-                                fontWeight={isActive ? 'bold' : 'normal'}
-                                fontSize="sm"
-                              >
-                                {item.label}
-                              </Text>
-                            </HStack>
-                          </Box>
-                        </ChakraLink>
-                      </NextLink>
-                    </React.Fragment>
-                  );
-                })}
-              </>
-            )}
+
           </VStack>
 
           {/* Theme Toggle at bottom of sidebar */}
