@@ -43,7 +43,8 @@
     "three": "^0.159.0",
     "twilio": "^5.7.0",
     "typescript": "^5.1.3",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.3.3",

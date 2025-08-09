@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Manual Deposit API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Manual Deposit API</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: GET /api/deposits/manual (Health Check)</h3>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: POST /api/deposits/manual (USDT Deposit)</h3>
+        <button onclick="testUSDTDeposit()">Test USDT Deposit</button>
+        <div id="usdt-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: POST /api/deposits/manual (GCash Deposit)</h3>
+        <button onclick="testGCashDeposit()">Test GCash Deposit</button>
+        <div id="gcash-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 4: POST /api/deposits/manual (Invalid Data)</h3>
+        <button onclick="testInvalidData()">Test Invalid Data</button>
+        <div id="invalid-result"></div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://www.ticgloballtd.com';
+
+        async function testHealthCheck() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/deposits/manual`, {
+                    method: 'GET'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Health Check Passed</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Health Check Failed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Health Check Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testUSDTDeposit() {
+            const resultDiv = document.getElementById('usdt-result');
+            resultDiv.innerHTML = '<p>Testing USDT deposit...</p>';
+            
+            try {
+                // Create a test file
+                const testFile = new File(['test receipt content'], 'test-receipt.txt', { type: 'text/plain' });
+                
+                const formData = new FormData();
+                formData.append('userEmail', 'test@ticglobal.com');
+                formData.append('amount', '50');
+                formData.append('currency', 'USDT');
+                formData.append('paymentMethod', 'usdt_trc20');
+                formData.append('network', 'TRC20');
+                formData.append('accountNumber', 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh');
+                formData.append('accountName', 'USDT TRC20 Wallet');
+                formData.append('receipt', testFile);
+
+                const response = await fetch(`${baseUrl}/api/deposits/manual`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ USDT Deposit Test Passed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ USDT Deposit Test Failed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ USDT Deposit Test Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testGCashDeposit() {
+            const resultDiv = document.getElementById('gcash-result');
+            resultDiv.innerHTML = '<p>Testing GCash deposit...</p>';
+            
+            try {
+                // Create a test file
+                const testFile = new File(['test receipt content'], 'test-receipt.jpg', { type: 'image/jpeg' });
+                
+                const formData = new FormData();
+                formData.append('userEmail', 'test@ticglobal.com');
+                formData.append('amount', '1000');
+                formData.append('currency', 'PHP');
+                formData.append('paymentMethod', 'gcash');
+                formData.append('network', 'Digital Wallet');
+                formData.append('accountNumber', '09123456789');
+                formData.append('accountName', 'TIC Global');
+                formData.append('receipt', testFile);
+
+                const response = await fetch(`${baseUrl}/api/deposits/manual`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ GCash Deposit Test Passed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ GCash Deposit Test Failed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ GCash Deposit Test Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testInvalidData() {
+            const resultDiv = document.getElementById('invalid-result');
+            resultDiv.innerHTML = '<p>Testing invalid data...</p>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('userEmail', 'invalid-email'); // Invalid email
+                formData.append('amount', '-50'); // Invalid amount
+                formData.append('currency', ''); // Empty currency
+                formData.append('paymentMethod', ''); // Empty payment method
+                // No receipt file
+
+                const response = await fetch(`${baseUrl}/api/deposits/manual`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 400) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Invalid Data Test Passed (Expected 400)</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Invalid Data Test Failed (Expected 400)</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Invalid Data Test Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run health check on page load
+        window.onload = function() {
+            testHealthCheck();
+        };
+    </script>
+</body>
+</html>

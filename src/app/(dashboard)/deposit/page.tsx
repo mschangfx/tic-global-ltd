@@ -269,17 +269,15 @@ export default function DepositPage() {
       if (requestData.success) {
         toast({
           title: 'Deposit Request Created',
-          description: 'accountNumber' in selectedMethod
-            ? 'Your deposit request has been submitted with receipt. Please wait for admin approval.'
-            : 'Your deposit request has been submitted. Please send the payment to the provided address.',
+          description: 'Your deposit is now being processed. You will be redirected to track the status.',
           status: 'success',
           duration: 3000,
           isClosable: true,
         });
 
-        // Redirect to success page
+        // Redirect to status page to show "Processing" status
         setTimeout(() => {
-          window.location.href = '/deposit/success';
+          window.location.href = `/wallet/deposit/status?id=${requestData.deposit.id}`;
         }, 1500);
       } else {
         throw new Error(requestData.message || 'Failed to create deposit request');

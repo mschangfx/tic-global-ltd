@@ -20,7 +20,7 @@ import {
   AlertDescription,
   useToast
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaClock, FaWallet, FaSync } from 'react-icons/fa';
+import { FaCheckCircle, FaClock, FaWallet, FaSync, FaTimesCircle } from 'react-icons/fa';
 import WalletService from '@/lib/services/walletService';
 import { getSession } from 'next-auth/react';
 import { createClient } from '@/lib/supabase/client';
@@ -118,7 +118,9 @@ function DepositStatusPageContent() {
       case 'completed':
         return { text: 'DONE', color: 'green', icon: FaCheckCircle };
       case 'rejected':
-        return { text: 'REJECTED', color: 'red', icon: FaClock };
+        return { text: 'REJECTED', color: 'red', icon: FaTimesCircle };
+      case 'pending':
+        return { text: 'Processing', color: 'blue', icon: FaClock };
       default:
         return { text: 'Processing', color: 'blue', icon: FaClock };
     }
@@ -214,7 +216,7 @@ function DepositStatusPageContent() {
             Deposit Status
           </Heading>
           <Text fontSize="lg" color={subtleTextColor}>
-            Track your {method || depositStatus?.method} deposit progress
+            Track your {method || depositStatus?.method} deposit - awaiting manual admin approval
           </Text>
         </VStack>
 
@@ -282,11 +284,26 @@ function DepositStatusPageContent() {
 
               {/* Status Messages */}
 
+              {(!depositStatus || depositStatus?.status === 'pending') && (
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <Box>
+                    <AlertTitle>Processing - Awaiting Admin Approval</AlertTitle>
+                    <AlertDescription>
+                      Your deposit is being reviewed by our admin team. You will receive a notification once it's approved and credited to your wallet.
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              )}
+
               {depositStatus?.status === 'completed' && (
                 <Alert status="success" borderRadius="md">
                   <AlertIcon />
                   <Box>
-                    <AlertTitle>Deposit Completed</AlertTitle>
+                    <AlertTitle>DONE - Deposit Completed</AlertTitle>
+                    <AlertDescription>
+                      Your deposit has been approved and credited to your wallet. You can now use your funds.
+                    </AlertDescription>
                   </Box>
                 </Alert>
               )}

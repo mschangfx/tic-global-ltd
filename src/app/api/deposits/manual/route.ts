@@ -3,9 +3,27 @@ import { createClient } from '@supabase/supabase-js';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+
+// Validation schema for manual deposits
+const ManualDepositSchema = z.object({
+  userEmail: z.string().email('Invalid email address'),
+  amount: z.string().transform(val => {
+    const num = parseFloat(val);
+    if (isNaN(num) || num <= 0) {
+      throw new Error('Amount must be a positive number');
+    }
+    return num;
+  }),
+  currency: z.string().min(1, 'Currency is required'),
+  paymentMethod: z.string().min(1, 'Payment method is required'),
+  network: z.string().optional(),
+  accountNumber: z.string().min(1, 'Account number is required'),
+  accountName: z.string().min(1, 'Account name is required'),
+});
 
 // Use service role key for admin operations
 const supabase = createClient(
@@ -21,9 +39,9 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 Manual deposits API called');
+    console.log('🔍 POST /api/deposits/manual called');
     const formData = await request.formData();
-
+    
     // Log all form data for debugging
     console.log('📋 Form data received:');
     const formEntries = Array.from(formData.entries());
@@ -35,37 +53,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const userEmail = formData.get('userEmail') as string;
-    const amount = formData.get('amount') as string;
-    const currency = formData.get('currency') as string;
-    const paymentMethod = formData.get('paymentMethod') as string;
-    const network = formData.get('network') as string;
-    const accountNumber = formData.get('accountNumber') as string;
-    const accountName = formData.get('accountName') as string;
+    // Extract form data
+    const rawData = {
+      userEmail: formData.get('userEmail') as string,
+      amount: formData.get('amount') as string,
+      currency: formData.get('currency') as string,
+      paymentMethod: formData.get('paymentMethod') as string,
+      network: formData.get('network') as string,
+      accountNumber: formData.get('accountNumber') as string,
+      accountName: formData.get('accountName') as string,
+    };
+    
     const receiptFile = formData.get('receipt') as File;
+    console.log('📊 Raw data extracted:', rawData);
 
-
-
-
-
-    // Validate required fields
-    if (!userEmail || !amount || !currency || !paymentMethod || !receiptFile) {
+    // Validate form data using Zod
+    let validatedData;
+    try {
+      validatedData = ManualDepositSchema.parse(rawData);
+      console.log('✅ Data validation passed:', validatedData);
+    } catch (error) {
+      console.error('❌ Validation failed:', error);
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { success: false, message: `Validation error: ${error.issues[0]?.message}` },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        { success: false, message: 'Invalid form data' },
         { status: 400 }
       );
     }
 
-    // Validate amount
-    const depositAmount = parseFloat(amount);
-    if (isNaN(depositAmount) || depositAmount <= 0) {
+    // Validate receipt file
+    if (!receiptFile || receiptFile.size === 0) {
       return NextResponse.json(
-        { success: false, message: 'Invalid deposit amount' },
+        { success: false, message: 'Receipt upload is required for all deposits' },
         { status: 400 }
       );
     }
 
     // Validate minimum amount based on payment method
+    const { amount: depositAmount, paymentMethod } = validatedData;
+    
     if (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
       // USDT minimum is $10
       if (depositAmount < 10) {
@@ -86,33 +117,31 @@ export async function POST(request: NextRequest) {
 
     // Save receipt file
     let receiptPath = '';
-    if (receiptFile) {
-      const bytes = await receiptFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Create unique filename
-      const fileExtension = receiptFile.name.split('.').pop() || 'jpg';
-      const fileName = `${uuidv4()}.${fileExtension}`;
-
-      // Create uploads directory if it doesn't exist
+    try {
       const uploadsDir = join(process.cwd(), 'public', 'uploads', 'receipts');
-
-      try {
-        await mkdir(uploadsDir, { recursive: true });
-      } catch (error) {
-        // Directory might already exist
-      }
-
-      // Save file
+      await mkdir(uploadsDir, { recursive: true });
+      
+      const fileExtension = receiptFile.name.split('.').pop() || 'jpg';
+      const fileName = `receipt_${uuidv4()}.${fileExtension}`;
       const filePath = join(uploadsDir, fileName);
-      await writeFile(filePath, buffer);
+      
+      const bytes = await receiptFile.arrayBuffer();
+      await writeFile(filePath, Buffer.from(bytes));
+      
       receiptPath = `/uploads/receipts/${fileName}`;
+      console.log('📁 Receipt saved to:', receiptPath);
+    } catch (error) {
+      console.error('❌ Error saving receipt:', error);
+      return NextResponse.json(
+        { success: false, message: 'Failed to save receipt file' },
+        { status: 500 }
+      );
     }
 
-    // Handle currency conversion
-    let usdAmount: number;
-    let originalCurrency: string;
-    let conversionRate: number;
+    // Calculate USD amount for storage
+    let usdAmount = depositAmount;
+    let originalCurrency = validatedData.currency;
+    let conversionRate = 1;
 
     if (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
       // USDT is already in USD
@@ -122,95 +151,63 @@ export async function POST(request: NextRequest) {
     } else {
       // Convert PHP to USD (approximate rate: 1 PHP = 0.018 USD)
       usdAmount = depositAmount * 0.018;
-      originalCurrency = currency;
+      originalCurrency = validatedData.currency;
       conversionRate = 0.018;
     }
 
-    // Create deposit record
+    console.log('💱 Currency conversion:', { depositAmount, usdAmount, originalCurrency, conversionRate });
 
-
+    // Create deposit record in Supabase
+    const depositId = uuidv4();
+    const transactionHash = `manual_${uuidv4()}`;
+    
+    console.log('💾 Creating deposit record...');
     const { data: deposit, error: depositError } = await supabase
       .from('deposits')
       .insert({
-        user_email: userEmail,
-        transaction_hash: `manual_${uuidv4()}`,
+        id: depositId,
+        user_email: validatedData.userEmail,
+        transaction_hash: transactionHash,
         method_id: paymentMethod,
         method_name: (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
           ? `USDT (${paymentMethod.includes('_') ? paymentMethod.split('_')[1].toUpperCase() : paymentMethod.split('-')[1].toUpperCase()})`
           : paymentMethod.toUpperCase(),
-        amount: usdAmount, // Store in USD
-        currency: 'USD', // Final currency
-        network: network,
-        deposit_address: accountNumber, // The address/account number where payment was sent
+        amount: usdAmount,
+        currency: 'USD',
+        network: validatedData.network || 'Manual',
+        deposit_address: validatedData.accountNumber,
         status: 'pending',
         request_metadata: {
           receiptUrl: receiptPath,
-          accountNumber,
-          accountName,
-          paymentMethod,
+          accountNumber: validatedData.accountNumber,
+          accountName: validatedData.accountName,
           originalAmount: depositAmount,
           originalCurrency: originalCurrency,
           conversionRate: conversionRate,
-          isManualDeposit: true
+          submittedAt: new Date().toISOString()
         },
         admin_notes: (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
           ? `Manual USDT (${paymentMethod.includes('_') ? paymentMethod.split('_')[1].toUpperCase() : paymentMethod.split('-')[1].toUpperCase()}) deposit - requires blockchain verification`
           : `Manual ${paymentMethod.toUpperCase()} deposit - requires verification`,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
       .single();
 
     if (depositError) {
-      console.error('Error creating deposit:', depositError);
+      console.error('❌ Error creating deposit:', depositError);
       return NextResponse.json(
         { success: false, message: 'Failed to create deposit record' },
         { status: 500 }
       );
     }
 
-    // Create notification for admin
-    await supabase
-      .from('notifications')
-      .insert({
-        user_email: 'admin@ticglobal.com', // Admin email
-        title: 'New Manual Deposit Request',
-        message: `New ${paymentMethod.toUpperCase()} deposit of ₱${depositAmount.toLocaleString()} (≈$${usdAmount.toFixed(2)}) from ${userEmail}`,
-        type: 'admin',
-        priority: 'high',
-        metadata: {
-          depositId: deposit.id,
-          userEmail,
-          amount: usdAmount,
-          originalAmount: depositAmount,
-          paymentMethod,
-          receiptUrl: receiptPath
-        }
-      });
-
-    // Create notification for user
-    await supabase
-      .from('notifications')
-      .insert({
-        user_email: userEmail,
-        title: 'Deposit Request Submitted',
-        message: (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
-          ? `Your USDT (${paymentMethod.includes('_') ? paymentMethod.split('_')[1].toUpperCase() : paymentMethod.split('-')[1].toUpperCase()}) deposit request of $${depositAmount.toLocaleString()} has been submitted and is pending verification.`
-          : `Your ${paymentMethod.toUpperCase()} deposit request of ₱${depositAmount.toLocaleString()} has been submitted and is pending verification.`,
-        type: 'deposit',
-        priority: 'medium',
-        metadata: {
-          depositId: deposit.id,
-          amount: usdAmount,
-          originalAmount: depositAmount,
-          paymentMethod,
-          status: 'pending'
-        }
-      });
+    console.log('✅ Deposit created successfully:', deposit);
 
     return NextResponse.json({
       success: true,
-      message: 'Manual deposit request created successfully',
+      message: 'Manual deposit request created successfully - awaiting admin approval',
       deposit: {
         id: deposit.id,
         amount: usdAmount,
@@ -219,29 +216,46 @@ export async function POST(request: NextRequest) {
         originalCurrency: originalCurrency,
         status: 'pending',
         paymentMethod,
-        receiptUrl: receiptPath
+        receiptUrl: receiptPath,
+        transactionHash: transactionHash
       }
     });
 
   } catch (error) {
-    console.error('❌ Error in manual deposit API:', error);
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-
-    // More detailed error response for debugging
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = {
-      error: errorMessage,
-      timestamp: new Date().toISOString(),
-      stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : 'No stack') : undefined
-    };
-
+    console.error('❌ POST /api/deposits/manual failed:', error);
+    
+    // Handle specific error types
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, message: `Validation error: ${error.issues[0]?.message}` },
+        { status: 400 }
+      );
+    }
+    
+    // Handle Supabase/Prisma errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const errorCode = (error as any).code;
+      if (errorCode?.startsWith?.('P2')) {
+        return NextResponse.json(
+          { success: false, message: `Database error: ${errorCode}` },
+          { status: 400 }
+        );
+      }
+    }
+    
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Internal server error',
-        details: errorDetails
-      },
+      { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
+}
+
+// Test endpoint
+export async function GET() {
+  return NextResponse.json({
+    success: true,
+    message: 'Manual deposits API is working',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
 }
