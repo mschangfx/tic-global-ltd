@@ -276,8 +276,8 @@ export default function DepositPage() {
           }
           requestData = await response.json();
         } else {
-          // Crypto payment without receipt - use regular API
-          const response = await fetch('/api/deposits', {
+          // Crypto payment without receipt - use bulletproof API
+          const response = await fetch('/api/deposits/bulletproof', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
