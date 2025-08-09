@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telegram Webhook Proxy</title>
+</head>
+<body>
+    <h1>Telegram Webhook Proxy</h1>
+    <p>This endpoint forwards Telegram webhooks to the API.</p>
+    
+    <script>
+        // This script will handle webhook forwarding
+        if (window.location.search.includes('webhook=true')) {
+            // Forward POST requests to the API
+            fetch('/api/telegram-bot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(window.telegramData || {})
+            }).then(response => {
+                console.log('Webhook forwarded:', response.status);
+            }).catch(error => {
+                console.error('Webhook forward error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

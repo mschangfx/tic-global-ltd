@@ -29,12 +29,22 @@ async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: a
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Set CORS headers to allow external access
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method === 'GET') {
-    return res.status(200).json({ 
+    return res.status(200).json({
       status: 'Telegram bot webhook is active',
       timestamp: new Date().toISOString(),
       bot_configured: !!BOT_TOKEN,
-      admin_id: ADMIN_TELEGRAM_ID
+      admin_id: ADMIN_TELEGRAM_ID,
+      method: 'GET'
     });
   }
 
