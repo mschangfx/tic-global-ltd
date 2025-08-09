@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // Helper function to get authenticated user email from both auth methods
 async function getAuthenticatedUserEmail(): Promise<string | null> {
   try {

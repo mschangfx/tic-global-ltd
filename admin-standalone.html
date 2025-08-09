@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIC Global Admin Panel</title>
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .transaction-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="admin-card">
+            <div class="header">
+                <h1>🔐 TIC Global Admin Panel</h1>
+                <p>Standalone Transaction Management System</p>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="loginSection" class="content">
+                <div class="login-form">
+                    <div class="form-group">
+                        <label class="form-label">👤 Username</label>
+                        <input type="text" id="username" class="form-input" placeholder="Enter admin username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔑 Password</label>
+                        <input type="password" id="password" class="form-input" placeholder="Enter admin password">
+                    </div>
+                    <button onclick="login()" class="btn btn-primary">🚀 Login to Admin Panel</button>
+                </div>
+            </div>
+            
+            <!-- Admin Dashboard -->
+            <div id="dashboardSection" class="content hidden">
+                <div class="controls">
+                    <h2>⚡ Admin Dashboard</h2>
+                    <div>
+                        <button onclick="loadTransactions()" class="btn btn-primary">🔄 Refresh</button>
+                        <button onclick="logout()" class="btn btn-danger">🚪 Logout</button>
+                    </div>
+                </div>
+                
+                <div id="messageArea"></div>
+                
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div id="totalPending" class="stat-number">0</div>
+                        <div>📋 Total Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="pendingDeposits" class="stat-number">0</div>
+                        <div>💰 Pending Deposits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="pendingWithdrawals" class="stat-number">0</div>
+                        <div>💸 Pending Withdrawals</div>
+                    </div>
+                </div>
+                
+                <!-- Transactions -->
+                <div id="transactionsList">
+                    <div class="loading">
+                        <h3>🔄 Loading transactions...</h3>
+                        <p>Please wait while we fetch the latest data.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Admin credentials
+        const ADMIN_CREDENTIALS = {
+            username: 'ticadmin',
+            password: 'TICGlobal2024!Admin'
+        };
+
+        // Supabase configuration
+        const SUPABASE_URL = 'https://clsowgswufspftizyjlc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTQxODAsImV4cCI6MjA2NDI3MDE4MH0.8q5bAO2_-8tMa7WLgVawMhr2SjCyljSxvk6qrHhq08I';
+        const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY5NDE4MCwiZXhwIjoyMDY0MjcwMTgwfQ.ZryoITxcPfjWYWXQfou8ymnafpT7EZc7B4Rr0YsGEK8';
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('dashboardSection').classList.remove('hidden');
+                loadTransactions();
+            } else {
+                alert('❌ Invalid credentials. Please check your username and password.');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        async function loadTransactions() {
+            try {
+                showMessage('🔄 Loading transactions...', 'success');
+                
+                // Use service role key for admin operations
+                const headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/json'
+                };
+
+                const [depositsResponse, withdrawalsResponse] = await Promise.all([
+                    fetch(`${SUPABASE_URL}/rest/v1/deposits?status=eq.pending&select=*`, { headers }),
+                    fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?status=eq.pending&select=*`, { headers })
+                ]);
+
+                if (!depositsResponse.ok || !withdrawalsResponse.ok) {
+                    throw new Error('Failed to fetch data from database');
+                }
+
+                const deposits = await depositsResponse.json();
+                const withdrawals = await withdrawalsResponse.json();
+
+                const transactions = [
+                    ...deposits.map(d => ({ ...d, type: 'deposit' })),
+                    ...withdrawals.map(w => ({ ...w, type: 'withdrawal' }))
+                ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                displayTransactions(transactions);
+                showMessage(`✅ Loaded ${transactions.length} pending transactions`, 'success');
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                showMessage(`❌ Error loading transactions: ${error.message}`, 'error');
+                document.getElementById('transactionsList').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #e74c3c;">
+                        <h3>❌ Error Loading Transactions</h3>
+                        <p>Error: ${error.message}</p>
+                        <button onclick="loadTransactions()" class="btn btn-primary">🔄 Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const deposits = transactions.filter(t => t.type === 'deposit');
+            const withdrawals = transactions.filter(t => t.type === 'withdrawal');
+
+            // Update stats
+            document.getElementById('totalPending').textContent = transactions.length;
+            document.getElementById('pendingDeposits').textContent = deposits.length;
+            document.getElementById('pendingWithdrawals').textContent = withdrawals.length;
+
+            // Display transactions
+            const transactionsList = document.getElementById('transactionsList');
+            
+            if (transactions.length === 0) {
+                transactionsList.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #6c757d;">
+                        <h3>✅ No pending transactions</h3>
+                        <p>All transactions have been processed.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            transactionsList.innerHTML = transactions.map(transaction => `
+                <div class="transaction-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="margin: 0 0 5px 0; color: #2c3e50;">
+                                ${transaction.type === 'deposit' ? '💰' : '💸'} ${transaction.type.toUpperCase()}
+                            </h3>
+                            <span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                ⏳ PENDING
+                            </span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60;">
+                                $${transaction.amount} ${transaction.currency || 'USD'}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #7f8c8d;">
+                                ${new Date(transaction.created_at).toLocaleString()}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div><strong>👤 User:</strong> ${transaction.user_email}</div>
+                        <div><strong>🆔 ID:</strong> ${transaction.id.substring(0, 8)}...</div>
+                        ${transaction.network ? `<div><strong>🌐 Network:</strong> ${transaction.network}</div>` : ''}
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                        <button onclick="handleTransaction('${transaction.id}', 'approve', '${transaction.type}')" class="btn btn-success">
+                            ✅ Approve
+                        </button>
+                        <button onclick="handleTransaction('${transaction.id}', 'reject', '${transaction.type}')" class="btn btn-danger">
+                            ❌ Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function handleTransaction(id, action, type) {
+            if (!confirm(`Are you sure you want to ${action} this ${type}?`)) {
+                return;
+            }
+
+            try {
+                const timestamp = new Date().toISOString();
+                const adminEmail = 'admin@ticgloballtd.com';
+                
+                const updateData = {
+                    status: action === 'approve' ? 'approved' : 'rejected',
+                    admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via standalone admin at ${timestamp}`,
+                    updated_at: timestamp,
+                    ...(action === 'approve' ? {
+                        approved_by: adminEmail,
+                        approved_at: timestamp
+                    } : {
+                        rejected_by: adminEmail,
+                        rejected_at: timestamp
+                    })
+                };
+
+                if (type === 'withdrawal') {
+                    updateData.processed_by = adminEmail;
+                    updateData.processed_at = timestamp;
+                }
+
+                const tableName = type === 'deposit' ? 'deposits' : 'withdrawal_requests';
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_SERVICE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    showMessage(`✅ Transaction ${action}d successfully!`, 'success');
+                    loadTransactions();
+                } else {
+                    const errorText = await response.text();
+                    console.error('Supabase error:', errorText);
+                    showMessage(`❌ Error: Failed to ${action} transaction`, 'error');
+                }
+            } catch (error) {
+                console.error(`Error ${action}ing transaction:`, error);
+                showMessage(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-focus username field
+        document.getElementById('username').focus();
+        
+        // Enter key support
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // Test connection on load
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                console.log('✅ Supabase connection test:', response.ok ? 'SUCCESS' : 'FAILED');
+            } catch (error) {
+                console.error('❌ Supabase connection test failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>

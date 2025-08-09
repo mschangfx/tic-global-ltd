@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 TIC Global - Supabase Connection Test</h1>
+        <p>This tool tests the connection to your Supabase database and verifies admin functionality.</p>
+        
+        <div>
+            <button onclick="testConnection()">🔗 Test Connection</button>
+            <button onclick="testDeposits()">💰 Test Deposits Table</button>
+            <button onclick="testWithdrawals()">💸 Test Withdrawals Table</button>
+            <button onclick="testFullAdmin()">⚡ Test Full Admin Functions</button>
+            <button onclick="clearResults()">🧹 Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://clsowgswufspftizyjlc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTQxODAsImV4cCI6MjA2NDI3MDE4MH0.8q5bAO2_-8tMa7WLgVawMhr2SjCyljSxvk6qrHhq08I';
+        const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY5NDE4MCwiZXhwIjoyMDY0MjcwMTgwfQ.ZryoITxcPfjWYWXQfou8ymnafpT7EZc7B4Rr0YsGEK8';
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testConnection() {
+            addResult('🔄 Testing basic connection to Supabase...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok) {
+                    addResult('✅ SUCCESS: Connected to Supabase successfully!', 'success');
+                    addResult(`📊 Response Status: ${response.status} ${response.statusText}`, 'info');
+                } else {
+                    addResult(`❌ ERROR: Connection failed with status ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: Network error - ${error.message}`, 'error');
+            }
+        }
+
+        async function testDeposits() {
+            addResult('🔄 Testing deposits table access...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/deposits?select=count`, {
+                    headers: {
+                        'apikey': SUPABASE_SERVICE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ SUCCESS: Deposits table accessible!', 'success');
+                    addResult(`📊 Found ${data.length} deposit records`, 'info');
+                } else {
+                    const errorText = await response.text();
+                    addResult(`❌ ERROR: Cannot access deposits table - ${response.status}`, 'error');
+                    addResult(`📝 Error details: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWithdrawals() {
+            addResult('🔄 Testing withdrawal_requests table access...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=count`, {
+                    headers: {
+                        'apikey': SUPABASE_SERVICE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ SUCCESS: Withdrawal requests table accessible!', 'success');
+                    addResult(`📊 Found ${data.length} withdrawal records`, 'info');
+                } else {
+                    const errorText = await response.text();
+                    addResult(`❌ ERROR: Cannot access withdrawal_requests table - ${response.status}`, 'error');
+                    addResult(`📝 Error details: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFullAdmin() {
+            addResult('🔄 Testing full admin functionality...', 'info');
+            
+            try {
+                // Test pending deposits
+                const depositsResponse = await fetch(`${SUPABASE_URL}/rest/v1/deposits?status=eq.pending&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_SERVICE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Test pending withdrawals
+                const withdrawalsResponse = await fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?status=eq.pending&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_SERVICE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (depositsResponse.ok && withdrawalsResponse.ok) {
+                    const deposits = await depositsResponse.json();
+                    const withdrawals = await withdrawalsResponse.json();
+                    
+                    addResult('✅ SUCCESS: Full admin functionality working!', 'success');
+                    addResult(`💰 Pending Deposits: ${deposits.length}`, 'info');
+                    addResult(`💸 Pending Withdrawals: ${withdrawals.length}`, 'info');
+                    addResult(`📋 Total Pending Transactions: ${deposits.length + withdrawals.length}`, 'info');
+                    
+                    if (deposits.length > 0 || withdrawals.length > 0) {
+                        addResult('🎯 READY: Admin panel can manage transactions!', 'success');
+                    } else {
+                        addResult('ℹ️ INFO: No pending transactions to manage at the moment', 'info');
+                    }
+
+                    // Show sample data structure
+                    if (deposits.length > 0) {
+                        addResult('📝 Sample deposit structure:', 'info');
+                        addResult(`<pre>${JSON.stringify(deposits[0], null, 2)}</pre>`, 'info');
+                    }
+                } else {
+                    addResult('❌ ERROR: Cannot access transaction data', 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic connection test
+        window.addEventListener('load', function() {
+            setTimeout(testConnection, 1000);
+        });
+    </script>
+</body>
+</html>

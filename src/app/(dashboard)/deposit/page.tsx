@@ -270,15 +270,14 @@ export default function DepositPage() {
             ? 'Your deposit request has been submitted with receipt. Please wait for admin approval.'
             : 'Your deposit request has been submitted. Please send the payment to the provided address.',
           status: 'success',
-          duration: 8000,
+          duration: 3000,
           isClosable: true,
         });
 
-        // Reset form
-        setSelectedMethod(null);
-        setAmount('');
-        setReceiptFile(null);
-        setStep(1);
+        // Redirect to success page
+        setTimeout(() => {
+          window.location.href = '/deposit/success';
+        }, 1500);
       } else {
         throw new Error(requestData.message || 'Failed to create deposit request');
       }
