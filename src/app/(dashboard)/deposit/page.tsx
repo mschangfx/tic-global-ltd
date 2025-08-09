@@ -225,16 +225,20 @@ export default function DepositPage() {
       // Prepare form data for manual methods with receipt
       let requestData;
 
-      if ('accountNumber' in selectedMethod) {
-        // Manual payment with receipt
+      console.log('🔍 Selected method:', selectedMethod.id, selectedMethod);
+      console.log('🔍 Has receipt file:', !!receiptFile);
+
+      if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
+        // Manual payment methods (GCash, PayMaya) with receipt
+        console.log('🏦 Using manual API for bank transfer:', selectedMethod.id);
         const formData = new FormData();
         formData.append('userEmail', 'user@ticglobal.com'); // Temporary user email
         formData.append('amount', amount);
         formData.append('currency', selectedMethod.symbol);
         formData.append('paymentMethod', selectedMethod.id);
         formData.append('network', selectedMethod.network);
-        formData.append('accountNumber', selectedMethod.accountNumber);
-        formData.append('accountName', selectedMethod.accountName);
+        formData.append('accountNumber', (selectedMethod as any).accountNumber);
+        formData.append('accountName', (selectedMethod as any).accountName);
         if (receiptFile) {
           formData.append('receipt', receiptFile);
         }
@@ -251,7 +255,7 @@ export default function DepositPage() {
         requestData = await response.json();
       } else {
         // Crypto payment - use direct API for ALL crypto deposits
-        console.log('🔄 Using direct API for crypto deposit');
+        console.log('💰 Using direct API for crypto deposit:', selectedMethod.id);
         const response = await fetch('/api/deposits/direct', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
