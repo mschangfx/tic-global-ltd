@@ -214,8 +214,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error in manual deposit API:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
+    // More detailed error response for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = {
+      error: errorMessage,
+      timestamp: new Date().toISOString(),
+      stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : 'No stack') : undefined
+    };
+
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      {
+        success: false,
+        message: 'Internal server error',
+        details: errorDetails
+      },
       { status: 500 }
     );
   }

@@ -207,11 +207,23 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Error creating deposit request:', error);
+
+    // More detailed error logging
+    const errorDetails = {
+      message: error.message || 'Unknown error',
+      name: error.name || 'Error',
+      timestamp: new Date().toISOString(),
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    };
+
+    console.error('Detailed error info:', errorDetails);
+
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to create deposit request',
-        details: error.message || 'Unknown error',
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: errorDetails,
+        message: 'Internal server error'
       },
       { status: 500 }
     );

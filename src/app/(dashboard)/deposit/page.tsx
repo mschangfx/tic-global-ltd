@@ -228,7 +228,7 @@ export default function DepositPage() {
       if ('accountNumber' in selectedMethod) {
         // Manual payment with receipt
         const formData = new FormData();
-        formData.append('userEmail', 'mschangfx@gmail.com'); // Replace with actual user email
+        formData.append('userEmail', 'user@ticglobal.com'); // Temporary user email
         formData.append('amount', amount);
         formData.append('currency', selectedMethod.symbol);
         formData.append('paymentMethod', selectedMethod.id);
@@ -244,23 +244,58 @@ export default function DepositPage() {
           body: formData
         });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
         requestData = await response.json();
       } else {
-        // Crypto payment
-        const response = await fetch('/api/deposits', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userEmail: 'mschangfx@gmail.com', // Replace with actual user email
-            amount: parseFloat(amount),
-            currency: selectedMethod.symbol,
-            paymentMethod: selectedMethod.id,
-            walletAddress: selectedMethod.address,
-            network: selectedMethod.network
-          })
-        });
+        // Crypto payment - check if receipt is uploaded
+        if (receiptFile) {
+          // Crypto payment with receipt - use manual API
+          const formData = new FormData();
+          formData.append('userEmail', 'user@ticglobal.com'); // Temporary user email
+          formData.append('amount', amount);
+          formData.append('currency', selectedMethod.symbol);
+          formData.append('paymentMethod', selectedMethod.id);
+          formData.append('network', selectedMethod.network);
+          formData.append('accountNumber', selectedMethod.address);
+          formData.append('accountName', `${selectedMethod.name} Wallet`);
+          if (receiptFile) {
+            formData.append('receipt', receiptFile);
+          }
 
-        requestData = await response.json();
+          const response = await fetch('/api/deposits/manual', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+          }
+          requestData = await response.json();
+        } else {
+          // Crypto payment without receipt - use regular API
+          const response = await fetch('/api/deposits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail: 'user@ticglobal.com', // Temporary user email
+              amount: parseFloat(amount),
+              currency: selectedMethod.symbol,
+              paymentMethod: selectedMethod.id,
+              walletAddress: selectedMethod.address,
+              network: selectedMethod.network
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+          }
+          requestData = await response.json();
+        }
       }
 
       if (requestData.success) {
@@ -283,11 +318,18 @@ export default function DepositPage() {
       }
     } catch (error) {
       console.error('Error creating deposit:', error);
+
+      // Try to get more specific error message
+      let errorMessage = 'Failed to create deposit request. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       toast({
-        title: 'Error',
-        description: 'Failed to create deposit request. Please try again.',
+        title: 'Submission Failed',
+        description: errorMessage,
         status: 'error',
-        duration: 5000,
+        duration: 8000,
         isClosable: true,
       });
     } finally {
