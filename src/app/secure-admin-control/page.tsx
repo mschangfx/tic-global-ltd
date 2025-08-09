@@ -7,10 +7,11 @@ import { createClient } from '@supabase/supabase-js';
 const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'TIC2024Admin!';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Initialize Supabase client
+const supabaseUrl = 'https://clsowgswufspftizyjlc.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTQxODAsImV4cCI6MjA2NDI3MDE4MH0.8q5bAO2_-8tMa7WLgVawMhr2SjCyljSxvk6qrHhq08I';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Transaction {
   id: string;
