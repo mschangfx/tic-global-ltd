@@ -250,49 +250,30 @@ export default function DepositPage() {
         }
         requestData = await response.json();
       } else {
-        // Crypto payment - check if receipt is uploaded
-        if (receiptFile) {
-          // Crypto payment with receipt - use manual API
-          const formData = new FormData();
-          formData.append('userEmail', 'user@ticglobal.com'); // Temporary user email
-          formData.append('amount', amount);
-          formData.append('currency', selectedMethod.symbol);
-          formData.append('paymentMethod', selectedMethod.id);
-          formData.append('network', selectedMethod.network);
-          formData.append('accountNumber', selectedMethod.address);
-          formData.append('accountName', `${selectedMethod.name} Wallet`);
-          if (receiptFile) {
-            formData.append('receipt', receiptFile);
-          }
+        // Crypto payment - use direct API for ALL crypto deposits
+        console.log('🔄 Using direct API for crypto deposit');
+        const response = await fetch('/api/deposits/direct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userEmail: 'user@ticglobal.com',
+            amount: parseFloat(amount),
+            currency: selectedMethod.symbol,
+            paymentMethod: selectedMethod.id,
+            network: selectedMethod.network,
+            hasReceipt: !!receiptFile,
+            receiptFileName: receiptFile?.name || null
+          })
+        });
 
-          const response = await fetch('/api/deposits/manual', {
-            method: 'POST',
-            body: formData
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-          }
-          requestData = await response.json();
-        } else {
-          // Crypto payment without receipt - use bulletproof API
-          const response = await fetch('/api/deposits/bulletproof', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userEmail: 'user@ticglobal.com', // Temporary user email
-              methodId: selectedMethod.id,
-              amount: parseFloat(amount)
-            })
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-          }
-          requestData = await response.json();
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('❌ Direct API error response:', errorData);
+          throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         }
+
+        requestData = await response.json();
+        console.log('✅ Direct API success response:', requestData);
       }
 
       if (requestData.success) {
