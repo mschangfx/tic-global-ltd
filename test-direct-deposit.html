@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Direct Deposit API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Test Direct Deposit API</h1>
+            <p>Verify crypto deposit functionality</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Test 1: API Health Check</h3>
+            <button class="btn" onclick="testApiHealth()">Test API Health</button>
+            <div id="healthResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💰 Test 2: Create USDT Deposit</h3>
+            <button class="btn btn-success" onclick="testUsdtDeposit()">Test USDT Deposit ($123)</button>
+            <div id="usdtResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Test 3: Test All APIs</h3>
+            <button class="btn" onclick="testAllApis()">Test All Deposit APIs</button>
+            <div id="allResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚨 Emergency Fix</h3>
+            <p>If crypto deposits still fail, click this to force clear cache:</p>
+            <button class="btn btn-danger" onclick="clearCacheAndReload()">🔥 Clear Cache & Reload</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function testApiHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '🔄 Testing API health...';
+            resultDiv.className = 'result info';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/deposits/direct`);
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ API Health Check: ${data.success ? 'WORKING' : 'FAILED'}\n\nResponse:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ API Health Check Failed:\n${error.message}`;
+            }
+        }
+
+        async function testUsdtDeposit() {
+            const resultDiv = document.getElementById('usdtResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '🔄 Testing USDT deposit...';
+            resultDiv.className = 'result info';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/deposits/direct`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userEmail: 'user@ticglobal.com',
+                        amount: 123,
+                        currency: 'USDT',
+                        paymentMethod: 'usdt_trc20',
+                        network: 'TRC20',
+                        hasReceipt: true
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ USDT Deposit SUCCESS!\n\nDeposit ID: ${data.deposit?.id}\nAmount: $${data.deposit?.amount}\nStatus: ${data.deposit?.status}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ USDT Deposit Failed:\n${data.message}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ USDT Deposit Error:\n${error.message}`;
+            }
+        }
+
+        async function testAllApis() {
+            const resultDiv = document.getElementById('allResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '🔄 Testing all deposit APIs...';
+            resultDiv.className = 'result info';
+
+            const apis = [
+                { name: 'Direct API', url: '/api/deposits/direct' },
+                { name: 'Bulletproof API', url: '/api/deposits/bulletproof' },
+                { name: 'Simple Test API', url: '/api/deposits/simple-test' }
+            ];
+
+            let results = '';
+            
+            for (const api of apis) {
+                try {
+                    const response = await fetch(`${API_BASE}${api.url}`);
+                    const data = await response.json();
+                    results += `✅ ${api.name}: ${data.success ? 'WORKING' : 'FAILED'}\n`;
+                } catch (error) {
+                    results += `❌ ${api.name}: ERROR - ${error.message}\n`;
+                }
+            }
+
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `🔍 API Test Results:\n\n${results}`;
+        }
+
+        function clearCacheAndReload() {
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Clear localStorage and sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Force reload with cache bypass
+            window.location.reload(true);
+        }
+
+        // Auto-run health check on page load
+        window.onload = function() {
+            testApiHealth();
+        };
+    </script>
+</body>
+</html>
