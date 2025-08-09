@@ -37,19 +37,20 @@ import {
 } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 
-// Crypto payment methods - TRC20 only
+// Manual crypto payment methods - TRC20 (requires admin approval)
 const CRYPTO_METHODS = [
   {
     id: 'usdt_trc20',
-    name: 'USDT (TRC20)',
+    name: 'USDT (TRC20) - Manual Verification',
     symbol: 'USDT',
     icon: FaBitcoin,
     network: 'Tron (TRC20)',
     address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
     minAmount: 10,
     fee: 1,
-    processingTime: '5-15 minutes',
-    iconColor: 'green.500'
+    processingTime: 'Manual approval: 1-24 hours',
+    iconColor: 'orange.500',
+    instructions: 'Send USDT to wallet address and upload transaction receipt'
   }
 ];
 
@@ -225,60 +226,45 @@ export default function DepositPage() {
       // Prepare form data for manual methods with receipt
       let requestData;
 
+      // ALL DEPOSITS ARE NOW MANUAL - require receipt upload and admin approval
       console.log('🔍 Selected method:', selectedMethod.id, selectedMethod);
       console.log('🔍 Has receipt file:', !!receiptFile);
 
+      if (!receiptFile) {
+        throw new Error('Receipt upload is required for all deposits. Please upload your payment receipt.');
+      }
+
+      console.log('📋 Using manual API for ALL deposits (manual approval required):', selectedMethod.id);
+
+      const formData = new FormData();
+      formData.append('userEmail', 'user@ticglobal.com'); // Temporary user email
+      formData.append('amount', amount);
+      formData.append('currency', selectedMethod.symbol);
+      formData.append('paymentMethod', selectedMethod.id);
+      formData.append('network', selectedMethod.network);
+
+      // Add account details for manual methods, wallet address for crypto
       if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
-        // Manual payment methods (GCash, PayMaya) with receipt
-        console.log('🏦 Using manual API for bank transfer:', selectedMethod.id);
-        const formData = new FormData();
-        formData.append('userEmail', 'user@ticglobal.com'); // Temporary user email
-        formData.append('amount', amount);
-        formData.append('currency', selectedMethod.symbol);
-        formData.append('paymentMethod', selectedMethod.id);
-        formData.append('network', selectedMethod.network);
         formData.append('accountNumber', (selectedMethod as any).accountNumber);
         formData.append('accountName', (selectedMethod as any).accountName);
-        if (receiptFile) {
-          formData.append('receipt', receiptFile);
-        }
-
-        const response = await fetch('/api/deposits/manual', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-        }
-        requestData = await response.json();
       } else {
-        // Crypto payment - use direct API for ALL crypto deposits
-        console.log('💰 Using direct API for crypto deposit:', selectedMethod.id);
-        const response = await fetch('/api/deposits/direct', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userEmail: 'user@ticglobal.com',
-            amount: parseFloat(amount),
-            currency: selectedMethod.symbol,
-            paymentMethod: selectedMethod.id,
-            network: selectedMethod.network,
-            hasReceipt: !!receiptFile,
-            receiptFileName: receiptFile?.name || null
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('❌ Direct API error response:', errorData);
-          throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        requestData = await response.json();
-        console.log('✅ Direct API success response:', requestData);
+        // For crypto methods, use the wallet address
+        formData.append('accountNumber', (selectedMethod as any).address || 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh');
+        formData.append('accountName', `${selectedMethod.name} Wallet`);
       }
+
+      formData.append('receipt', receiptFile);
+
+      const response = await fetch('/api/deposits/manual', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      requestData = await response.json();
 
       if (requestData.success) {
         toast({
@@ -347,7 +333,7 @@ export default function DepositPage() {
                 
                 {/* Crypto Payment Methods */}
                 <VStack spacing={4}>
-                  <Text fontSize="lg" fontWeight="bold" color={textColor}>Cryptocurrency</Text>
+                  <Text fontSize="lg" fontWeight="bold" color="orange.500">Cryptocurrency (Manual Verification)</Text>
                   <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} maxW="400px" mx="auto">
                     {CRYPTO_METHODS.map((method) => (
                       <Card
@@ -385,7 +371,7 @@ export default function DepositPage() {
 
                 {/* Manual Payment Methods */}
                 <VStack spacing={4} mt={8}>
-                  <Text fontSize="lg" fontWeight="bold" color={textColor}>Digital Wallets (Philippines)</Text>
+                  <Text fontSize="lg" fontWeight="bold" color="blue.500">Digital Wallets (Manual Verification)</Text>
 
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="600px" mx="auto">
                     {MANUAL_METHODS.map((method) => (
@@ -596,6 +582,21 @@ export default function DepositPage() {
                 {/* Crypto Payment Details */}
                 {'address' in selectedMethod && (
                   <VStack spacing={4} align="stretch">
+                    <Alert status="warning">
+                      <AlertIcon />
+                      <Box>
+                        <AlertTitle>⚠️ Manual Verification Required</AlertTitle>
+                        <AlertDescription>
+                          <strong>ALL CRYPTO DEPOSITS REQUIRE MANUAL ADMIN APPROVAL:</strong><br/>
+                          1. Send exactly ${amount} {selectedMethod.symbol} to the address below<br/>
+                          2. Take a screenshot of your transaction confirmation<br/>
+                          3. Upload the screenshot below (REQUIRED)<br/>
+                          4. Wait for admin approval (usually within {selectedMethod.processingTime})<br/>
+                          <strong>⚠️ No automatic processing - admin verification required</strong>
+                        </AlertDescription>
+                      </Box>
+                    </Alert>
+
                     <Box p={4} bg={useColorModeValue('gray.50', 'gray.600')} borderRadius="md">
                       <VStack spacing={3}>
                         <Text fontWeight="bold" color={textColor}>
@@ -640,6 +641,21 @@ export default function DepositPage() {
                         </Text>
                       </HStack>
                     </VStack>
+
+                    {/* Receipt Upload for Crypto */}
+                    <FormControl isRequired>
+                      <FormLabel>Upload Transaction Receipt (Required)</FormLabel>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                        p={1}
+                        bg={cardBg}
+                      />
+                      <Text fontSize="sm" color={subtleTextColor} mt={1}>
+                        Upload a clear screenshot of your crypto transaction confirmation
+                      </Text>
+                    </FormControl>
                   </VStack>
                 )}
 
@@ -759,21 +775,18 @@ export default function DepositPage() {
                 )}
 
                 <Button
-                  colorScheme="green"
+                  colorScheme="orange"
                   size="lg"
                   onClick={handleConfirmDeposit}
                   isLoading={isSubmitting}
-                  loadingText={'accountNumber' in selectedMethod ? 'Submitting...' : 'Creating Request...'}
-                  isDisabled={'accountNumber' in selectedMethod && !receiptFile}
+                  loadingText="Submitting for Manual Approval..."
+                  isDisabled={!receiptFile}
                 >
-                  {'accountNumber' in selectedMethod ? 'Submit Deposit Request' : "I've Sent the Payment"}
+                  Submit Deposit for Manual Approval
                 </Button>
 
                 <Text fontSize="xs" color={subtleTextColor} textAlign="center">
-                  {'accountNumber' in selectedMethod
-                    ? 'Your deposit will be processed after admin verification of your receipt.'
-                    : 'After sending the payment, it will be automatically detected and credited to your account. Please save your transaction ID for reference.'
-                  }
+                  ⚠️ All deposits require manual admin verification of your receipt. Processing time: 1-24 hours.
                 </Text>
               </VStack>
             </CardBody>

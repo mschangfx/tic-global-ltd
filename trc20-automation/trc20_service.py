@@ -94,14 +94,9 @@ class TRC20AutomationService:
             
             logger.info(f"Processing deposit {deposit_id}: {amount} USDT")
             
-            # For demo purposes, auto-approve deposits after 1 minute
-            created_at = datetime.fromisoformat(deposit['created_at'].replace('Z', '+00:00'))
-            now = datetime.now(created_at.tzinfo)
-            
-            if now - created_at > timedelta(minutes=1):
-                self.approve_deposit(deposit_id, amount, deposit.get('user_email'))
-            else:
-                logger.info(f"Deposit {deposit_id} waiting for confirmation time")
+            # MANUAL APPROVAL ONLY - No automatic processing
+            logger.info(f"Deposit {deposit_id} requires manual admin approval - no automatic processing")
+            logger.info(f"Admin must manually approve this deposit in the admin panel")
                 
         except Exception as e:
             logger.error(f"Error processing deposit {deposit['id']}: {e}")
