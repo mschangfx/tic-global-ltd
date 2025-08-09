@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-// Force dynamic rendering
+// Force dynamic rendering and use Node.js runtime for file handling
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Validation schema for manual deposits
 const ManualDepositSchema = z.object({
@@ -94,6 +93,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate file type (match Supabase bucket allowed types)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(receiptFile.type)) {
+      return NextResponse.json(
+        { success: false, message: 'Receipt must be an image (JPEG, PNG, WebP) or PDF file' },
+        { status: 400 }
+      );
+    }
+
     // Validate minimum amount based on payment method
     const { amount: depositAmount, paymentMethod } = validatedData;
     
@@ -115,23 +123,62 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save receipt file
+    // Save receipt file to Supabase Storage
     let receiptPath = '';
     try {
-      const uploadsDir = join(process.cwd(), 'public', 'uploads', 'receipts');
-      await mkdir(uploadsDir, { recursive: true });
-      
-      const fileExtension = receiptFile.name.split('.').pop() || 'jpg';
-      const fileName = `receipt_${uuidv4()}.${fileExtension}`;
-      const filePath = join(uploadsDir, fileName);
-      
+      // Validate file size (max 5MB to match Supabase bucket limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (receiptFile.size > maxSize) {
+        return NextResponse.json(
+          { success: false, message: 'Receipt file size must be less than 5MB' },
+          { status: 400 }
+        );
+      }
+
+      // Sanitize filename
+      const fileExtension = receiptFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const safeName = receiptFile.name.replace(/[^\w.\-]+/g, "_");
+      const fileName = `${Date.now()}_${uuidv4()}_${safeName}`;
+      const filePath = `receipts/${fileName}`;
+
+      console.log('📁 Uploading receipt to Supabase Storage:', filePath);
+
+      // Convert file to buffer
       const bytes = await receiptFile.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
-      
-      receiptPath = `/uploads/receipts/${fileName}`;
-      console.log('📁 Receipt saved to:', receiptPath);
+      const buffer = Buffer.from(bytes);
+
+      // Upload to Supabase Storage (using existing user-uploads bucket)
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('user-uploads')
+        .upload(filePath, buffer, {
+          contentType: receiptFile.type || 'image/jpeg',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('❌ Supabase upload error:', uploadError);
+        return NextResponse.json(
+          { success: false, message: 'Failed to upload receipt file' },
+          { status: 500 }
+        );
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('user-uploads')
+        .getPublicUrl(filePath);
+
+      receiptPath = urlData.publicUrl;
+      console.log('✅ Receipt uploaded successfully:', receiptPath);
+
     } catch (error) {
       console.error('❌ Error saving receipt:', error);
+      if (error && typeof error === 'object' && 'code' in error && (error as any).code === 'EROFS') {
+        return NextResponse.json(
+          { success: false, message: 'Storage is read-only, using cloud storage' },
+          { status: 507 }
+        );
+      }
       return NextResponse.json(
         { success: false, message: 'Failed to save receipt file' },
         { status: 500 }
