@@ -201,76 +201,47 @@ export async function POST(request: NextRequest) {
           console.error('❌ Failed to update existing deposit:', updateError);
         }
       } else {
-        // Try to find existing deposit by user email, amount, and method
-        console.log('⚠️ No depositId provided - attempting to find existing deposit...');
-
-        const { data: existingDeposits, error: findError } = await supabase
+        // Create new deposit record (original working behavior)
+        console.log('💾 Creating new deposit record...');
+        const { data: newDeposit, error: createError } = await supabase
           .from('deposits')
-          .select('id, status, created_at')
-          .eq('user_email', userEmail)
-          .eq('amount', usdAmount)
-          .eq('status', 'pending')
-          .is('receipt_url', null) // Only deposits without receipts
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (findError) {
-          console.error('❌ Error finding existing deposit:', findError);
-          return NextResponse.json(
-            { success: false, message: 'Failed to find existing deposit record' },
-            { status: 500 }
-          );
-        }
-
-        if (existingDeposits && existingDeposits.length > 0) {
-          const foundDeposit = existingDeposits[0];
-          console.log('✅ Found existing deposit to update:', foundDeposit.id);
-
-          // Update the found deposit
-          const { data: updatedDeposit, error: updateError } = await supabase
-            .from('deposits')
-            .update({
-              transaction_hash: transactionHash,
-              receipt_url: receiptPath,
-              account_number: accountNumber,
-              account_name: accountName,
-              payment_method: paymentMethod,
-              request_metadata: {
-                receiptUrl: receiptPath,
-                accountNumber: accountNumber,
-                accountName: accountName,
-                originalAmount: depositAmount,
-                originalCurrency: originalCurrency,
-                conversionRate: conversionRate,
-                submittedAt: new Date().toISOString(),
-                foundByFallback: true
-              },
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', foundDeposit.id)
-            .select()
-            .single();
-
-          deposit = updatedDeposit;
-          depositError = updateError;
-
-          if (!updateError) {
-            console.log('✅ Found deposit updated with receipt:', updatedDeposit);
-          } else {
-            console.error('❌ Failed to update found deposit:', updateError);
-          }
-        } else {
-          // No existing deposit found - this is an error
-          console.error('❌ No existing deposit found to update');
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'No pending deposit found to update. Please create a deposit first.',
-              error: 'NO_PENDING_DEPOSIT'
+          .insert({
+            id: finalDepositId,
+            user_email: userEmail,
+            transaction_hash: transactionHash,
+            method_id: paymentMethod,
+            method_name: (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
+              ? `USDT (${paymentMethod.includes('_') ? paymentMethod.split('_')[1].toUpperCase() : paymentMethod.split('-')[1].toUpperCase()})`
+              : paymentMethod.toUpperCase(),
+            amount: usdAmount,
+            currency: 'USD',
+            network: network || 'Manual',
+            deposit_address: accountNumber,
+            status: 'pending',
+            receipt_url: receiptPath,
+            account_number: accountNumber,
+            account_name: accountName,
+            payment_method: paymentMethod,
+            request_metadata: {
+              receiptUrl: receiptPath,
+              accountNumber: accountNumber,
+              accountName: accountName,
+              originalAmount: depositAmount,
+              originalCurrency: originalCurrency,
+              conversionRate: conversionRate,
+              submittedAt: new Date().toISOString()
             },
-            { status: 400 }
-          );
-        }
+            admin_notes: (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
+              ? `Manual USDT (${paymentMethod.includes('_') ? paymentMethod.split('_')[1].toUpperCase() : paymentMethod.split('-')[1].toUpperCase()}) deposit - requires blockchain verification`
+              : `Manual ${paymentMethod.toUpperCase()} deposit - requires verification`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        deposit = newDeposit;
+        depositError = createError;
       }
 
       if (depositError) {
@@ -285,7 +256,9 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Receipt uploaded successfully - deposit updated and awaiting admin approval',
+        message: depositId
+          ? 'Receipt uploaded successfully - deposit updated and awaiting admin approval'
+          : 'Manual deposit request created successfully - awaiting admin approval',
         deposit: {
           id: deposit.id,
           amount: usdAmount,
