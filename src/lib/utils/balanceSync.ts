@@ -33,7 +33,7 @@ export class BalanceSyncManager {
     transactionType: 'deposit' | 'withdrawal' | 'transfer' | 'payment',
     amount?: number,
     delay: number = 1000
-  ): Promise<void> {
+  ): Promise<WalletBalance> {
     // Prevent multiple simultaneous syncs
     if (this.syncInProgress) {
       console.log('⏳ Balance sync already in progress, skipping...');
@@ -67,7 +67,7 @@ export class BalanceSyncManager {
   /**
    * Manual balance refresh (for user-triggered refreshes)
    */
-  async manualRefresh(): Promise<void> {
+  async manualRefresh(): Promise<WalletBalance> {
     console.log('🔄 Manual balance refresh triggered...');
     try {
       const newBalance = await this.walletService.forceRefreshBalance();
