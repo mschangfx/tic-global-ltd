@@ -54,8 +54,14 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
         const supabase = createClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-        // Use authenticated user email or fallback to default for testing
-        const userEmail = user?.email || 'mschangfx@gmail.com';
+        // Check if user is authenticated
+        if (!user?.email) {
+          console.log('❌ Navbar: No authenticated user found');
+          setWalletBalance(null);
+          return;
+        }
+
+        const userEmail = user.email;
         console.log('🔍 Navbar: Loading balance for:', userEmail);
 
         // Use the wallet balance API directly for consistency

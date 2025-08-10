@@ -3,11 +3,10 @@ import { authOptions } from '@/lib/auth-config';
 import { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-// List of admin emails - in production, this should be in environment variables or database
+// List of admin emails - loaded from environment variables for security
 const ADMIN_EMAILS = [
   'admin@ticgloballtd.com',
-  'mschangfx@gmail.com',
-  // Add more admin emails as needed
+  ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(email => email.trim()) : [])
 ];
 
 /**
