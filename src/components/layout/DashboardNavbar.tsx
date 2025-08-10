@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'; // For logout redirect
 import { createClient } from '@/lib/supabase/client'; // For fetching user data
 import { useLanguage, getLanguageDisplayName, formatCurrency } from '@/contexts/LanguageContext'; // For language switching
 import WalletService, { WalletBalance } from '@/lib/services/walletService';
+import { useSession } from 'next-auth/react'; // For NextAuth session
 import {
   Box,
   Flex,
@@ -45,23 +46,36 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
   const walletService = WalletService.getInstance();
   const { language, setLanguage, t } = useLanguage();
+  const { data: nextAuthSession } = useSession(); // Get NextAuth session
 
   useEffect(() => {
     // Load balance using the same API as the wallet page for consistency
     const loadBalance = async () => {
       try {
-        // Get authenticated user email
-        const supabase = createClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        let userEmail: string | null = null;
+
+        // Method 1: Check NextAuth session (Google OAuth)
+        if (nextAuthSession?.user?.email) {
+          userEmail = nextAuthSession.user.email;
+          console.log('🔍 Navbar: Using NextAuth user:', userEmail);
+        } else {
+          // Method 2: Check Supabase auth (manual login)
+          const supabase = createClient();
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+          if (user?.email) {
+            userEmail = user.email;
+            console.log('🔍 Navbar: Using Supabase user:', userEmail);
+          }
+        }
 
         // Check if user is authenticated
-        if (!user?.email) {
+        if (!userEmail) {
           console.log('❌ Navbar: No authenticated user found');
           setWalletBalance(null);
           return;
         }
 
-        const userEmail = user.email;
         console.log('🔍 Navbar: Loading balance for:', userEmail);
 
         // Use the wallet balance API directly for consistency
