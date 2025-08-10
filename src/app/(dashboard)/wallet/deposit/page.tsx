@@ -192,12 +192,19 @@ export default function DepositPage() {
   const [realTimeFees, setRealTimeFees] = useState<NetworkFeeData[]>([]);
   const [isLoadingFees, setIsLoadingFees] = useState(false);
   const [depositMethods, setDepositMethods] = useState<DepositMethod[]>([]);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const cardBgColor = useColorModeValue('white', 'gray.700');
   const textColor = useColorModeValue('black', 'white');
   const subtleTextColor = useColorModeValue('black', 'white');
   const accentColor = 'green.400';
+
+  // Additional color mode values used in JSX
+  const infoBgColor = useColorModeValue('blue.50', 'blue.900');
+  const infoBorderColor = useColorModeValue('blue.200', 'blue.700');
+  const infoTextColor = useColorModeValue('blue.700', 'blue.200');
+  const infoSubTextColor = useColorModeValue('blue.600', 'blue.300');
 
   // Component mounting check
   useEffect(() => {
@@ -1219,28 +1226,28 @@ export default function DepositPage() {
 
               {/* Additional Info */}
               <Box
-                bg={useColorModeValue('blue.50', 'blue.900')}
+                bg={infoBgColor}
                 p={6}
                 borderRadius="xl"
                 maxW="800px"
                 mx="auto"
                 border="1px solid"
-                borderColor={useColorModeValue('blue.200', 'blue.700')}
+                borderColor={infoBorderColor}
               >
                 <VStack spacing={4} textAlign="center">
                   <HStack spacing={2} justify="center">
                     <Box w={6} h={6} bg="blue.100" borderRadius="full" display="flex" alignItems="center" justifyContent="center">
                       <Box w={3} h={3} bg="blue.500" borderRadius="full" />
                     </Box>
-                    <Text fontSize="md" color={useColorModeValue('blue.700', 'blue.200')} fontWeight="semibold">
+                    <Text fontSize="md" color={infoTextColor} fontWeight="semibold">
                       All deposits are processed automatically and credited to your wallet balance
                     </Text>
                   </HStack>
                   <HStack spacing={6} justify="center" flexWrap="wrap">
-                    <Text fontSize="sm" color={useColorModeValue('blue.600', 'blue.300')}>
+                    <Text fontSize="sm" color={infoSubTextColor}>
                       ✓ Deposits do not require user verification
                     </Text>
-                    <Text fontSize="sm" color={useColorModeValue('blue.600', 'blue.300')}>
+                    <Text fontSize="sm" color={infoSubTextColor}>
                       ✓ Secure blockchain transactions
                     </Text>
                   </HStack>
@@ -1621,10 +1628,51 @@ export default function DepositPage() {
                     </CardBody>
                   </Card>
 
+                  {/* Upload Receipt Section */}
+                  <Card bg="orange.50" borderColor="orange.200" borderWidth="1px">
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <Heading size="md" color="orange.700" textAlign="center">
+                          Upload Payment Receipt
+                        </Heading>
+
+                        <FormControl isRequired>
+                          <FormLabel color="orange.700">
+                            {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                              ? 'Upload Transaction Screenshot'
+                              : 'Upload Payment Receipt'
+                            }
+                          </FormLabel>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                            p={1}
+                            bg="white"
+                          />
+                          <FormHelperText color="gray.600">
+                            {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                              ? 'Upload a clear screenshot of your USDT transaction confirmation'
+                              : 'Upload a clear screenshot of your payment receipt'
+                            }
+                          </FormHelperText>
+                        </FormControl>
+
+                        {receiptFile && (
+                          <Alert status="success">
+                            <AlertIcon />
+                            <Text>Receipt uploaded: {receiptFile.name}</Text>
+                          </Alert>
+                        )}
+                      </VStack>
+                    </CardBody>
+                  </Card>
+
                   <Button
                     colorScheme="green"
                     isLoading={isSubmitting}
                     loadingText="Processing..."
+                    isDisabled={!receiptFile}
                     onClick={async () => {
                       console.log('Confirm Deposit button clicked');
                       console.log('User:', user);
@@ -1664,40 +1712,56 @@ export default function DepositPage() {
                         return;
                       }
 
+                      if (!receiptFile) {
+                        toast({
+                          title: 'Receipt Required',
+                          description: 'Please upload your payment receipt before confirming.',
+                          status: 'warning',
+                          duration: 5000,
+                          isClosable: true,
+                        });
+                        return;
+                      }
+
                       setIsSubmitting(true);
 
                       try {
-                        console.log('Creating deposit record...');
+                        console.log('Submitting deposit with receipt...');
 
-                        // Create deposit record in database
-                        const response = await fetch('/api/deposits/create-new', {
+                        // Submit deposit with receipt using manual API
+                        const formData = new FormData();
+                        formData.append('userEmail', user.email);
+                        formData.append('amount', depositAmount);
+                        formData.append('currency', selectedMethod.symbol || 'USD');
+                        formData.append('paymentMethod', selectedMethod.id);
+                        formData.append('network', selectedMethod.network);
+                        formData.append('accountNumber', selectedMethod.address);
+                        formData.append('accountName', (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ?
+                          'USDT Wallet' : 'TIC Global');
+                        formData.append('receipt', receiptFile);
+
+                        const response = await fetch('/api/deposits/manual', {
                           method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            amount: parseFloat(depositAmount),
-                            method: selectedMethod.name,
-                            status: 'pending'
-                          }),
+                          body: formData
                         });
 
-                        console.log('API Response status:', response.status);
                         const data = await response.json();
-                        console.log('API Response data:', data);
 
                         if (data.success) {
-                          console.log('Redirecting to upload page...');
-                          // Redirect to upload page for manual methods
-                          const uploadUrl = new URL('/wallet/deposit/upload', window.location.origin);
-                          uploadUrl.searchParams.set('amount', depositAmount);
-                          uploadUrl.searchParams.set('method', selectedMethod.name);
-                          uploadUrl.searchParams.set('address', selectedMethod.address);
-                          uploadUrl.searchParams.set('methodId', selectedMethod.id);
+                          toast({
+                            title: 'Deposit Request Submitted',
+                            description: 'Your deposit request has been submitted successfully and is pending verification.',
+                            status: 'success',
+                            duration: 5000,
+                            isClosable: true,
+                          });
 
-                          router.push(uploadUrl.pathname + uploadUrl.search);
+                          // Redirect to status page
+                          setTimeout(() => {
+                            router.push(`/wallet/deposit/status?depositId=${data.deposit.id}`);
+                          }, 1500);
                         } else {
-                          throw new Error(data.error || 'Failed to create deposit');
+                          throw new Error(data.message || 'Failed to submit deposit request');
                         }
                       } catch (error) {
                         console.error('Error creating deposit:', error);

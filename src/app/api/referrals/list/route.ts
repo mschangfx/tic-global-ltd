@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         referred_email,
-        level,
+        level_depth,
         referral_code,
         created_at,
         user_profiles!referral_relationships_referred_email_fkey (
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         id: referral.id,
         email: referral.referred_email,
         name: profile?.full_name || referral.referred_email.split('@')[0],
-        level: referral.level,
+        level: referral.level_depth,
         joinDate: referral.created_at,
         planType: plan?.plan_type || 'starter',
         status: userStatus,
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     const { data: referralsData } = await supabase
       .from('referral_relationships')
       .select(`
-        level,
+        level_depth,
         user_profiles!referral_relationships_referred_email_fkey (
           last_active
         ),
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Count by level
-      levelBreakdown[referral.level] = (levelBreakdown[referral.level] || 0) + 1;
+      levelBreakdown[referral.level_depth] = (levelBreakdown[referral.level_depth] || 0) + 1;
 
       // Count by plan
       const planType = plan?.plan_type || 'starter';

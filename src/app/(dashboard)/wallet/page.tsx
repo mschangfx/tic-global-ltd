@@ -283,23 +283,32 @@ export default function MyWalletPage() {
         return;
       }
 
-      // Use the same API endpoint as the navbar for consistency
-      const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
+      // Use the same API endpoint as the navbar for consistency (POST method)
+      const response = await fetch('/api/wallet/balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail })
+      });
 
       if (response.ok) {
         const data = await response.json();
         console.log('📊 Balance API response:', data);
-        if (data.success) {
+        if (data.wallet) {
           const balance: WalletBalance = {
-            total: parseFloat(data.balance.total_balance) || 0,
-            tic: parseFloat(data.balance.tic_balance) || 0,
-            gic: parseFloat(data.balance.gic_balance) || 0,
-            staking: parseFloat(data.balance.staking_balance) || 0,
-            partner_wallet: parseFloat(data.balance.partner_wallet_balance) || 0,
-            lastUpdated: new Date(data.balance.last_updated)
+            total: parseFloat(data.wallet.total_balance) || 0,
+            tic: parseFloat(data.wallet.tic_balance) || 0,
+            gic: parseFloat(data.wallet.gic_balance) || 0,
+            staking: parseFloat(data.wallet.staking_balance) || 0,
+            partner_wallet: parseFloat(data.wallet.partner_wallet_balance) || 0,
+            lastUpdated: new Date(data.wallet.last_updated || new Date())
           };
           console.log('✅ Wallet page: Balance loaded:', balance);
           setWalletBalance(balance);
+
+          // Notify WalletService listeners to update navbar
+          walletService.notifyListeners(balance);
           return;
         }
       }
@@ -308,6 +317,9 @@ export default function MyWalletPage() {
       console.log('⚠️ Balance API not available, using WalletService');
       const balance = await walletService.getBalance();
       setWalletBalance(balance);
+
+      // Notify all listeners (including navbar) to update
+      walletService.notifyListeners(balance);
     } catch (error) {
       console.error('Error loading current balance:', error);
       // Last resort: use dev sync but warn about it
@@ -345,6 +357,9 @@ export default function MyWalletPage() {
         };
         console.log('📊 Setting wallet balance from dev sync:', balance);
         setWalletBalance(balance);
+
+        // Notify all listeners (including navbar) to update
+        walletService.notifyListeners(balance);
       }
     } catch (error) {
       console.error('Error loading balance with dev sync:', error);
@@ -387,6 +402,9 @@ export default function MyWalletPage() {
 
         setWalletBalance(newBalance);
 
+        // Notify all listeners (including navbar) to update
+        walletService.notifyListeners(newBalance);
+
         // Show success message
         const ticValue = (data.wallet.tic_balance * TIC_PRICE).toFixed(2);
         alert(`Wallet synced successfully! USD Balance: $${data.wallet.total_balance.toFixed(2)} | TIC: ${data.wallet.tic_balance} ($${ticValue})`);
@@ -406,41 +424,20 @@ export default function MyWalletPage() {
   const handleTestBalanceAPI = async () => {
     try {
       setIsTestingAPI(true);
-      console.log('🧪 Testing wallet balance API...');
+      console.log('🧪 Testing wallet balance API and forcing refresh...');
 
-      const userEmail = await getAuthenticatedUserEmail();
-      if (!userEmail) {
-        alert('No authenticated user found');
-        return;
-      }
+      // Use WalletService force refresh which will update all components
+      const newBalance = await walletService.forceRefreshBalance();
+      setWalletBalance(newBalance);
 
-      // Test the balance API directly
-      const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
-      const data = await response.json();
+      alert(`Balance Updated!\nCurrent Balance: $${newBalance.total.toFixed(2)}\nLast Updated: ${newBalance.lastUpdated}`);
 
-      console.log('🧪 Balance API response:', data);
+      console.log('✅ Force refresh completed, all components should be updated');
 
-      if (data.success) {
-        // Update the displayed balance immediately
-        const newBalance: WalletBalance = {
-          total: parseFloat(data.balance.total_balance) || 0,
-          tic: parseFloat(data.balance.tic_balance) || 0,
-          gic: parseFloat(data.balance.gic_balance) || 0,
-          staking: parseFloat(data.balance.staking_balance) || 0,
-          partner_wallet: parseFloat(data.balance.partner_wallet_balance) || 0,
-          lastUpdated: new Date(data.balance.last_updated)
-        };
-        setWalletBalance(newBalance);
-
-        alert(`Balance Updated!\nCurrent Balance: $${newBalance.total.toFixed(2)}\nLast Updated: ${data.balance.last_updated}`);
-
-        // Force refresh the entire page to update all components
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        alert(`API Test Failed: ${data.error}`);
-      }
+      // Optional: Force refresh the entire page to update all components
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('API test error:', error);
       alert('API test failed. Check console for details.');

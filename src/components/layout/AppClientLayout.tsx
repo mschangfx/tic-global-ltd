@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import React from 'react';
 
 export default function AppClientLayout({
@@ -57,7 +58,9 @@ export default function AppClientLayout({
         overflowX: 'hidden', // Prevent horizontal overflow for the main content area
         maxWidth: '100%',    // Ensure it doesn't exceed viewport width
       }}>
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
       {shouldShowMainNavbarAndFooter && <Footer />}
     </>

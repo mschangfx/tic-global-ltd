@@ -82,6 +82,28 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    // Check for recent duplicate deposits (within last 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: recentDeposits } = await supabaseAdmin
+      .from('deposits')
+      .select('id, amount, method_name, created_at')
+      .eq('user_email', userEmail)
+      .eq('amount', depositAmount)
+      .eq('method_name', method)
+      .gte('created_at', fiveMinutesAgo)
+      .order('created_at', { ascending: false });
+
+    if (recentDeposits && recentDeposits.length > 0) {
+      console.log('⚠️ Duplicate deposit detected, returning existing deposit:', recentDeposits[0]);
+      return NextResponse.json({
+        success: true,
+        message: 'Deposit request already exists',
+        deposit: recentDeposits[0],
+        isDuplicate: true
+      });
+    }
+
     const { data: deposit, error } = await supabaseAdmin
       .from('deposits')
       .insert({

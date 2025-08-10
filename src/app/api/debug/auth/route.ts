@@ -20,6 +20,33 @@ export async function GET(request: NextRequest) {
     const supabase = createClient();
     const { data: { user: supabaseUser } } = await supabase.auth.getUser();
     
+    // Test wallet balance API if user is authenticated
+    let walletTest = null;
+    const userEmail = nextAuthSession?.user?.email || supabaseUser?.email;
+
+    if (userEmail) {
+      try {
+        const walletResponse = await fetch(`${request.nextUrl.origin}/api/wallet/balance`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userEmail })
+        });
+
+        const walletData = await walletResponse.json();
+        walletTest = {
+          status: walletResponse.status,
+          ok: walletResponse.ok,
+          data: walletData
+        };
+      } catch (walletError) {
+        walletTest = {
+          error: walletError instanceof Error ? walletError.message : 'Unknown wallet error'
+        };
+      }
+    }
+
     return NextResponse.json({
       success: true,
       nextAuth: {
@@ -30,6 +57,7 @@ export async function GET(request: NextRequest) {
         user: supabaseUser,
         userEmail: supabaseUser?.email || null
       },
+      walletTest,
       timestamp: new Date().toISOString()
     });
     

@@ -80,7 +80,19 @@ function DepositStatusPageContent() {
             isClosable: true,
           });
 
-          console.log('🎉 Deposit completed - wallet will update automatically via its own refresh mechanisms');
+          console.log('🎉 Deposit completed - triggering automatic wallet balance refresh');
+
+          // Automatically refresh wallet balance when deposit is completed
+          setTimeout(async () => {
+            try {
+              const { syncAfterDeposit } = await import('@/lib/utils/balanceSync');
+              await syncAfterDeposit(parseFloat(amount || '0'));
+            } catch (error) {
+              console.error('❌ Failed to auto-sync after deposit completion:', error);
+              // Fallback to manual refresh
+              handleRefreshWallet();
+            }
+          }, 2000); // Wait 2 seconds to ensure deposit is fully processed
         }
       } else {
         setError(data.error || 'Failed to fetch deposit status');
@@ -148,15 +160,36 @@ function DepositStatusPageContent() {
 
       console.log('🔄 Refreshing wallet balance for:', userEmail);
 
-      // Call the wallet balance API directly
-      const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
+      // Call the wallet balance API directly using POST method for consistency
+      const response = await fetch('/api/wallet/balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail })
+      });
       const data = await response.json();
 
-      if (data.success) {
-        console.log('✅ Wallet balance refreshed:', data.balance);
+      if (data.wallet) {
+        console.log('✅ Wallet balance refreshed:', data.wallet);
+
+        // Create balance object and notify WalletService listeners
+        const balance = {
+          total: parseFloat(data.wallet.total_balance) || 0,
+          tic: parseFloat(data.wallet.tic_balance) || 0,
+          gic: parseFloat(data.wallet.gic_balance) || 0,
+          staking: parseFloat(data.wallet.staking_balance) || 0,
+          partner_wallet: parseFloat(data.wallet.partner_wallet_balance) || 0,
+          lastUpdated: new Date(data.wallet.last_updated)
+        };
+
+        // Notify all components (including navbar) about the balance update
+        const walletService = WalletService.getInstance();
+        walletService.notifyListeners(balance);
+
         toast({
           title: 'Wallet Refreshed!',
-          description: `Balance: $${parseFloat(data.balance.total_balance).toFixed(2)}`,
+          description: `Balance: $${balance.total.toFixed(2)}`,
           status: 'success',
           duration: 3000,
           isClosable: true,

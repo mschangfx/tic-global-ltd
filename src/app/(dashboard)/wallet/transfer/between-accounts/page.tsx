@@ -381,8 +381,20 @@ export default function BetweenAccountsTransferPage() {
       setToAccount('');
       setAmountError('');
 
-      // Refresh wallet balance
-      await loadWalletData();
+      // Refresh wallet balance and notify all components
+      try {
+        const { syncAfterTransfer } = await import('@/lib/utils/balanceSync');
+        await syncAfterTransfer(transferAmount);
+
+        // Update local state
+        const walletService = WalletService.getInstance();
+        const newBalance = await walletService.getBalance();
+        setWalletBalance(newBalance);
+      } catch (refreshError) {
+        console.error('❌ Failed to refresh balance after transfer:', refreshError);
+        // Fallback to original method
+        await loadWalletData();
+      }
 
     } catch (error) {
       console.error('Transfer error:', error);

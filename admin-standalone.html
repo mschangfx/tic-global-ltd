@@ -459,48 +459,146 @@
             }
 
             try {
-                const timestamp = new Date().toISOString();
-                const adminEmail = 'admin@ticgloballtd.com';
-                
-                const updateData = {
-                    status: action === 'approve' ? 'approved' : 'rejected',
-                    admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via standalone admin at ${timestamp}`,
-                    updated_at: timestamp,
-                    ...(action === 'approve' ? {
-                        approved_by: adminEmail,
-                        approved_at: timestamp
-                    } : {
-                        rejected_by: adminEmail,
-                        rejected_at: timestamp
-                    })
+                const headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
                 };
 
-                if (type === 'withdrawal') {
-                    updateData.processed_by = adminEmail;
-                    updateData.processed_at = timestamp;
+                if (type === 'deposit') {
+                    // First get the deposit details
+                    const getDepositResponse = await fetch(`${SUPABASE_URL}/rest/v1/deposits?id=eq.${id}&select=*`, {
+                        headers: headers
+                    });
+
+                    if (!getDepositResponse.ok) {
+                        throw new Error('Failed to fetch deposit details');
+                    }
+
+                    const deposits = await getDepositResponse.json();
+                    if (deposits.length === 0) {
+                        throw new Error('Deposit not found');
+                    }
+
+                    const deposit = deposits[0];
+
+                    // Update deposit status with admin info
+                    const updateData = {
+                        status: action === 'approve' ? 'completed' : 'rejected',
+                        updated_at: new Date().toISOString(),
+                        admin_email: 'admin@ticgloballtd.com',
+                        admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via standalone admin panel`
+                    };
+
+                    if (action === 'approve') {
+                        updateData.approved_by = 'admin@ticgloballtd.com';
+                        updateData.approved_at = new Date().toISOString();
+                    } else {
+                        updateData.rejected_by = 'admin@ticgloballtd.com';
+                        updateData.rejected_at = new Date().toISOString();
+                    }
+
+                    const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/deposits?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: headers,
+                        body: JSON.stringify(updateData)
+                    });
+
+                    if (!updateResponse.ok) {
+                        const errorText = await updateResponse.text();
+                        throw new Error(`Failed to update deposit status: ${errorText}`);
+                    }
+
+                    // If approved, credit the user's wallet
+                    if (action === 'approve') {
+                        // Find user by email if user_id is null
+                        let userId = deposit.user_id;
+
+                        if (!userId && deposit.user_email) {
+                            const userResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${deposit.user_email}&select=id`, {
+                                headers: headers
+                            });
+
+                            if (userResponse.ok) {
+                                const users = await userResponse.json();
+                                if (users.length > 0) {
+                                    userId = users[0].id;
+                                }
+                            }
+                        }
+
+                        if (userId) {
+                            // Get or create wallet
+                            const walletResponse = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}`, {
+                                headers: headers
+                            });
+
+                            if (walletResponse.ok) {
+                                const wallets = await walletResponse.json();
+                                let currentBalance = 0;
+
+                                if (wallets.length > 0) {
+                                    // Update existing wallet
+                                    currentBalance = parseFloat(wallets[0].balance || 0);
+                                    const newBalance = currentBalance + parseFloat(deposit.amount);
+
+                                    await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}`, {
+                                        method: 'PATCH',
+                                        headers: headers,
+                                        body: JSON.stringify({
+                                            balance: newBalance.toString(),
+                                            updated_at: new Date().toISOString()
+                                        })
+                                    });
+                                } else {
+                                    // Create new wallet
+                                    await fetch(`${SUPABASE_URL}/rest/v1/wallets`, {
+                                        method: 'POST',
+                                        headers: headers,
+                                        body: JSON.stringify({
+                                            user_id: userId,
+                                            balance: deposit.amount.toString(),
+                                            created_at: new Date().toISOString(),
+                                            updated_at: new Date().toISOString()
+                                        })
+                                    });
+                                }
+                            }
+                        } else {
+                            console.warn('Could not find user ID for wallet crediting');
+                        }
+                    }
+
+                    showMessage(`✅ Deposit ${action === 'approve' ? 'approved and completed' : 'rejected'} successfully!`, 'success');
+
+                } else if (type === 'withdrawal') {
+                    // Update withdrawal status with admin info
+                    const updateData = {
+                        status: action === 'approve' ? 'completed' : 'cancelled',
+                        updated_at: new Date().toISOString(),
+                        admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via standalone admin panel`,
+                        processed_by: 'admin@ticgloballtd.com',
+                        processed_at: new Date().toISOString()
+                    };
+
+                    const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: headers,
+                        body: JSON.stringify(updateData)
+                    });
+
+                    if (!updateResponse.ok) {
+                        const errorText = await updateResponse.text();
+                        throw new Error(`Failed to update withdrawal status: ${errorText}`);
+                    }
+
+                    showMessage(`✅ Withdrawal ${action === 'approve' ? 'approved and completed' : 'cancelled'} successfully!`, 'success');
                 }
 
-                const tableName = type === 'deposit' ? 'deposits' : 'withdrawal_requests';
-                
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'apikey': SUPABASE_SERVICE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify(updateData)
-                });
+                // Refresh the dashboard
+                loadTransactions();
 
-                if (response.ok) {
-                    showMessage(`✅ Transaction ${action}d successfully!`, 'success');
-                    loadTransactions();
-                } else {
-                    const errorText = await response.text();
-                    console.error('Supabase error:', errorText);
-                    showMessage(`❌ Error: Failed to ${action} transaction`, 'error');
-                }
             } catch (error) {
                 console.error(`Error ${action}ing transaction:`, error);
                 showMessage(`❌ Network error: ${error.message}`, 'error');

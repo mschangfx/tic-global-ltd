@@ -168,10 +168,37 @@ export async function POST(request: NextRequest) {
       // Don't fail the registration for dashboard creation error
     }
 
+    // Process referral relationship if referralId is provided
+    if (referralId) {
+      try {
+        console.log('🔗 Processing referral relationship for:', email, 'with code:', referralId);
+
+        const referralResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://ticgloballtd.com'}/api/referrals/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            referralCode: referralId,
+            newUserEmail: email
+          })
+        });
+
+        const referralResult = await referralResponse.json();
+
+        if (referralResult.success) {
+          console.log('✅ Referral relationship created successfully');
+        } else {
+          console.warn('⚠️ Referral processing failed:', referralResult.message);
+        }
+      } catch (referralError) {
+        console.error('❌ Error processing referral:', referralError);
+        // Don't fail the registration for referral processing error
+      }
+    }
+
     return NextResponse.json(
-      { 
+      {
         message: 'Account created successfully',
-        userId: authData.user.id 
+        userId: authData.user.id
       },
       { status: 201 }
     );

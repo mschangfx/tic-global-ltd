@@ -138,32 +138,39 @@ export async function POST(request: NextRequest) {
     const depositService = DepositService.getInstance();
     const status = action === 'approve' ? 'completed' : 'rejected';
 
+    console.log(`🔄 Processing bulk ${action} for ${depositIds.length} deposits`);
+
     // Update multiple deposits using DepositService
     const results = [];
     const errors = [];
 
     for (const depositId of depositIds) {
       try {
+        console.log(`🔄 Processing deposit ${depositId} - setting status to ${status}`);
+
         const updatedDeposit = await depositService.updateDepositStatus(
           depositId,
           status,
           adminEmail,
-          adminNotes
+          adminNotes || `Bulk ${action} via admin panel`
         );
+
+        console.log(`✅ Successfully updated deposit ${depositId}`);
 
         results.push({
           id: updatedDeposit.id,
           status: updatedDeposit.status,
           user_email: updatedDeposit.user_email,
-          amount: updatedDeposit.final_amount,
+          amount: updatedDeposit.final_amount || updatedDeposit.amount,
           success: true
         });
 
       } catch (error: any) {
-        console.error(`Error updating deposit ${depositId}:`, error);
+        console.error(`❌ Error updating deposit ${depositId}:`, error);
         errors.push({
           id: depositId,
-          error: error.message || 'Update failed'
+          error: error.message || 'Update failed',
+          success: false
         });
       }
     }

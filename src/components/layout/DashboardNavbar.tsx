@@ -26,7 +26,7 @@ import {
   Image
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
-import { FaBars, FaWallet, FaBell, FaDownload, FaGlobe, FaUserCircle, FaGem, FaChevronDown, FaArrowCircleDown, FaArrowCircleUp, FaExchangeAlt } from 'react-icons/fa'; // Added action icons
+import { FaBars, FaWallet, FaBell, FaDownload, FaGlobe, FaUserCircle, FaGem, FaChevronDown, FaArrowCircleDown, FaArrowCircleUp, FaExchangeAlt, FaSync } from 'react-icons/fa'; // Added action icons
 import ThemeToggle from '@/components/ThemeToggle';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -44,6 +44,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
   const iconButtonBg = useColorModeValue('whiteAlpha.200', 'whiteAlpha.100');
   const iconButtonHoverBg = useColorModeValue('whiteAlpha.300', 'whiteAlpha.200');
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
   const walletService = WalletService.getInstance();
   const { language, setLanguage, t } = useLanguage();
   const { data: nextAuthSession } = useSession(); // Get NextAuth session
@@ -52,6 +53,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
     // Load balance using the same API as the wallet page for consistency
     const loadBalance = async () => {
       try {
+        setIsLoadingBalance(true);
         let userEmail: string | null = null;
 
         // Method 1: Check NextAuth session (Google OAuth)
@@ -60,19 +62,27 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
           console.log('🔍 Navbar: Using NextAuth user:', userEmail);
         } else {
           // Method 2: Check Supabase auth (manual login)
-          const supabase = createClient();
-          const { data: { user }, error: authError } = await supabase.auth.getUser();
+          try {
+            const supabase = createClient();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-          if (user?.email) {
-            userEmail = user.email;
-            console.log('🔍 Navbar: Using Supabase user:', userEmail);
+            if (authError) {
+              // Silently handle auth errors - this is normal when not logged in
+            } else if (user?.email) {
+              userEmail = user.email;
+              console.log('🔍 Navbar: Using Supabase user:', userEmail);
+            }
+          } catch (supabaseError) {
+            // Silently handle connection errors - this is normal during page load
           }
         }
 
         // Check if user is authenticated
         if (!userEmail) {
-          console.log('❌ Navbar: No authenticated user found');
+          console.log('⚠️ Navbar: No authenticated user found');
+          console.log('🔍 Navbar: NextAuth session:', nextAuthSession);
           setWalletBalance(null);
+          setIsLoadingBalance(false);
           return;
         }
 
@@ -88,9 +98,18 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
         });
 
         const data = await response.json();
+        console.log('🔍 Navbar: API request details:', {
+          url: '/api/wallet/balance',
+          method: 'POST',
+          userEmail: userEmail,
+          responseStatus: response.status,
+          responseOk: response.ok
+        });
+        console.log('🔍 Navbar: Raw API response:', data);
 
         if (data.wallet) {
           const w = data.wallet;
+          console.log('🔍 Navbar: Wallet data from API:', w);
           const balance: WalletBalance = {
             total: Number(w.total_balance) || 0,
             tic: Number(w.tic_balance) || 0,
@@ -99,17 +118,23 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
             partner_wallet: Number(w.partner_wallet_balance) || 0,
             lastUpdated: w.last_updated ? new Date(w.last_updated) : new Date()
           };
-          console.log('✅ Navbar: Balance loaded:', balance);
+          console.log('✅ Navbar: Balance loaded successfully:', balance);
+          console.log('💰 Navbar: Total balance will display as:', `$${balance.total.toFixed(2)}`);
+          console.log('🔍 Navbar: Setting wallet balance state...');
           setWalletBalance(balance);
+          setIsLoadingBalance(false);
+          console.log('✅ Navbar: State updated');
         } else if (data.error) {
           console.error('❌ Navbar: API error:', data.error);
           // Fallback to WalletService if API fails
           try {
             const balance = await walletService.getBalance();
             setWalletBalance(balance);
+            setIsLoadingBalance(false);
           } catch (fallbackError) {
             console.error('❌ Navbar: Fallback also failed:', fallbackError);
             setWalletBalance(null);
+            setIsLoadingBalance(false);
           }
         } else {
           console.error('❌ Navbar: Unexpected API response:', data);
@@ -117,9 +142,11 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
           try {
             const balance = await walletService.getBalance();
             setWalletBalance(balance);
+            setIsLoadingBalance(false);
           } catch (fallbackError) {
             console.error('❌ Navbar: Fallback also failed:', fallbackError);
             setWalletBalance(null);
+            setIsLoadingBalance(false);
           }
         }
       } catch (error) {
@@ -129,16 +156,21 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
           const balance = await walletService.getBalance();
           console.log('🔄 Navbar: Fallback balance from WalletService:', balance);
           setWalletBalance(balance);
+          setIsLoadingBalance(false);
         } catch (fallbackError) {
           console.error('❌ Navbar: Fallback also failed:', fallbackError);
           setWalletBalance(null);
+          setIsLoadingBalance(false);
         }
       }
     };
 
     // Set up wallet service listener for real-time updates
     const handleBalanceUpdate = (newBalance: WalletBalance) => {
+      console.log('🔔 Navbar: Received balance update from WalletService:', newBalance);
+      console.log('💰 Navbar: Will update display to:', `$${newBalance.total.toFixed(2)}`);
       setWalletBalance(newBalance);
+      setIsLoadingBalance(false);
     };
 
     // Subscribe to balance updates
@@ -148,8 +180,22 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
     loadBalance();
 
     // Set up periodic refresh every 30 seconds to keep navbar in sync
-    const refreshInterval = setInterval(() => {
-      loadBalance();
+    const refreshInterval = setInterval(async () => {
+      console.log('🔄 Navbar: Periodic balance refresh triggered');
+      try {
+        // Use the balance sync utility for consistency
+        const { manualBalanceRefresh } = await import('@/lib/utils/balanceSync');
+        await manualBalanceRefresh();
+      } catch (error) {
+        console.error('❌ Navbar: Periodic refresh failed:', error);
+        // Fallback to WalletService
+        try {
+          const balance = await walletService.getBalance();
+          setWalletBalance(balance);
+        } catch (fallbackError) {
+          console.error('❌ Navbar: Periodic fallback failed:', fallbackError);
+        }
+      }
     }, 30000);
 
     // Cleanup listener and interval on unmount
@@ -225,19 +271,20 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
       {/* Right Side: Actions */}
       <HStack spacing={{ base: 2, md: 3 }}>
         {/* Currency Display Dropdown */}
-        <Menu>
-          <MenuButton
-            as={Button}
-            size="sm"
-            variant="ghost"
-            colorScheme="whiteAlpha"
-            leftIcon={<Icon as={FaWallet} color="cyan.400" />} // Changed to FaWallet
-            rightIcon={<Icon as={FaChevronDown} boxSize={3} />} // Assuming FaChevronDown is still imported
-            _hover={{ bg: iconButtonHoverBg }}
-            display={{ base: 'none', md: 'flex' }}
-          >
-            {walletBalance !== null ? `$${walletBalance.total.toFixed(2)}` : 'Loading...'}
-          </MenuButton>
+        <HStack spacing={1}>
+          <Menu>
+            <MenuButton
+              as={Button}
+              size="sm"
+              variant="ghost"
+              colorScheme="whiteAlpha"
+              leftIcon={<Icon as={FaWallet} color="cyan.400" />} // Changed to FaWallet
+              rightIcon={<Icon as={FaChevronDown} boxSize={3} />} // Assuming FaChevronDown is still imported
+              _hover={{ bg: iconButtonHoverBg }}
+              display={{ base: 'none', md: 'flex' }}
+            >
+              {isLoadingBalance ? 'Loading...' : walletBalance ? `$${walletBalance.total.toFixed(2)}` : '$0.00'}
+            </MenuButton>
           <MenuList bg={bgColor} borderColor={useColorModeValue('gray.700', 'gray.600')} minW="180px"> {/* Adjusted minW */}
             <MenuItem as={NextLink} href="/wallet/deposit" icon={<Icon as={FaArrowCircleDown} />} bg={bgColor} _hover={{bg: iconButtonHoverBg}}>
               {t('navbar.deposit')}
@@ -256,6 +303,37 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
             </NextLink>
           </MenuList>
         </Menu>
+
+        {/* Refresh Balance Button */}
+        <IconButton
+          aria-label="Refresh balance"
+          icon={<Icon as={FaSync} />}
+          size="sm"
+          variant="ghost"
+          colorScheme="whiteAlpha"
+          onClick={async () => {
+            console.log('🔄 Manual balance refresh triggered from navbar');
+            setIsLoadingBalance(true);
+            try {
+              const { manualBalanceRefresh } = await import('@/lib/utils/balanceSync');
+              await manualBalanceRefresh();
+              console.log('✅ Navbar: Manual refresh completed');
+            } catch (error) {
+              console.error('❌ Navbar: Manual refresh failed:', error);
+              // Fallback to WalletService
+              try {
+                const balance = await walletService.getBalance();
+                setWalletBalance(balance);
+              } catch (fallbackError) {
+                console.error('❌ Navbar: Fallback also failed:', fallbackError);
+              }
+            }
+          }}
+          _hover={{ bg: iconButtonHoverBg }}
+          display={{ base: 'none', md: 'flex' }}
+        />
+
+        </HStack>
 
         {/* Notification Icon */}
         <ErrorBoundary fallback={null}>

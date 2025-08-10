@@ -119,14 +119,14 @@ export default function ToUserTransferPage() {
 
         if (balanceResponse.ok) {
           const balanceData = await balanceResponse.json();
-          if (balanceData.success) {
+          if (balanceData.wallet) {
             const balance: WalletBalance = {
-              total: balanceData.balance.total_balance,
-              tic: balanceData.balance.tic_balance,
-              gic: balanceData.balance.gic_balance,
-              staking: balanceData.balance.staking_balance,
-              partner_wallet: balanceData.balance.partner_wallet || 0,
-              lastUpdated: new Date(balanceData.balance.last_updated)
+              total: balanceData.wallet.total_balance,
+              tic: balanceData.wallet.tic_balance,
+              gic: balanceData.wallet.gic_balance,
+              staking: balanceData.wallet.staking_balance,
+              partner_wallet: balanceData.wallet.partner_wallet_balance || 0,
+              lastUpdated: new Date(balanceData.wallet.last_updated || new Date())
             };
             setWalletBalance(balance);
           }
@@ -389,8 +389,20 @@ export default function ToUserTransferPage() {
       setAmountError('');
       setAddressValidation(null);
 
-      // Refresh wallet balance
-      await loadWalletData();
+      // Refresh wallet balance and notify all components
+      try {
+        const { syncAfterTransfer } = await import('@/lib/utils/balanceSync');
+        await syncAfterTransfer(transferAmount);
+
+        // Update local state
+        const walletService = WalletService.getInstance();
+        const newBalance = await walletService.getBalance();
+        setWalletBalance(newBalance);
+      } catch (refreshError) {
+        console.error('❌ Failed to refresh balance after transfer:', refreshError);
+        // Fallback to original method
+        await loadWalletData();
+      }
 
     } catch (error) {
       console.error('Transfer error:', error);

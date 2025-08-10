@@ -219,19 +219,40 @@ class ReferralKitService {
     newUserEmail: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Find the referrer by code
-      const { data: referrerData, error: referrerError } = await this.supabase
-        .from('user_profiles')
-        .select('email')
+      // Find the referrer by code - check both user_referral_codes and user_profiles tables
+      let referrerData = null;
+
+      // First check user_referral_codes table
+      const { data: referralCodeData, error: codeError } = await this.supabase
+        .from('user_referral_codes')
+        .select('user_email')
         .eq('referral_code', referrerCode)
         .single();
 
-      if (referrerError || !referrerData) {
+      if (referralCodeData) {
+        referrerData = { email: referralCodeData.user_email };
+      } else {
+        // Fallback to user_profiles table
+        const { data: profileData, error: profileError } = await this.supabase
+          .from('user_profiles')
+          .select('email')
+          .eq('referral_code', referrerCode)
+          .single();
+
+        if (profileData) {
+          referrerData = profileData;
+        }
+      }
+
+      if (!referrerData) {
+        console.log('❌ Referral code not found:', referrerCode);
         return {
           success: false,
           message: 'Invalid referral code'
         };
       }
+
+      console.log('✅ Found referrer:', referrerData.email, 'for code:', referrerCode);
 
       // Check if the new user is already referred by someone
       const { data: existingReferral } = await this.supabase
@@ -268,7 +289,7 @@ class ReferralKitService {
         .insert({
           referrer_email: referrerData.email,
           referred_email: newUserEmail,
-          level: 1,
+          level_depth: 1,
           referral_code: referrerCode,
           created_at: new Date().toISOString(),
           is_active: true
@@ -281,6 +302,28 @@ class ReferralKitService {
       // Build multi-level referral chain
       await this.buildReferralChain(referrerData.email, newUserEmail, 2);
 
+      // Update referrer's total referral count
+      const { data: currentCount } = await this.supabase
+        .from('user_referral_codes')
+        .select('total_referrals')
+        .eq('user_email', referrerData.email)
+        .single();
+
+      const newCount = (currentCount?.total_referrals || 0) + 1;
+
+      const { error: updateCountError } = await this.supabase
+        .from('user_referral_codes')
+        .update({
+          total_referrals: newCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_email', referrerData.email);
+
+      if (updateCountError) {
+        console.warn('Failed to update referral count:', updateCountError);
+      }
+
+      console.log('✅ Referral relationship created successfully');
       return {
         success: true,
         message: 'Referral processed successfully'
@@ -318,7 +361,7 @@ class ReferralKitService {
           .insert({
             referrer_email: upperReferrer.referred_by_email,
             referred_email: newUserEmail,
-            level: level,
+            level_depth: level,
             created_at: new Date().toISOString(),
             is_active: true
           });
@@ -394,20 +437,35 @@ class ReferralKitService {
   // Validate referral code
   async validateReferralCode(code: string): Promise<{ valid: boolean; referrerEmail?: string }> {
     try {
-      const { data, error } = await this.supabase
+      // First check user_referral_codes table
+      const { data: referralCodeData, error: codeError } = await this.supabase
+        .from('user_referral_codes')
+        .select('user_email')
+        .eq('referral_code', code)
+        .single();
+
+      if (referralCodeData) {
+        return {
+          valid: true,
+          referrerEmail: referralCodeData.user_email
+        };
+      }
+
+      // Fallback to user_profiles table
+      const { data: profileData, error: profileError } = await this.supabase
         .from('user_profiles')
         .select('email')
         .eq('referral_code', code)
         .single();
 
-      if (error || !data) {
-        return { valid: false };
+      if (profileData) {
+        return {
+          valid: true,
+          referrerEmail: profileData.email
+        };
       }
 
-      return {
-        valid: true,
-        referrerEmail: data.email
-      };
+      return { valid: false };
     } catch (error) {
       console.error('Error validating referral code:', error);
       return { valid: false };

@@ -37,41 +37,45 @@ class WalletService {
   }
 
   // Notify all listeners of balance changes
-  private notifyListeners(balance: WalletBalance) {
+  notifyListeners(balance: WalletBalance) {
     this.listeners.forEach(callback => callback(balance));
   }
 
-  // Helper method to get authenticated user email from both auth methods
+  // Helper method to get authenticated user email from both auth methods (same as navbar)
   async getAuthenticatedUserEmail(): Promise<string | null> {
     try {
-      // Method 1: Try NextAuth session (Google OAuth)
+      console.log('🔍 WalletService: Getting authenticated user...');
+
+      // Method 1: Try NextAuth session (Google OAuth) - same as navbar
       const nextAuthSession = await getSession();
       if (nextAuthSession?.user?.email) {
-        console.log('🔍 Found NextAuth user:', nextAuthSession.user.email);
+        console.log('🔍 WalletService: Found NextAuth user:', nextAuthSession.user.email);
         return nextAuthSession.user.email;
       }
 
-      // Method 2: Try Supabase auth (manual login)
+      // Method 2: Try Supabase auth (manual login) - same as navbar
       const { data: { user: supabaseUser } } = await this.supabase.auth.getUser();
       if (supabaseUser?.email) {
-        console.log('🔍 Found Supabase user:', supabaseUser.email);
+        console.log('🔍 WalletService: Found Supabase user:', supabaseUser.email);
         return supabaseUser.email;
       }
 
-      console.log('❌ No authenticated user found in either system');
+      console.log('❌ WalletService: No authenticated user found in either system');
       return null;
     } catch (error) {
-      console.error('Error getting authenticated user:', error);
+      console.error('❌ WalletService: Error getting authenticated user:', error);
       return null;
     }
   }
 
-  // Get current wallet balance (automatically syncs with transactions)
+  // Get current wallet balance (using same API as navbar for consistency)
   async getBalance(): Promise<WalletBalance> {
     try {
+      console.log('🔄 WalletService: Getting balance...');
       const userEmail = await this.getAuthenticatedUserEmail();
 
       if (!userEmail) {
+        console.log('❌ WalletService: No user email, returning empty balance');
         const emptyBalance: WalletBalance = {
           total: 0,
           tic: 0,
@@ -83,8 +87,8 @@ class WalletService {
         return emptyBalance;
       }
 
-      // Use direct query method since get_current_user_balance() doesn't work with Google OAuth
-      return this.getBalanceDirectQuery(userEmail);
+      // Use the same API endpoint as the navbar for consistency
+      return this.getBalanceFromAPI(userEmail);
 
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
@@ -100,11 +104,65 @@ class WalletService {
     }
   }
 
+  // New method: Get balance from API (same as navbar)
+  private async getBalanceFromAPI(userEmail: string): Promise<WalletBalance> {
+    try {
+      console.log('🔄 WalletService: Calling balance API for:', userEmail);
+
+      // Use the same API endpoint as the navbar
+      const response = await fetch('/api/wallet/balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail })
+      });
+
+      console.log('🔍 WalletService: API response status:', response.status, response.ok);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 WalletService: API response data:', data);
+
+        if (data.wallet) {
+          const w = data.wallet;
+          const balance: WalletBalance = {
+            total: Number(w.total_balance) || 0,
+            tic: Number(w.tic_balance) || 0,
+            gic: Number(w.gic_balance) || 0,
+            staking: Number(w.staking_balance) || 0,
+            partner_wallet: Number(w.partner_wallet_balance) || 0,
+            lastUpdated: w.last_updated ? new Date(w.last_updated) : new Date()
+          };
+
+          console.log('✅ WalletService: Balance loaded from API:', balance);
+
+          // Update cache
+          this.balanceCache = balance;
+
+          return balance;
+        } else {
+          console.error('❌ WalletService: No wallet data in API response');
+          throw new Error('No wallet data in response');
+        }
+      } else {
+        console.error('❌ WalletService: API request failed:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ WalletService: Error details:', errorData);
+        throw new Error(`API request failed: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ WalletService: Error calling balance API:', error);
+      // Fallback to direct query method
+      return this.getBalanceDirectQuery(userEmail);
+    }
+  }
+
   // Fallback method for direct wallet query
   private async getBalanceDirectQuery(userEmail: string): Promise<WalletBalance> {
     try {
-      // Skip automatic sync to prevent unexpected balance changes
-      console.log('📊 Getting wallet balance for:', userEmail, '(sync disabled)');
+      console.log('🔄 WalletService: Using fallback direct query for:', userEmail);
+      console.log('⚠️ WalletService: API failed, falling back to direct database query');
 
       // Note: Automatic sync disabled to prevent user confusion
       // Manual sync can be triggered via /api/wallet/sync if needed

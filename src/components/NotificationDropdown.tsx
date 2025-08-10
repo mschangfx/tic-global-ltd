@@ -95,11 +95,19 @@ export default function NotificationDropdown({ size = 'sm' }: NotificationDropdo
         // Only run in browser environment
         if (typeof window === 'undefined') return;
 
-        // Check authentication status using Supabase
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // Check authentication status using Supabase with error handling
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
 
-        if (error || !user?.email) {
-          // Silently handle unauthenticated state
+          if (error || !user?.email) {
+            // Silently handle unauthenticated state
+            setIsAuthenticated(false);
+            setNotifications([]);
+            setUnreadCount(0);
+            return;
+          }
+        } catch (authError) {
+          console.warn('Notification auth check failed:', authError);
           setIsAuthenticated(false);
           setNotifications([]);
           setUnreadCount(0);

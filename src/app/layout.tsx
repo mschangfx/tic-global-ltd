@@ -104,78 +104,146 @@ export default function RootLayout({
 
                   // Function to check if error is from extension
                   const isExtensionError = (source, message, stack) => {
-                    const indicators = [
-                      'chrome-extension://',
-                      'moz-extension://',
-                      'safari-extension://',
-                      'Cannot read properties of null',
-                      'Cannot read property',
-                      'egjjdjbpglichdcondbcbdnbeeppgdph',
-                      'inpage.js'
-                    ];
+                    try {
+                      // Convert all inputs to safe strings
+                      const safeSource = source ? String(source) : '';
+                      const safeMessage = message ? String(message) : '';
+                      const safeStack = stack ? String(stack) : '';
 
-                    const checkString = (str) => str && indicators.some(indicator => str.includes(indicator));
-                    return checkString(source) || checkString(message) || checkString(stack);
+                      // Only check for very specific extension indicators
+                      const extensionIndicators = [
+                        'chrome-extension://',
+                        'moz-extension://',
+                        'safari-extension://',
+                        'egjjdjbpglichdcondbcbdnbeeppgdph',
+                        'inpage.js'
+                      ];
+
+                      // Check for extension URLs first (most reliable)
+                      const hasExtensionUrl = extensionIndicators.some(indicator =>
+                        safeSource.includes(indicator) || safeMessage.includes(indicator) || safeStack.includes(indicator)
+                      );
+
+                      if (hasExtensionUrl) return true;
+
+                      // Only suppress specific null property errors if they seem extension-related
+                      if ((safeMessage.includes('Cannot read properties of null') || safeMessage.includes('Cannot read property')) &&
+                          (safeMessage.includes('type') || safeStack.includes('extension') || safeStack.includes('inpage'))) {
+                        return true;
+                      }
+
+                      return false;
+                    } catch (error) {
+                      // If there's an error in the error checking function, don't assume it's an extension error
+                      return false;
+                    }
                   };
 
                   // Override window.onerror
                   window.onerror = function(message, source, lineno, colno, error) {
-                    if (isExtensionError(source, message, error?.stack)) {
-                      console.warn('🔇 Extension error suppressed (onerror):', message);
-                      return true; // Prevent default error handling
+                    try {
+                      const safeMessage = message || '';
+                      const safeSource = source || '';
+                      const safeStack = error?.stack || '';
+
+                      if (isExtensionError(safeSource, safeMessage, safeStack)) {
+                        console.warn('🔇 Extension error suppressed (onerror):', safeMessage);
+                        return true; // Prevent default error handling
+                      }
+                      if (originalOnError) {
+                        return originalOnError.apply(this, arguments);
+                      }
+                      return false;
+                    } catch (err) {
+                      // Fallback to original handler if our handler fails
+                      if (originalOnError) {
+                        return originalOnError.apply(this, arguments);
+                      }
+                      return false;
                     }
-                    if (originalOnError) {
-                      return originalOnError.apply(this, arguments);
-                    }
-                    return false;
                   };
 
                   // Override window.onunhandledrejection
                   window.onunhandledrejection = function(event) {
-                    const errorMsg = event.reason?.message || event.reason?.toString() || '';
-                    const errorStack = event.reason?.stack || '';
+                    try {
+                      const errorMsg = event.reason?.message || event.reason?.toString?.() || String(event.reason) || '';
+                      const errorStack = event.reason?.stack || '';
 
-                    if (isExtensionError('', errorMsg, errorStack)) {
-                      console.warn('🔇 Extension promise rejection suppressed (onunhandledrejection):', errorMsg);
-                      event.preventDefault();
-                      return true;
-                    }
+                      if (isExtensionError('', errorMsg, errorStack)) {
+                        console.warn('🔇 Extension promise rejection suppressed (onunhandledrejection):', errorMsg);
+                        event.preventDefault();
+                        return true;
+                      }
 
-                    if (originalOnUnhandledRejection) {
-                      return originalOnUnhandledRejection.apply(this, arguments);
+                      if (originalOnUnhandledRejection) {
+                        return originalOnUnhandledRejection.apply(this, arguments);
+                      }
+                      return false;
+                    } catch (err) {
+                      // Fallback to original handler if our handler fails
+                      if (originalOnUnhandledRejection) {
+                        return originalOnUnhandledRejection.apply(this, arguments);
+                      }
+                      return false;
                     }
-                    return false;
                   };
 
                   // Override console.error to suppress extension errors
                   console.error = function(...args) {
-                    const message = args.join(' ');
-                    if (isExtensionError('', message, '')) {
-                      console.warn('🔇 Extension console.error suppressed:', message);
-                      return;
+                    try {
+                      const message = args.map(arg => {
+                        try {
+                          return String(arg);
+                        } catch (e) {
+                          return '[object]';
+                        }
+                      }).join(' ');
+
+                      // Only suppress if it's clearly from an extension
+                      if (isExtensionError('', message, '')) {
+                        console.warn('🔇 Extension console.error suppressed:', message);
+                        return;
+                      }
+
+                      // Let all other errors through
+                      originalConsoleError.apply(console, args);
+                    } catch (err) {
+                      // If our handler fails, fall back to original console.error
+                      originalConsoleError.apply(console, args);
                     }
-                    originalConsoleError.apply(console, args);
                   };
 
                   // Event listeners with capture phase
                   window.addEventListener('error', function(event) {
-                    if (isExtensionError(event.filename, event.message, event.error?.stack)) {
-                      console.warn('🔇 Extension addEventListener error suppressed:', event.message);
-                      event.stopImmediatePropagation();
-                      event.preventDefault();
-                      return false;
+                    try {
+                      const filename = event.filename || '';
+                      const message = event.message || '';
+                      const stack = event.error?.stack || '';
+
+                      if (isExtensionError(filename, message, stack)) {
+                        console.warn('🔇 Extension addEventListener error suppressed:', message);
+                        event.stopImmediatePropagation();
+                        event.preventDefault();
+                        return false;
+                      }
+                    } catch (error) {
+                      // Ignore errors in error handler to prevent infinite loops
                     }
                   }, true);
 
                   window.addEventListener('unhandledrejection', function(event) {
-                    const errorMsg = event.reason?.message || event.reason?.toString() || '';
-                    const errorStack = event.reason?.stack || '';
+                    try {
+                      const errorMsg = event.reason?.message || event.reason?.toString?.() || String(event.reason) || '';
+                      const errorStack = event.reason?.stack || '';
 
-                    if (isExtensionError('', errorMsg, errorStack)) {
-                      console.warn('🔇 Extension addEventListener rejection suppressed:', errorMsg);
-                      event.stopImmediatePropagation();
-                      event.preventDefault();
-                      return false;
+                      if (isExtensionError('', errorMsg, errorStack)) {
+                        console.warn('🔇 Extension addEventListener rejection suppressed:', errorMsg);
+                        event.stopImmediatePropagation();
+                        event.preventDefault();
+                        return false;
+                      }
+                    } catch (error) {
+                      // Ignore errors in error handler to prevent infinite loops
                     }
                   }, true);
 
@@ -209,11 +277,43 @@ export default function RootLayout({
                   // Check for error overlays very frequently
                   setInterval(hideExtensionErrors, 100);
 
-                  // Also check on DOM mutations
-                  if (typeof MutationObserver !== 'undefined') {
-                    const observer = new MutationObserver(hideExtensionErrors);
-                    observer.observe(document.body, { childList: true, subtree: true });
+                  // Also check on DOM mutations - with safety checks
+                  if (typeof MutationObserver !== 'undefined' && document.body) {
+                    try {
+                      const observer = new MutationObserver(hideExtensionErrors);
+                      observer.observe(document.body, { childList: true, subtree: true });
+                    } catch (error) {
+                      console.warn('MutationObserver setup failed:', error);
+                    }
                   }
+
+
+
+                  // Add a final catch-all error handler for warnings
+                  const originalConsoleWarn = console.warn;
+                  console.warn = function(...args) {
+                    try {
+                      const message = args.map(arg => {
+                        try {
+                          return String(arg);
+                        } catch (e) {
+                          return '[object]';
+                        }
+                      }).join(' ');
+
+                      // Only suppress if it's clearly from an extension
+                      if (isExtensionError('', message, '')) {
+                        // Silently suppress extension warnings
+                        return;
+                      }
+
+                      // Let all other warnings through
+                      originalConsoleWarn.apply(console, args);
+                    } catch (err) {
+                      // Fall back to original console.warn
+                      originalConsoleWarn.apply(console, args);
+                    }
+                  };
 
                   console.log('🛡️ Ultra-aggressive extension error suppression activated');
                 }

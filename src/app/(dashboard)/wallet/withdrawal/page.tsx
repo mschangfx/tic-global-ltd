@@ -103,6 +103,11 @@ export default function WithdrawalPage() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
 
+  // Debug: Log wallet balance changes
+  useEffect(() => {
+    console.log('🎯 Withdrawal page: walletBalance state changed:', walletBalance);
+  }, [walletBalance]);
+
   // Real-time fee states
   const [realTimeFees, setRealTimeFees] = useState<NetworkFeeData[]>([]);
   const [isLoadingFees, setIsLoadingFees] = useState(false);
@@ -484,44 +489,89 @@ export default function WithdrawalPage() {
 
   const loadCurrentBalance = async () => {
     try {
-      // Use the exact same authentication pattern as the working wallet page
-      const userEmail = await getAuthenticatedUserEmail();
-      if (!userEmail) {
+      setIsLoadingBalance(true);
+      console.log('🔄 Withdrawal page: Loading current balance...');
+
+      // First, try to get cached balance from WalletService
+      const cachedBalance = walletService.getCachedBalance();
+      if (cachedBalance) {
+        console.log('⚡ Withdrawal page: Using cached balance:', cachedBalance);
+        setWalletBalance(cachedBalance);
         setIsLoadingBalance(false);
         return;
       }
 
-      // Fetch wallet balance using the same API as other working pages
-      const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
+      // Use the exact same authentication pattern as the working wallet page
+      const userEmail = await getAuthenticatedUserEmail();
+      console.log('🔍 Withdrawal page: Authenticated user email:', userEmail);
+      if (!userEmail) {
+        console.error('❌ Withdrawal page: No authenticated user found');
+        setIsLoadingBalance(false);
+        return;
+      }
+
+      // Fetch wallet balance using the same POST API as other working pages
+      const response = await fetch('/api/wallet/balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail })
+      });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
+        console.log('📊 Withdrawal page: Balance API response:', data);
+        if (data.wallet) {
           const balance: WalletBalance = {
-            total: parseFloat(data.balance.total_balance) || 0,
-            tic: parseFloat(data.balance.tic_balance) || 0,
-            gic: parseFloat(data.balance.gic_balance) || 0,
-            staking: parseFloat(data.balance.staking_balance) || 0,
-            partner_wallet: parseFloat(data.balance.partner_wallet_balance) || 0,
-            lastUpdated: new Date(data.balance.last_updated)
+            total: parseFloat(data.wallet.total_balance) || 0,
+            tic: parseFloat(data.wallet.tic_balance) || 0,
+            gic: parseFloat(data.wallet.gic_balance) || 0,
+            staking: parseFloat(data.wallet.staking_balance) || 0,
+            partner_wallet: parseFloat(data.wallet.partner_wallet_balance) || 0,
+            lastUpdated: new Date(data.wallet.last_updated || new Date())
           };
+          console.log('✅ Withdrawal page: Balance loaded successfully:', balance);
+          console.log('💰 Withdrawal page: Total balance:', balance.total);
           setWalletBalance(balance);
           setIsLoadingBalance(false);
+
+          // Notify WalletService listeners to ensure synchronization
+          walletService.notifyListeners(balance);
           return;
+        } else {
+          console.error('❌ Withdrawal page: No wallet data in API response:', data);
         }
+      } else {
+        console.error('❌ Withdrawal page: API request failed:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Withdrawal page: Error details:', errorData);
       }
 
       // Fallback: try to use WalletService if balance API doesn't exist
+      console.log('⚠️ Withdrawal page: API failed, using WalletService fallback');
       const balance = await walletService.getBalance();
+      console.log('🔄 Withdrawal page: WalletService balance:', balance);
       setWalletBalance(balance);
+      setIsLoadingBalance(false);
+
+      // Notify listeners for consistency
+      walletService.notifyListeners(balance);
     } catch (error) {
-      console.error('Error loading current balance:', error);
+      console.error('❌ Withdrawal page: Error loading current balance:', error);
       // Last resort: use WalletService
       try {
+        console.log('🔄 Withdrawal page: Last resort - using WalletService');
         const balance = await walletService.getBalance();
+        console.log('🔄 Withdrawal page: Last resort balance:', balance);
         setWalletBalance(balance);
+        setIsLoadingBalance(false);
+
+        // Notify listeners for consistency
+        walletService.notifyListeners(balance);
       } catch (serviceError) {
-        console.error('Error with WalletService:', serviceError);
+        console.error('❌ Withdrawal page: Error with WalletService:', serviceError);
+        setIsLoadingBalance(false);
       }
     }
   };
@@ -530,9 +580,17 @@ export default function WithdrawalPage() {
   const loadBalance = async () => {
     setIsLoadingBalance(true);
     try {
+      console.log('🔄 Withdrawal page: loadBalance called');
+
+      // Test WalletService first
+      console.log('🧪 Testing WalletService...');
+      const serviceBalance = await walletService.getBalance();
+      console.log('🧪 WalletService balance:', serviceBalance);
+
+      // Then try our custom load
       await loadCurrentBalance();
     } catch (error) {
-      console.error('Error loading balance:', error);
+      console.error('❌ Withdrawal page: Error loading balance:', error);
     } finally {
       setIsLoadingBalance(false);
     }
@@ -581,16 +639,23 @@ export default function WithdrawalPage() {
   const handleRefreshBalance = async () => {
     setIsRefreshingBalance(true);
     try {
-      await loadCurrentBalance();
+      console.log('🔄 Withdrawal page: Manual refresh triggered');
+
+      // Force refresh using WalletService to ensure fresh data
+      const freshBalance = await walletService.forceRefreshBalance();
+      console.log('✅ Withdrawal page: Fresh balance loaded:', freshBalance);
+
+      setWalletBalance(freshBalance);
+
       toast({
         title: 'Balance Refreshed',
-        description: 'Your wallet balance has been updated.',
+        description: `Your wallet balance has been updated: $${freshBalance.total.toFixed(2)}`,
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
-      console.error('Error refreshing balance:', error);
+      console.error('❌ Withdrawal page: Error refreshing balance:', error);
       toast({
         title: 'Refresh Failed',
         description: 'Failed to refresh balance. Please try again.',
@@ -755,6 +820,19 @@ export default function WithdrawalPage() {
 
       // Set success state and message
       setIsSuccess(true);
+
+      // Automatically refresh wallet balance after successful withdrawal
+      try {
+        const { syncAfterWithdrawal } = await import('@/lib/utils/balanceSync');
+        await syncAfterWithdrawal(amount);
+
+        // Update local state
+        const newBalance = await walletService.getBalance();
+        setWalletBalance(newBalance);
+      } catch (refreshError) {
+        console.error('❌ Failed to refresh balance after withdrawal:', refreshError);
+        // Don't fail the withdrawal if balance refresh fails
+      }
 
       if (isManualMethod) {
         const isPhpMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya';

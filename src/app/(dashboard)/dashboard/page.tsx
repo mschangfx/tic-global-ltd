@@ -185,7 +185,6 @@ export default function DashboardOverviewPage() {
     const fetchUser = async () => {
       setIsEmailLoading(true);
       try {
-
         // Method 1: Check NextAuth session (Google OAuth)
         if (nextAuthSession?.user?.email) {
           const email = nextAuthSession.user.email;
@@ -193,8 +192,13 @@ export default function DashboardOverviewPage() {
 
           setUserEmail(email);
 
-          // Fetch verification status
-          await fetchVerificationStatus(email);
+          // Fetch verification status with error handling
+          try {
+            await fetchVerificationStatus(email);
+          } catch (verificationError) {
+            console.warn('Verification status fetch failed:', verificationError);
+            // Continue with user setup even if verification status fails
+          }
 
           // Set display name from Google OAuth
           let nameToDisplay = "Valued Member";
@@ -216,12 +220,17 @@ export default function DashboardOverviewPage() {
         // The middleware should handle authentication redirects
       } catch (err) {
         console.error('Error in fetchUser:', err);
+        // Set fallback values to prevent UI issues
+        setUserName("Valued Member");
       } finally {
         setIsEmailLoading(false);
       }
     };
 
-    fetchUser();
+    // Only run if NextAuth status is not loading
+    if (nextAuthStatus !== 'loading') {
+      fetchUser();
+    }
 
     // Auth state listener removed - using NextAuth session only
     // NextAuth handles session management automatically

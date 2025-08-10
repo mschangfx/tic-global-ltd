@@ -45,14 +45,20 @@ export async function PUT(
       );
     }
 
+    console.log(`🔄 Admin updating deposit ${depositId} to status: ${status}`);
+    console.log(`👤 Admin: ${adminEmail}`);
+    console.log(`📝 Notes: ${adminNotes || 'None'}`);
+
     // Update deposit status using DepositService
     const depositService = DepositService.getInstance();
     const updatedDeposit = await depositService.updateDepositStatus(
       depositId,
       status,
       adminEmail,
-      adminNotes
+      adminNotes || `Updated to ${status} via admin panel`
     );
+
+    console.log(`✅ Successfully updated deposit ${depositId} to ${status}`);
 
     console.log(`✅ Admin ${adminEmail} updated deposit ${depositId} to ${status}`);
 
