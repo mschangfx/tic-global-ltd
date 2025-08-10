@@ -37,7 +37,21 @@ export class BalanceSyncManager {
     // Prevent multiple simultaneous syncs
     if (this.syncInProgress) {
       console.log('⏳ Balance sync already in progress, skipping...');
-      return;
+      // Return current cached balance if available
+      const cachedBalance = this.walletService.getCachedBalance();
+      if (cachedBalance) {
+        return cachedBalance;
+      }
+      // If no cached balance, wait for current sync to complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return this.walletService.getCachedBalance() || {
+        total: 0,
+        tic: 0,
+        gic: 0,
+        staking: 0,
+        partner_wallet: 0,
+        lastUpdated: new Date()
+      };
     }
 
     this.syncInProgress = true;
