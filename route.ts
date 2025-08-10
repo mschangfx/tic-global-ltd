@@ -36,10 +36,20 @@ const supabase = createClient(
   }
 );
 
+// Validate environment variables
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing Supabase environment variables');
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🔍 POST /api/deposits/manual called');
+    console.log('🌐 Request URL:', request.url);
+    console.log('📋 Request method:', request.method);
+    console.log('🔑 Headers:', Object.fromEntries(request.headers.entries()));
+
     const formData = await request.formData();
+    console.log('📦 FormData received successfully');
     
     // Log all form data for debugging
     console.log('📋 Form data received:');
@@ -373,18 +383,26 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ POST /api/deposits/manual failed:', error);
-    
+    console.error('❌ Error details:', {
+      name: error?.constructor?.name,
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code
+    });
+
     // Handle specific error types
     if (error instanceof z.ZodError) {
+      console.error('❌ Zod validation error:', error.issues);
       return NextResponse.json(
         { success: false, message: `Validation error: ${error.issues[0]?.message}` },
         { status: 400 }
       );
     }
-    
+
     // Handle Supabase/Prisma errors
     if (error && typeof error === 'object' && 'code' in error) {
       const errorCode = (error as any).code;
+      console.error('❌ Database error code:', errorCode);
       if (errorCode?.startsWith?.('P2')) {
         return NextResponse.json(
           { success: false, message: `Database error: ${errorCode}` },
@@ -392,9 +410,13 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    
+
+    // Return more detailed error message for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Returning internal server error:', errorMessage);
+
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { success: false, message: `Internal server error: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -402,10 +424,22 @@ export async function POST(request: NextRequest) {
 
 // Test endpoint
 export async function GET() {
+  console.log('🧪 GET /api/deposits/manual test endpoint called');
+
+  // Test Supabase connection
+  try {
+    const { data, error } = await supabase.from('deposits').select('count').limit(1);
+    console.log('✅ Supabase connection test:', { data, error });
+  } catch (testError) {
+    console.error('❌ Supabase connection test failed:', testError);
+  }
+
   return NextResponse.json({
     success: true,
     message: 'Manual deposits API is working',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing',
+    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing'
   });
 }
