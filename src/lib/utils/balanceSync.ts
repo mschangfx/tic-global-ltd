@@ -1,11 +1,11 @@
 /**
  * Balance Synchronization Utility
- * 
+ *
  * This utility ensures that wallet balance is automatically synchronized
  * across all components after any transaction (deposits, withdrawals, transfers, payments).
  */
 
-import WalletService from '@/lib/services/walletService';
+import WalletService, { WalletBalance } from '@/lib/services/walletService';
 
 export class BalanceSyncManager {
   private static instance: BalanceSyncManager;
