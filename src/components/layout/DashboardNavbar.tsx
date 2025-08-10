@@ -78,24 +78,35 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
 
         console.log('🔍 Navbar: Loading balance for:', userEmail);
 
-        // Use the wallet balance API directly for consistency
-        const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
+        // Use the wallet balance API directly for consistency (POST request)
+        const response = await fetch('/api/wallet/balance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userEmail })
+        });
         const data = await response.json();
 
-        if (data.success) {
+        if (data.wallet) {
           const balance: WalletBalance = {
-            total: parseFloat(data.balance.total_balance) || 0,
-            tic: parseFloat(data.balance.tic_balance) || 0,
-            gic: parseFloat(data.balance.gic_balance) || 0,
-            staking: parseFloat(data.balance.staking_balance) || 0,
-            partner_wallet: parseFloat(data.balance.partner_wallet_balance) || 0,
-            lastUpdated: new Date(data.balance.last_updated)
+            total: parseFloat(data.wallet.total_balance) || 0,
+            tic: parseFloat(data.wallet.tic_balance) || 0,
+            gic: parseFloat(data.wallet.gic_balance) || 0,
+            staking: parseFloat(data.wallet.staking_balance) || 0,
+            partner_wallet: parseFloat(data.wallet.partner_wallet_balance) || 0,
+            lastUpdated: new Date(data.wallet.last_updated)
           };
           console.log('✅ Navbar: Balance loaded:', balance);
           setWalletBalance(balance);
-        } else {
-          console.error('❌ Navbar: API failed:', data);
+        } else if (data.error) {
+          console.error('❌ Navbar: API error:', data.error);
           // Fallback to WalletService if API fails
+          const balance = await walletService.getBalance();
+          setWalletBalance(balance);
+        } else {
+          console.error('❌ Navbar: Unexpected API response:', data);
+          // Fallback to WalletService
           const balance = await walletService.getBalance();
           setWalletBalance(balance);
         }
