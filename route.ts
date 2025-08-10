@@ -381,7 +381,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ POST /api/deposits/manual failed:', error);
     console.error('❌ Error details:', {
       name: error?.constructor?.name,
