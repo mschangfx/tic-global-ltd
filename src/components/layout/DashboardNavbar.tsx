@@ -86,36 +86,53 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
           },
           body: JSON.stringify({ userEmail })
         });
+
         const data = await response.json();
 
         if (data.wallet) {
+          const w = data.wallet;
           const balance: WalletBalance = {
-            total: parseFloat(data.wallet.total_balance) || 0,
-            tic: parseFloat(data.wallet.tic_balance) || 0,
-            gic: parseFloat(data.wallet.gic_balance) || 0,
-            staking: parseFloat(data.wallet.staking_balance) || 0,
-            partner_wallet: parseFloat(data.wallet.partner_wallet_balance) || 0,
-            lastUpdated: new Date(data.wallet.last_updated)
+            total: Number(w.total_balance) || 0,
+            tic: Number(w.tic_balance) || 0,
+            gic: Number(w.gic_balance) || 0,
+            staking: Number(w.staking_balance) || 0,
+            partner_wallet: Number(w.partner_wallet_balance) || 0,
+            lastUpdated: w.last_updated ? new Date(w.last_updated) : new Date()
           };
           console.log('✅ Navbar: Balance loaded:', balance);
           setWalletBalance(balance);
         } else if (data.error) {
           console.error('❌ Navbar: API error:', data.error);
           // Fallback to WalletService if API fails
-          const balance = await walletService.getBalance();
-          setWalletBalance(balance);
+          try {
+            const balance = await walletService.getBalance();
+            setWalletBalance(balance);
+          } catch (fallbackError) {
+            console.error('❌ Navbar: Fallback also failed:', fallbackError);
+            setWalletBalance(null);
+          }
         } else {
           console.error('❌ Navbar: Unexpected API response:', data);
           // Fallback to WalletService
-          const balance = await walletService.getBalance();
-          setWalletBalance(balance);
+          try {
+            const balance = await walletService.getBalance();
+            setWalletBalance(balance);
+          } catch (fallbackError) {
+            console.error('❌ Navbar: Fallback also failed:', fallbackError);
+            setWalletBalance(null);
+          }
         }
       } catch (error) {
         console.error('❌ Navbar: Error loading balance:', error);
         // Fallback to WalletService
-        const balance = await walletService.getBalance();
-        console.log('🔄 Navbar: Fallback balance from WalletService:', balance);
-        setWalletBalance(balance);
+        try {
+          const balance = await walletService.getBalance();
+          console.log('🔄 Navbar: Fallback balance from WalletService:', balance);
+          setWalletBalance(balance);
+        } catch (fallbackError) {
+          console.error('❌ Navbar: Fallback also failed:', fallbackError);
+          setWalletBalance(null);
+        }
       }
     };
 
