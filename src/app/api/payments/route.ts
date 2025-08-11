@@ -135,21 +135,21 @@ export async function POST(request: NextRequest) {
 
     // Manual payment processing (without database function for now)
 
-    // Get current wallet balance
-    const { data: walletData, error: walletFetchError } = await supabase
-      .from('user_wallets')
-      .select('total_balance')
-      .eq('user_email', userEmail)
-      .single();
+    // Get current wallet balance using the transaction-based system
+    console.log('🔍 Fetching wallet balance for user:', userEmail);
+    const { data: balanceData, error: balanceError } = await supabase
+      .rpc('get_calculated_wallet_balance', { user_email_param: userEmail });
 
-    if (walletFetchError || !walletData) {
+    if (balanceError || !balanceData || balanceData.length === 0) {
+      console.error('❌ Error fetching wallet balance:', balanceError);
       return NextResponse.json(
-        { error: 'Wallet not found' },
-        { status: 404 }
+        { error: 'Unable to fetch wallet balance' },
+        { status: 500 }
       );
     }
 
-    const currentBalance = parseFloat(walletData.total_balance) || 0;
+    const currentBalance = parseFloat(balanceData[0].total_balance) || 0;
+    console.log('💰 Current wallet balance:', currentBalance, 'Plan price:', plan.price);
 
     // Check sufficient balance
     if (currentBalance < plan.price) {
@@ -161,22 +161,32 @@ export async function POST(request: NextRequest) {
 
     const newBalance = currentBalance - plan.price;
 
-    // Update wallet balance
-    const { error: walletUpdateError } = await supabase
-      .from('user_wallets')
-      .update({
-        total_balance: newBalance,
-        last_updated: new Date().toISOString()
-      })
-      .eq('user_email', userEmail);
+    // Create a withdrawal transaction for the plan purchase
+    const transactionId = `plan-purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('💳 Creating wallet transaction:', transactionId, 'Amount:', -plan.price);
 
-    if (walletUpdateError) {
-      console.error('Error updating wallet:', walletUpdateError);
+    const { error: walletTransactionError } = await supabase
+      .from('wallet_transactions')
+      .insert({
+        user_email: userEmail,
+        transaction_id: transactionId,
+        transaction_type: 'withdrawal',
+        amount: -plan.price, // Negative amount for withdrawal/deduction
+        balance_before: currentBalance,
+        balance_after: newBalance,
+        description: `Plan purchase: ${plan.name}`,
+        created_at: new Date().toISOString()
+      });
+
+    if (walletTransactionError) {
+      console.error('❌ Error creating wallet transaction:', walletTransactionError);
       return NextResponse.json(
-        { error: 'Failed to update wallet balance' },
+        { error: 'Failed to deduct from wallet balance' },
         { status: 500 }
       );
     }
+
+    console.log('✅ Wallet transaction created successfully');
 
     // Create payment transaction record
     const { data: paymentTransaction, error: transactionError } = await supabase
@@ -191,6 +201,7 @@ export async function POST(request: NextRequest) {
         status: 'completed',
         wallet_balance_before: currentBalance,
         wallet_balance_after: newBalance,
+        wallet_transaction_id: transactionId, // Reference to the wallet transaction
         created_at: new Date().toISOString(),
         completed_at: new Date().toISOString()
       })
