@@ -764,8 +764,14 @@ export default function WithdrawalPage() {
     }
 
     if (!walletBalance || amount > walletBalance.total) {
-      console.log('❌ Insufficient balance. Amount:', amount, 'Balance:', walletBalance?.total);
-      setError('Insufficient balance for this withdrawal amount.');
+      console.log('❌ Insufficient balance check failed:', {
+        requestedAmount: amount,
+        availableBalance: walletBalance?.total,
+        walletBalanceObject: walletBalance,
+        hasWalletBalance: !!walletBalance,
+        comparison: `${amount} > ${walletBalance?.total} = ${amount > (walletBalance?.total || 0)}`
+      });
+      setError(`Insufficient balance. You have $${walletBalance?.total?.toFixed(2) || '0.00'} but need $${amount.toFixed(2)}.`);
       return;
     }
 

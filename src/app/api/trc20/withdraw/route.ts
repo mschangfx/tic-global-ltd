@@ -44,23 +44,33 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient();
 
-    // Check user's wallet balance
-    const { data: walletData, error: walletError } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_email', user_email)
-      .single();
+    // Check user's wallet balance using calculated balance (same as frontend)
+    const { data: calculatedBalance, error: balanceError } = await supabase
+      .rpc('get_calculated_wallet_balance', {
+        user_email_param: user_email
+      });
 
-    if (walletError || !walletData) {
+    if (balanceError || !calculatedBalance || calculatedBalance.length === 0) {
+      console.error('❌ Error getting calculated balance for TRC20 withdrawal:', balanceError);
       return NextResponse.json(
-        { error: 'User wallet not found' },
-        { status: 404 }
+        { error: 'Unable to fetch wallet balance' },
+        { status: 500 }
       );
     }
 
-    const currentBalance = parseFloat(walletData.balance);
+    const balance = calculatedBalance[0];
+    const currentBalance = parseFloat(balance.total_balance?.toString() || '0');
     const processingFee = withdrawalAmount * 0.1; // 10% processing fee
     const totalRequired = withdrawalAmount + processingFee;
+
+    console.log('💰 TRC20 withdrawal balance check:', {
+      userEmail: user_email,
+      requestedAmount: withdrawalAmount,
+      processingFee,
+      totalRequired,
+      availableBalance: currentBalance,
+      sufficient: currentBalance >= totalRequired
+    });
 
     if (currentBalance < totalRequired) {
       return NextResponse.json(

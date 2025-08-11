@@ -237,28 +237,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user wallet
-    const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets')
-      .select('*')
-      .eq('user_email', userEmail)
-      .single();
+    // Get user wallet using calculated balance (same as frontend)
+    const { data: calculatedBalance, error: balanceError } = await supabase
+      .rpc('get_calculated_wallet_balance', {
+        user_email_param: userEmail
+      });
 
-    if (walletError || !wallet) {
+    if (balanceError || !calculatedBalance || calculatedBalance.length === 0) {
+      console.error('❌ Error getting calculated balance for withdrawal:', balanceError);
       return NextResponse.json(
-        { error: 'User wallet not found' },
-        { status: 404 }
+        { error: 'Unable to fetch wallet balance' },
+        { status: 500 }
       );
     }
 
-    // Check sufficient balance
-    if (wallet.total_balance < withdrawalAmount) {
+    const balance = calculatedBalance[0];
+    const availableBalance = parseFloat(balance.total_balance?.toString() || '0');
+
+    console.log('💰 Withdrawal balance check:', {
+      userEmail,
+      requestedAmount: withdrawalAmount,
+      availableBalance,
+      sufficient: availableBalance >= withdrawalAmount
+    });
+
+    // Check sufficient balance using calculated balance (same as frontend)
+    if (availableBalance < withdrawalAmount) {
       return NextResponse.json(
-        { 
+        {
           error: 'Insufficient balance',
           required: withdrawalAmount,
-          available: wallet.total_balance,
-          shortfall: withdrawalAmount - wallet.total_balance
+          available: availableBalance,
+          shortfall: withdrawalAmount - availableBalance
         },
         { status: 400 }
       );
