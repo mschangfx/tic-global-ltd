@@ -58,6 +58,7 @@ import {
   parseDepositAmount,
   validateDepositAmount,
   getDepositLimits,
+  getCompactDepositLimits,
   CONVERSION_RATES
 } from '@/lib/utils/currency';
 
@@ -235,8 +236,8 @@ export default function DepositPage() {
           symbol: 'USDT',
           network: 'TRC20',
           address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
-          processingTime: '5-30 minutes',
-          fee: 'Free',
+          processingTime: '1-3 minutes',
+          fee: '0%',
           limits: getDepositLimits('usdt-trc20'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/USDT-TRC20.png'
         },
@@ -246,8 +247,8 @@ export default function DepositPage() {
           symbol: 'USDT',
           network: 'BEP20',
           address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-          processingTime: '5-30 minutes',
-          fee: 'Free',
+          processingTime: '2-4 minutes',
+          fee: '0%',
           limits: getDepositLimits('usdt-bep20'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/USDT-BEP20-1.png'
         },
@@ -1088,7 +1089,7 @@ export default function DepositPage() {
                 </Text>
               </VStack>
 
-              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} maxW="1000px" mx="auto">
+              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} maxW="1000px" mx="auto">
                 {depositMethods.map((method) => (
                   <Card
                     key={method.id}
@@ -1100,85 +1101,114 @@ export default function DepositPage() {
                     borderRadius="xl"
                     _hover={{
                       borderColor: "blue.400",
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
                     }}
                     transition="all 0.3s ease-in-out"
                     position="relative"
                     overflow="hidden"
+                    height="auto"
+                    minH="340px"
                   >
-                    <CardBody p={6} textAlign="center">
-                      <VStack spacing={6}>
+                    <CardBody p={4} textAlign="center">
+                      <VStack spacing={4} justify="space-between" h="full">
                         {/* Icon with background circle */}
                         <Box
                           bg="blue.50"
                           borderRadius="full"
-                          p={4}
+                          p={3}
                           position="relative"
                         >
                           <Image
                             src={method?.icon || '/img/default-wallet.png'}
                             alt={`${method?.network || 'Wallet'} logo`}
-                            boxSize="64px"
+                            boxSize="48px"
                             objectFit="contain"
                           />
                         </Box>
 
                         {/* Title and Network */}
-                        <VStack spacing={2}>
-                          <Text fontSize="xl" color={textColor} fontWeight="bold">
+                        <VStack spacing={1}>
+                          <Text fontSize="lg" color={textColor} fontWeight="bold" lineHeight="1.1">
                             {method?.name || 'Unknown'}
                           </Text>
                           <Text
-                            fontSize="xl"
+                            fontSize="sm"
                             fontWeight="bold"
                             color="blue.500"
                             bg="blue.50"
-                            px={4}
-                            py={2}
+                            px={3}
+                            py={1}
                             borderRadius="full"
+                            lineHeight="1.1"
                           >
                             {method?.network || 'Unknown'}
                           </Text>
                         </VStack>
 
                         {/* Details */}
-                        <VStack spacing={3} w="full">
-                          <HStack justify="space-between" w="full">
+                        <VStack spacing={3} w="full" flex="1">
+                          <HStack justify="space-between" w="full" align="center">
                             <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
                               Processing:
                             </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
+                            <Text fontSize="sm" color={textColor} fontWeight="bold" textAlign="right">
                               {method?.processingTime || '5-30 minutes'}
                             </Text>
                           </HStack>
-                          <HStack justify="space-between" w="full">
+
+                          <HStack justify="space-between" w="full" align="center">
                             <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
                               Fee:
                             </Text>
-                            <Text fontSize="sm" color="blue.500" fontWeight="bold">
+                            <Text fontSize="sm" color="green.500" fontWeight="bold">
                               {method?.fee || 'Free'}
                             </Text>
                           </HStack>
-                          <HStack justify="space-between" w="full">
+
+                          <VStack spacing={1} w="full" align="center">
                             <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
                               Limits:
                             </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
-                              {method?.limits || '500 - 50,000 PHP'}
-                            </Text>
-                          </HStack>
+                            {(() => {
+                              const limits = getCompactDepositLimits(method.id);
+                              return (
+                                <VStack spacing={0} align="center">
+                                  <Text
+                                    fontSize="sm"
+                                    color={textColor}
+                                    fontWeight="bold"
+                                    textAlign="center"
+                                    lineHeight="1.3"
+                                  >
+                                    {limits.primary}
+                                  </Text>
+                                  <Text
+                                    fontSize="xs"
+                                    color={subtleTextColor}
+                                    textAlign="center"
+                                    lineHeight="1.3"
+                                    mt={0.5}
+                                  >
+                                    {limits.secondary}
+                                  </Text>
+                                </VStack>
+                              );
+                            })()}
+                          </VStack>
                         </VStack>
 
                         {/* Select Button */}
                         <Button
                           colorScheme="blue"
-                          size="lg"
+                          size="md"
                           w="full"
-                          borderRadius="xl"
+                          borderRadius="lg"
                           fontWeight="bold"
+                          py={2}
+                          mt={2}
                           _hover={{
-                            transform: 'translateY(-2px)',
+                            transform: 'translateY(-1px)',
                           }}
                           transition="all 0.2s"
                         >

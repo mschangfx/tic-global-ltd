@@ -126,16 +126,41 @@ export function validateDepositAmount(
  */
 export function getDepositLimits(paymentMethod: string): string {
   const isPhpMethod = paymentMethod === 'gcash' || paymentMethod === 'paymaya';
-  
+
   if (isPhpMethod) {
     // PHP methods: show PHP limits with USD equivalent
     const minPhp = convertUsdToPhp(10); // $10 minimum
     const maxPhp = convertUsdToPhp(10000); // $10,000 maximum
-    return `₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP ($10 - $10,000 USD)`;
+    return `₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP\n($10 - $10,000 USD)`;
   } else {
     // Crypto methods: show USD limits with PHP equivalent
     const minPhp = convertUsdToPhp(10);
     const maxPhp = convertUsdToPhp(10000);
-    return `$10 - $10,000 USD (₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP)`;
+    return `$10 - $10,000 USD\n(₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP)`;
+  }
+}
+
+/**
+ * Get compact deposit limits for card display
+ */
+export function getCompactDepositLimits(paymentMethod: string): { primary: string; secondary: string } {
+  const isPhpMethod = paymentMethod === 'gcash' || paymentMethod === 'paymaya';
+
+  if (isPhpMethod) {
+    // PHP methods: show PHP limits with USD equivalent
+    const minPhp = convertUsdToPhp(10); // $10 minimum
+    const maxPhp = convertUsdToPhp(10000); // $10,000 maximum
+    return {
+      primary: `₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP`,
+      secondary: `($10 - $10,000 USD)`
+    };
+  } else {
+    // Crypto methods: show USD limits with PHP equivalent
+    const minPhp = convertUsdToPhp(10);
+    const maxPhp = convertUsdToPhp(10000);
+    return {
+      primary: `$10 - $10,000 USD`,
+      secondary: `(₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP)`
+    };
   }
 }
