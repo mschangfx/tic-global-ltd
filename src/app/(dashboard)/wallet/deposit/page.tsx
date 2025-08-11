@@ -819,6 +819,19 @@ export default function DepositPage() {
       return;
     }
 
+    // Validate minimum amounts based on payment method
+    if (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') {
+      if (amount < 10) {
+        setError('Minimum USDT deposit amount is $10.');
+        return;
+      }
+    } else if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
+      if (amount < 10) {
+        setError('Minimum deposit amount is $10 (≈₱555) for digital wallet payments.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
