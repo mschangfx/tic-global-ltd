@@ -266,23 +266,23 @@ export default function DepositPage() {
         {
           id: 'gcash',
           name: 'GCash',
-          symbol: 'PHP',
+          symbol: 'USD', // USD is always the deposit amount
           network: 'Digital Wallet',
           address: '09675131248',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: getDepositLimits('gcash'), // ₱630 - ₱630,000 PHP ($10 - $10,000 USD)
+          limits: getDepositLimits('gcash'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/gcash.png'
         },
         {
           id: 'paymaya',
           name: 'PayMaya',
-          symbol: 'PHP',
+          symbol: 'USD', // USD is always the deposit amount
           network: 'Digital Wallet',
           address: '09675131248',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: getDepositLimits('paymaya'), // ₱630 - ₱630,000 PHP ($10 - $10,000 USD)
+          limits: getDepositLimits('paymaya'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/paymaya.jpg'
         }
       ];
@@ -872,12 +872,12 @@ export default function DepositPage() {
 
         if (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') {
           const networkName = selectedMethod.network;
-          setSuccessMessage(`Please send $${usdAmount.toFixed(2)} USDT (${networkName}) to the address: ${selectedMethod.address}. Equivalent: ${getConversionDisplay(usdAmount)}. After payment, upload your transaction screenshot for verification.`);
+          setSuccessMessage(`Deposit Amount: $${usdAmount.toFixed(2)} USD. Please send $${usdAmount.toFixed(2)} USDT (${networkName}) to the address: ${selectedMethod.address}. Equivalent: ${getConversionDisplay(usdAmount)}. After payment, upload your transaction screenshot for verification.`);
           // Generate QR code for USDT address
           await generateDepositQR();
         } else {
-          // For PHP methods (GCash/PayMaya)
-          setSuccessMessage(`Please send ${formatCurrency(phpAmount, 'PHP')} to ${selectedMethod.name} account: ${selectedMethod.address}. Equivalent: ${getPhpConversionDisplay(phpAmount)}. After payment, upload your receipt for verification.`);
+          // For PHP methods (GCash/PayMaya) - USD deposit, PHP payment
+          setSuccessMessage(`Deposit Amount: $${usdAmount.toFixed(2)} USD. Please send ${formatCurrency(phpAmount, 'PHP')} to ${selectedMethod.name} account: ${selectedMethod.address}. Payment equivalent of your $${usdAmount.toFixed(2)} USD deposit. After payment, upload your receipt for verification.`);
           // Generate QR code for the payment details
           await generateManualQRCode(selectedMethod.address, phpAmount.toString(), selectedMethod.name);
         }
@@ -885,8 +885,8 @@ export default function DepositPage() {
         toast({
           title: 'Payment Instructions Generated',
           description: (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
-            ? `Send $${usdAmount.toFixed(2)} USDT (${getConversionDisplay(usdAmount)}) to the address and upload transaction screenshot for verification.`
-            : `Send ${formatCurrency(phpAmount, 'PHP')} (${getPhpConversionDisplay(phpAmount)}) to ${selectedMethod.name} account and upload receipt for verification.`,
+            ? `Deposit: $${usdAmount.toFixed(2)} USD. Send $${usdAmount.toFixed(2)} USDT to the address and upload transaction screenshot for verification.`
+            : `Deposit: $${usdAmount.toFixed(2)} USD. Send ${formatCurrency(phpAmount, 'PHP')} to ${selectedMethod.name} account and upload receipt for verification.`,
           status: 'info',
           duration: 8000,
           isClosable: true,
@@ -1889,44 +1889,34 @@ export default function DepositPage() {
                 <>
                   <FormControl isInvalid={!!error} mt={4}>
                     <FormLabel htmlFor="depositAmount" color={textColor}>
-                      Amount to Deposit ({selectedMethod.name})
-                      {(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') && (
-                        <Text fontSize="xs" color="gray.500" fontWeight="normal">
-                          Enter amount in USD (will be converted to PHP for payment)
-                        </Text>
-                      )}
-                      {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
-                        <Text fontSize="xs" color="gray.500" fontWeight="normal">
-                          Enter amount in USD (you will send USDT equivalent)
-                        </Text>
-                      )}
+                      Amount to Deposit (USD)
+                      <Text fontSize="xs" color="gray.500" fontWeight="normal">
+                        Enter amount in USD - all deposits are processed in USD
+                      </Text>
                     </FormLabel>
                     <InputGroup>
                       <InputLeftAddon>
-                        {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ? '₱' : '$'}
+                        $
                       </InputLeftAddon>
                       <Input
                         id="depositAmount"
                         type="number"
-                        placeholder={
-                          selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
-                            ? `e.g., 630 (≈$10 USD)`
-                            : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
-                            ? `e.g., 100 (≈₱${convertUsdToPhp(100).toFixed(0)} PHP)`
-                            : "e.g., 100"
-                        }
+                        placeholder="e.g., 100"
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
+                        step="0.01"
+                        min="10"
+                        max="10000"
                       />
                     </InputGroup>
                     {depositAmount && parseFloat(depositAmount) > 0 && (
                       <FormHelperText color="blue.500">
                         {(() => {
-                          const { usdAmount, phpAmount, originalCurrency } = parseDepositAmount(parseFloat(depositAmount), selectedMethod.id);
+                          const { usdAmount, phpAmount } = parseDepositAmount(parseFloat(depositAmount), selectedMethod.id);
                           if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
-                            return `You will pay: ${formatCurrency(phpAmount, 'PHP')} → Wallet credit: ${formatCurrency(usdAmount, 'USD')} (Rate: $1 = ₱63)`;
+                            return `Deposit: ${formatCurrency(usdAmount, 'USD')} → You pay: ${formatCurrency(phpAmount, 'PHP')} (Rate: $1 = ₱63)`;
                           } else {
-                            return `You will send: ${formatCurrency(usdAmount, 'USD')} USDT → Equivalent: ${formatCurrency(phpAmount, 'PHP')} (Rate: $1 = ₱63)`;
+                            return `Deposit: ${formatCurrency(usdAmount, 'USD')} → You send: ${formatCurrency(usdAmount, 'USD')} USDT (≈₱${phpAmount.toFixed(0)} PHP)`;
                           }
                         })()}
                       </FormHelperText>
