@@ -1768,13 +1768,25 @@ export default function DepositPage() {
                       try {
                         console.log('Submitting deposit with receipt...');
 
+                        // Parse deposit amount and get conversion details
+                        const inputAmount = parseFloat(depositAmount);
+                        const { usdAmount, phpAmount, originalCurrency } = parseDepositAmount(inputAmount, selectedMethod.id);
+
+                        console.log('💱 Deposit conversion for submission:', {
+                          inputAmount,
+                          usdAmount,
+                          phpAmount,
+                          originalCurrency,
+                          method: selectedMethod.id
+                        });
+
                         // Submit deposit with receipt using manual API
                         const formData = new FormData();
                         formData.append('userEmail', user.email);
                         // Always send USD amount to API for consistent wallet crediting
                         formData.append('amount', usdAmount.toString());
                         formData.append('currency', 'USD'); // Always USD for wallet crediting
-                        formData.append('originalAmount', amount.toString()); // Original input amount
+                        formData.append('originalAmount', inputAmount.toString()); // Original input amount
                         formData.append('originalCurrency', originalCurrency); // Original currency
                         formData.append('conversionRate', CONVERSION_RATES.USD_TO_PHP.toString());
                         formData.append('paymentMethod', selectedMethod.id);
