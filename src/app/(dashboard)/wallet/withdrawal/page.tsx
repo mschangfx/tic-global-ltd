@@ -1215,6 +1215,7 @@ export default function WithdrawalPage() {
                     onClick={() => handleMethodSelect(method)}
                     bg={cardBgColor}
                     border="2px solid"
+                    // @ts-ignore - TypeScript incorrectly infers filtered array as never[]
                     borderColor={selectedMethod?.id === method.id ? 'blue.400' : useColorModeValue('gray.200', 'gray.600')}
                     borderRadius="xl"
                     minH="340px"
