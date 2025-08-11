@@ -264,6 +264,7 @@
                             🔄 Auto-refresh: ON (every 10s)
                         </span>
                         <button onclick="manualRefresh()" class="btn btn-primary">🔄 Refresh</button>
+                        <button onclick="syncAllWallets()" class="btn" style="background: #f39c12; color: white;">⚡ Sync Wallets</button>
                         <button onclick="logout()" class="btn btn-danger">🚪 Logout</button>
                     </div>
                 </div>
@@ -391,6 +392,73 @@
             if (autoRefreshInterval) {
                 nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS * 1000);
                 updateCountdown();
+            }
+        }
+
+        async function syncAllWallets() {
+            if (!confirm('⚠️ This will sync wallet balances for all users based on completed transactions. Continue?')) {
+                return;
+            }
+
+            try {
+                showMessage('🔄 Syncing all wallet balances...', 'success');
+
+                // Get all users with transactions
+                const headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // Get distinct user emails from deposits and withdrawals
+                const [depositsResponse, withdrawalsResponse] = await Promise.all([
+                    fetch(`${SUPABASE_URL}/rest/v1/deposits?select=user_email&status=eq.completed`, { headers }),
+                    fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=user_email&status=eq.completed`, { headers })
+                ]);
+
+                const deposits = await depositsResponse.json();
+                const withdrawals = await withdrawalsResponse.json();
+
+                // Get unique user emails
+                const userEmails = [...new Set([
+                    ...deposits.map(d => d.user_email),
+                    ...withdrawals.map(w => w.user_email)
+                ])];
+
+                console.log(`Found ${userEmails.length} users to sync`);
+
+                let syncedCount = 0;
+                let errorCount = 0;
+
+                // Sync each user's wallet
+                for (const userEmail of userEmails) {
+                    try {
+                        const syncResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/sync_user_wallet_balance`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                user_email_param: userEmail
+                            })
+                        });
+
+                        if (syncResponse.ok) {
+                            syncedCount++;
+                            console.log(`✅ Synced wallet for ${userEmail}`);
+                        } else {
+                            errorCount++;
+                            console.error(`❌ Failed to sync wallet for ${userEmail}`);
+                        }
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`❌ Error syncing wallet for ${userEmail}:`, error);
+                    }
+                }
+
+                showMessage(`✅ Wallet sync completed! Synced: ${syncedCount}, Errors: ${errorCount}`, 'success');
+
+            } catch (error) {
+                console.error('Error syncing wallets:', error);
+                showMessage(`❌ Error syncing wallets: ${error.message}`, 'error');
             }
         }
 
@@ -679,27 +747,54 @@
                     showMessage(`✅ Deposit ${action === 'approve' ? 'approved and completed' : 'rejected'} successfully!`, 'success');
 
                 } else if (type === 'withdrawal') {
-                    // Update withdrawal status with admin info
-                    const updateData = {
-                        status: action === 'approve' ? 'completed' : 'cancelled',
-                        updated_at: new Date().toISOString(),
-                        admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via standalone admin panel`,
-                        processed_by: 'admin@ticgloballtd.com',
-                        processed_at: new Date().toISOString()
-                    };
+                    if (action === 'approve') {
+                        // Use the approve_withdrawal database function
+                        const approveResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/approve_withdrawal`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                withdrawal_id_param: id,
+                                admin_email_param: 'admin@ticgloballtd.com',
+                                admin_notes_param: 'Approved via standalone admin panel',
+                                blockchain_hash_param: null
+                            })
+                        });
 
-                    const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?id=eq.${id}`, {
-                        method: 'PATCH',
-                        headers: headers,
-                        body: JSON.stringify(updateData)
-                    });
+                        if (!approveResponse.ok) {
+                            const errorText = await approveResponse.text();
+                            throw new Error(`Failed to approve withdrawal: ${errorText}`);
+                        }
 
-                    if (!updateResponse.ok) {
-                        const errorText = await updateResponse.text();
-                        throw new Error(`Failed to update withdrawal status: ${errorText}`);
+                        const approveResult = await approveResponse.json();
+                        if (!approveResult.success) {
+                            throw new Error(approveResult.message || 'Failed to approve withdrawal');
+                        }
+
+                        showMessage(`✅ Withdrawal approved and completed successfully!`, 'success');
+                    } else {
+                        // Use the refund_cancelled_withdrawal database function for rejections
+                        const refundResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/refund_cancelled_withdrawal`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                withdrawal_id_param: id,
+                                admin_email_param: 'admin@ticgloballtd.com',
+                                admin_notes_param: 'Cancelled via standalone admin panel - funds refunded to wallet'
+                            })
+                        });
+
+                        if (!refundResponse.ok) {
+                            const errorText = await refundResponse.text();
+                            throw new Error(`Failed to cancel withdrawal: ${errorText}`);
+                        }
+
+                        const refundResult = await refundResponse.json();
+                        if (!refundResult.success) {
+                            throw new Error(refundResult.message || 'Failed to cancel withdrawal');
+                        }
+
+                        showMessage(`✅ Withdrawal cancelled and $${refundResult.refund_amount} refunded to user wallet!`, 'success');
                     }
-
-                    showMessage(`✅ Withdrawal ${action === 'approve' ? 'approved and completed' : 'cancelled'} successfully!`, 'success');
                 }
 
                 // Refresh the dashboard
