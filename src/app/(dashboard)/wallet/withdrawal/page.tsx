@@ -1056,38 +1056,41 @@ export default function WithdrawalPage() {
                 </Text>
               </VStack>
 
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && method.tronNetwork).map((method) => (
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} maxW="1200px" mx="auto">
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && method.tronNetwork).map((method) => {
+                  const limits = getCompactWithdrawalLimits(method.id);
+                  return (
                   <Card
                     key={method.id}
                     cursor="pointer"
                     onClick={() => handleMethodSelect(method)}
                     bg={cardBgColor}
                     border="2px solid"
-                    borderColor="gray.200"
+                    borderColor={selectedMethod?.id === method.id ? 'green.400' : useColorModeValue('gray.200', 'gray.600')}
                     borderRadius="xl"
+                    minH="340px"
                     _hover={{
-                      borderColor: accentColor,
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                      borderColor: 'green.400',
+                      transform: 'translateY(-4px)',
+                      boxShadow: 'xl',
                     }}
                     transition="all 0.3s ease-in-out"
                     position="relative"
                     overflow="hidden"
                   >
-                    <CardBody p={6} textAlign="center">
-                      <VStack spacing={5}>
+                    <CardBody p={6} display="flex" flexDirection="column" justifyContent="space-between" h="full">
+                      <VStack spacing={4} flex="1">
                         {/* Icon with background circle */}
                         <Box
-                          bg="green.50"
+                          bg={useColorModeValue('green.50', 'green.900')}
                           borderRadius="full"
-                          p={4}
+                          p={3}
                           position="relative"
                         >
                           <Image
                             src={method.icon || '/img/default-crypto.png'}
                             alt={`${method.network || 'Unknown'} logo`}
-                            boxSize="64px"
+                            boxSize="48px"
                             onError={(e) => {
                               console.warn('Failed to load image:', method.icon);
                               e.currentTarget.src = '/img/default-crypto.png';
@@ -1102,8 +1105,8 @@ export default function WithdrawalPage() {
                             bg="green.500"
                             color="white"
                             borderRadius="full"
-                            w="24px"
-                            h="24px"
+                            w="20px"
+                            h="20px"
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
@@ -1115,17 +1118,17 @@ export default function WithdrawalPage() {
                         </Box>
 
                         {/* Title and Network */}
-                        <VStack spacing={2}>
-                          <Heading as="h3" size="lg" color={textColor} fontWeight="bold">
+                        <VStack spacing={1} textAlign="center">
+                          <Text fontSize="xl" color={textColor} fontWeight="bold">
                             {method.name || 'Unknown Method'}
-                          </Heading>
+                          </Text>
                           <Text
-                            fontSize="xl"
-                            fontWeight="bold"
+                            fontSize="md"
+                            fontWeight="semibold"
                             color="green.500"
-                            bg="green.50"
-                            px={4}
-                            py={2}
+                            bg={useColorModeValue('green.50', 'green.900')}
+                            px={3}
+                            py={1}
                             borderRadius="full"
                           >
                             {method.network || 'Unknown Network'}
@@ -1133,50 +1136,56 @@ export default function WithdrawalPage() {
                         </VStack>
 
                         {/* Details */}
-                        <VStack spacing={3} w="full">
+                        <VStack spacing={2} w="full" flex="1">
                           <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                            <Text fontSize="sm" color={subtleTextColor}>
                               Processing:
                             </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
+                            <Text fontSize="sm" color={textColor} fontWeight="semibold">
                               {method.processingTime || 'Loading...'}
                             </Text>
                           </HStack>
                           <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                            <Text fontSize="sm" color={subtleTextColor}>
                               Fee:
                             </Text>
-                            <Text fontSize="sm" color="green.500" fontWeight="bold">
+                            <Text fontSize="sm" color="green.500" fontWeight="semibold">
                               {method.fee || 'Loading...'}
                             </Text>
                           </HStack>
-                          <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                          <VStack spacing={1} w="full">
+                            <Text fontSize="sm" color={subtleTextColor} textAlign="center">
                               Limits:
                             </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
-                              {method.limits || 'Loading...'}
+                            <Text fontSize="sm" color={textColor} fontWeight="semibold" textAlign="center" lineHeight="1.3">
+                              {limits.primary}
                             </Text>
-                          </HStack>
+                            <Text fontSize="xs" color={subtleTextColor} textAlign="center">
+                              {limits.secondary}
+                            </Text>
+                          </VStack>
                         </VStack>
-
-                        {/* Select Button */}
-                        <Button
-                          colorScheme="green"
-                          size="lg"
-                          w="full"
-                          borderRadius="xl"
-                          fontWeight="bold"
-                          _hover={{
-                            transform: 'translateY(-2px)',
-                          }}
-                          transition="all 0.2s"
-                        >
-                          Select {method.network}
-                        </Button>
                       </VStack>
+
+                      {/* Select Button */}
+                      <Button
+                        colorScheme="green"
+                        size="md"
+                        w="full"
+                        borderRadius="lg"
+                        fontWeight="semibold"
+                        mt={4}
+                        _hover={{
+                          transform: 'translateY(-1px)',
+                        }}
+                        transition="all 0.2s"
+                      >
+                        Select {method.network}
+                      </Button>
                     </CardBody>
                   </Card>
+                  );
+                })
                 )) : (
                   <Text color={subtleTextColor} textAlign="center">
                     No withdrawal methods available
@@ -1196,54 +1205,57 @@ export default function WithdrawalPage() {
                 </Text>
               </VStack>
 
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} maxW="800px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && !method.tronNetwork).map((method) => (
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} maxW="1200px" mx="auto">
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && !method.tronNetwork).map((method) => {
+                  const limits = getCompactWithdrawalLimits(method.id);
+                  return (
                   <Card
                     key={method.id}
                     cursor="pointer"
                     onClick={() => handleMethodSelect(method)}
                     bg={cardBgColor}
                     border="2px solid"
-                    borderColor="gray.200"
+                    borderColor={selectedMethod?.id === method.id ? 'blue.400' : useColorModeValue('gray.200', 'gray.600')}
                     borderRadius="xl"
+                    minH="340px"
                     _hover={{
-                      borderColor: "blue.400",
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                      borderColor: 'blue.400',
+                      transform: 'translateY(-4px)',
+                      boxShadow: 'xl',
                     }}
                     transition="all 0.3s ease-in-out"
                     position="relative"
                     overflow="hidden"
                   >
-                    <CardBody p={6} textAlign="center">
-                      <VStack spacing={6}>
+                    <CardBody p={6} display="flex" flexDirection="column" justifyContent="space-between" h="full">
+                      <VStack spacing={4} flex="1">
                         {/* Icon with background circle */}
                         <Box
-                          bg="blue.50"
+                          bg={useColorModeValue('blue.50', 'blue.900')}
                           borderRadius="full"
-                          p={4}
+                          p={3}
                           position="relative"
                         >
                           <Image
                             src={method?.icon || '/img/default-wallet.png'}
                             alt={`${method?.network || 'Wallet'} logo`}
-                            boxSize="64px"
+                            boxSize="48px"
                             objectFit="contain"
                           />
                         </Box>
 
                         {/* Title and Network */}
-                        <VStack spacing={2}>
+                        <VStack spacing={1} textAlign="center">
                           <Text fontSize="xl" color={textColor} fontWeight="bold">
                             {method?.name || 'Unknown'}
                           </Text>
                           <Text
-                            fontSize="xl"
-                            fontWeight="bold"
+                            fontSize="md"
+                            fontWeight="semibold"
                             color="blue.500"
-                            bg="blue.50"
-                            px={4}
-                            py={2}
+                            bg={useColorModeValue('blue.50', 'blue.900')}
+                            px={3}
+                            py={1}
                             borderRadius="full"
                           >
                             {method?.network || 'Unknown'}
@@ -1251,50 +1263,56 @@ export default function WithdrawalPage() {
                         </VStack>
 
                         {/* Details */}
-                        <VStack spacing={3} w="full">
+                        <VStack spacing={2} w="full" flex="1">
                           <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                            <Text fontSize="sm" color={subtleTextColor}>
                               Processing:
                             </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
+                            <Text fontSize="sm" color={textColor} fontWeight="semibold">
                               {method?.processingTime || '5-30 minutes'}
                             </Text>
                           </HStack>
                           <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                            <Text fontSize="sm" color={subtleTextColor}>
                               Fee:
                             </Text>
-                            <Text fontSize="sm" color="blue.500" fontWeight="bold">
+                            <Text fontSize="sm" color="blue.500" fontWeight="semibold">
                               {method?.fee || '10% gas fee'}
                             </Text>
                           </HStack>
-                          <HStack justify="space-between" w="full">
-                            <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                          <VStack spacing={1} w="full">
+                            <Text fontSize="sm" color={subtleTextColor} textAlign="center">
                               Limits:
                             </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="bold">
-                              {method?.limits || '10 - 1,000 USD'}
+                            <Text fontSize="sm" color={textColor} fontWeight="semibold" textAlign="center" lineHeight="1.3">
+                              {limits.primary}
                             </Text>
-                          </HStack>
+                            <Text fontSize="xs" color={subtleTextColor} textAlign="center">
+                              {limits.secondary}
+                            </Text>
+                          </VStack>
                         </VStack>
-
-                        {/* Select Button */}
-                        <Button
-                          colorScheme="blue"
-                          size="lg"
-                          w="full"
-                          borderRadius="xl"
-                          fontWeight="bold"
-                          _hover={{
-                            transform: 'translateY(-2px)',
-                          }}
-                          transition="all 0.2s"
-                        >
-                          Select {method?.network || 'Method'}
-                        </Button>
                       </VStack>
+
+                      {/* Select Button */}
+                      <Button
+                        colorScheme="blue"
+                        size="md"
+                        w="full"
+                        borderRadius="lg"
+                        fontWeight="semibold"
+                        mt={4}
+                        _hover={{
+                          transform: 'translateY(-1px)',
+                        }}
+                        transition="all 0.2s"
+                      >
+                        Select {method?.network || 'Method'}
+                      </Button>
                     </CardBody>
                   </Card>
+                  );
+                })
                 )) : null}
               </SimpleGrid>
             </VStack>
