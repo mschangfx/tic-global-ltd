@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Wallet Balance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        .warning { border-color: #ffc107; background: #fff3cd; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Wallet Balance Issue</h1>
+        <p>Step-by-step debugging to find why the frontend shows $0.00</p>
+        
+        <div class="debug-section success">
+            <strong>✅ CONFIRMED:</strong> Database returns $3,549.54 for mschangfx@gmail.com
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Test API Endpoint</h3>
+            <button onclick="testAPI()">Test Balance API</button>
+            <div id="api-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Check Browser Console</h3>
+            <button onclick="checkConsole()">Check Console Logs</button>
+            <div id="console-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Test Authentication</h3>
+            <button onclick="testAuth()">Test User Authentication</button>
+            <button onclick="testWithDifferentUser()">Test with Different User</button>
+            <div id="auth-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Check Local Storage</h3>
+            <button onclick="checkStorage()">Check Local Storage</button>
+            <div id="storage-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 5: Force Clear Cache</h3>
+            <button onclick="clearCache()">Clear All Cache</button>
+            <button onclick="hardRefresh()">Hard Refresh</button>
+            <div id="cache-result"></div>
+        </div>
+    </div>
+
+    <script>
+        function addResult(elementId, content, className = '') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `debug-section ${className}`;
+            div.innerHTML = content;
+            element.appendChild(div);
+        }
+
+        async function testAPI() {
+            const userEmail = 'mschangfx@gmail.com';
+            addResult('api-result', '🔄 Testing API...', 'warning');
+            
+            try {
+                const response = await fetch('/api/wallet/balance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    },
+                    body: JSON.stringify({ userEmail })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.wallet) {
+                    addResult('api-result', 
+                        `✅ API SUCCESS<br>` +
+                        `Total Balance: $${data.wallet.total_balance}<br>` +
+                        `Status: ${response.status}<br>` +
+                        `<pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    addResult('api-result', 
+                        `❌ API FAILED<br>` +
+                        `Status: ${response.status}<br>` +
+                        `Error: ${data.error || 'Unknown error'}<br>` +
+                        `<pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                addResult('api-result', `❌ NETWORK ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        function checkConsole() {
+            addResult('console-result', 
+                `📊 Console Debugging Instructions:<br>` +
+                `1. Open browser DevTools (F12)<br>` +
+                `2. Go to Console tab<br>` +
+                `3. Look for these messages:<br>` +
+                `   - "🔍 Navbar: Loading balance for: mschangfx@gmail.com"<br>` +
+                `   - "✅ Navbar: Balance loaded successfully"<br>` +
+                `   - "💰 Navbar: Total balance will display as: $X.XX"<br>` +
+                `4. If you see errors, copy them here<br>` +
+                `5. Check Network tab for /api/wallet/balance requests`, 
+                'warning'
+            );
+        }
+
+        function testAuth() {
+            addResult('auth-result', '🔄 Checking authentication...', 'warning');
+
+            // Check if we can access any auth-related data
+            const hasNextAuth = !!window.next;
+            const hasSupabase = !!window.supabase;
+
+            addResult('auth-result',
+                `📊 Authentication Check:<br>` +
+                `NextAuth available: ${hasNextAuth}<br>` +
+                `Supabase available: ${hasSupabase}<br>` +
+                `Current URL: ${window.location.href}<br>` +
+                `User Agent: ${navigator.userAgent.substring(0, 100)}...`,
+                'warning'
+            );
+        }
+
+        async function testWithDifferentUser() {
+            const testUsers = [
+                'mschangfx@gmail.com',
+                'test@example.com',
+                'admin@ticgloballtd.com'
+            ];
+
+            addResult('auth-result', '🔄 Testing with different users...', 'warning');
+
+            for (const userEmail of testUsers) {
+                try {
+                    const response = await fetch('/api/wallet/balance', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        },
+                        body: JSON.stringify({ userEmail })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.wallet) {
+                        addResult('auth-result',
+                            `✅ ${userEmail}: $${data.wallet.total_balance}`,
+                            'success'
+                        );
+                    } else {
+                        addResult('auth-result',
+                            `❌ ${userEmail}: ${data.error || 'No data'}`,
+                            'error'
+                        );
+                    }
+                } catch (error) {
+                    addResult('auth-result',
+                        `❌ ${userEmail}: ${error.message}`,
+                        'error'
+                    );
+                }
+            }
+        }
+
+        function checkStorage() {
+            const localStorage = window.localStorage;
+            const sessionStorage = window.sessionStorage;
+            
+            let localStorageItems = [];
+            let sessionStorageItems = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('wallet') || key.includes('balance') || key.includes('auth'))) {
+                    localStorageItems.push(`${key}: ${localStorage.getItem(key)}`);
+                }
+            }
+            
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key && (key.includes('wallet') || key.includes('balance') || key.includes('auth'))) {
+                    sessionStorageItems.push(`${key}: ${sessionStorage.getItem(key)}`);
+                }
+            }
+            
+            addResult('storage-result', 
+                `📊 Storage Check:<br>` +
+                `Local Storage Items:<br>` +
+                `<pre>${localStorageItems.join('\n') || 'None found'}</pre><br>` +
+                `Session Storage Items:<br>` +
+                `<pre>${sessionStorageItems.join('\n') || 'None found'}</pre>`, 
+                'warning'
+            );
+        }
+
+        function clearCache() {
+            // Clear various caches
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear any service worker caches if available
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            addResult('cache-result', '✅ Cleared localStorage, sessionStorage, and browser caches', 'success');
+        }
+
+        function hardRefresh() {
+            addResult('cache-result', '🔄 Performing hard refresh...', 'warning');
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        }
+
+        // Auto-run tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testAPI();
+                checkStorage();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
