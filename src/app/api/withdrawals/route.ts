@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import TransactionService from '@/lib/services/transactionService';
+import { validateWithdrawalAmount } from '@/lib/utils/currency';
 
 // Helper function to get authenticated user email from both auth methods
 async function getAuthenticatedUserEmail(): Promise<string | null> {
@@ -202,6 +203,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate withdrawal amount using standard validation
+    const validation = validateWithdrawalAmount(withdrawalAmount, methodId);
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: validation.error || 'Invalid withdrawal amount' },
+        { status: 400 }
+      );
+    }
+
     // Get payment method details
     const { data: method, error: methodError } = await supabase
       .from('payment_methods')
@@ -214,17 +224,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Payment method not found or inactive' },
         { status: 404 }
-      );
-    }
-
-    // Validate amount limits
-    if (withdrawalAmount < method.min_amount) {
-      return NextResponse.json(
-        { 
-          error: `Minimum withdrawal amount is $${method.min_amount}`,
-          min_amount: method.min_amount
-        },
-        { status: 400 }
       );
     }
 

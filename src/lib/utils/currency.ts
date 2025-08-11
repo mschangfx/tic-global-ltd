@@ -5,8 +5,11 @@
 
 // Standard conversion rates
 export const CONVERSION_RATES = {
-  USD_TO_PHP: 63,
+  USD_TO_PHP: 63, // For deposits: $1 USD = ₱63 PHP
   PHP_TO_USD: 1 / 63, // ≈ 0.01587
+  // Withdrawal rates (different from deposit rates)
+  USD_TO_PHP_WITHDRAWAL: 60, // For withdrawals: $1 USD = ₱60 PHP
+  PHP_TO_USD_WITHDRAWAL: 1 / 60, // ≈ 0.01667
 } as const;
 
 /**
@@ -21,6 +24,22 @@ export function convertUsdToPhp(usdAmount: number): number {
  */
 export function convertPhpToUsd(phpAmount: number): number {
   return Math.round(phpAmount * CONVERSION_RATES.PHP_TO_USD * 100) / 100;
+}
+
+/**
+ * Convert USD to PHP for withdrawals using withdrawal rate
+ * $1 USD = ₱60 PHP for withdrawals
+ */
+export function convertUsdToPhpWithdrawal(usdAmount: number): number {
+  return Math.round(usdAmount * CONVERSION_RATES.USD_TO_PHP_WITHDRAWAL * 100) / 100;
+}
+
+/**
+ * Convert PHP to USD for withdrawals using withdrawal rate
+ * ₱60 PHP = $1 USD for withdrawals
+ */
+export function convertPhpToUsdWithdrawal(phpAmount: number): number {
+  return Math.round(phpAmount * CONVERSION_RATES.PHP_TO_USD_WITHDRAWAL * 100) / 100;
 }
 
 /**
@@ -47,6 +66,15 @@ export function formatCurrency(amount: number, currency: 'USD' | 'PHP'): string 
  */
 export function getConversionDisplay(usdAmount: number): string {
   const phpAmount = convertUsdToPhp(usdAmount);
+  return `$${usdAmount.toFixed(2)} USD (≈₱${phpAmount.toFixed(2)} PHP)`;
+}
+
+/**
+ * Get conversion display text for withdrawal methods
+ * Uses withdrawal rate: $1 USD = ₱60 PHP
+ */
+export function getWithdrawalConversionDisplay(usdAmount: number): string {
+  const phpAmount = convertUsdToPhpWithdrawal(usdAmount);
   return `$${usdAmount.toFixed(2)} USD (≈₱${phpAmount.toFixed(2)} PHP)`;
 }
 
@@ -111,6 +139,88 @@ export function validateDepositAmount(
   }
 
   return { isValid: true };
+}
+
+/**
+ * Parse withdrawal amount and determine currency
+ * USD is ALWAYS the withdrawal amount for all methods
+ */
+export function parseWithdrawalAmount(
+  amount: string | number,
+  paymentMethod: string
+): { usdAmount: number; phpAmount: number; originalCurrency: 'USD' | 'PHP' } {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+  // USD is ALWAYS the withdrawal amount for all methods
+  // The user always enters USD, and we convert to PHP for payment instructions when needed
+  return {
+    usdAmount: numAmount, // User always enters USD amount
+    phpAmount: convertUsdToPhpWithdrawal(numAmount), // Convert to PHP using withdrawal rate
+    originalCurrency: 'USD' // Always USD as the original currency
+  };
+}
+
+/**
+ * Validate withdrawal amount for a specific payment method
+ * USD is ALWAYS the withdrawal amount for all methods
+ */
+export function validateWithdrawalAmount(
+  amount: number,
+  paymentMethod: string
+): { isValid: boolean; error?: string; minAmount?: number } {
+  // USD is ALWAYS the withdrawal amount for all methods
+  const usdAmount = amount; // User always enters USD
+
+  // Standard withdrawal limits: $10 - $10,000 USD
+  const MIN_USD = 10;
+  const MAX_USD = 10000;
+  const MIN_PHP = convertUsdToPhpWithdrawal(MIN_USD);
+  const MAX_PHP = convertUsdToPhpWithdrawal(MAX_USD);
+
+  if (usdAmount < MIN_USD) {
+    return {
+      isValid: false,
+      error: `Minimum withdrawal amount is $${MIN_USD} USD (₱${MIN_PHP.toFixed(0)} PHP)`,
+      minAmount: MIN_USD
+    };
+  }
+
+  if (usdAmount > MAX_USD) {
+    return {
+      isValid: false,
+      error: `Maximum withdrawal amount is $${MAX_USD} USD (₱${MAX_PHP.toFixed(0)} PHP)`,
+      minAmount: MAX_USD
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Get withdrawal limits for display
+ * USD is ALWAYS the withdrawal amount for all methods
+ */
+export function getWithdrawalLimits(paymentMethod: string): string {
+  // USD is ALWAYS the withdrawal amount for all methods
+  // Show USD limits as primary with PHP equivalent using withdrawal rate
+  const minPhp = convertUsdToPhpWithdrawal(10);
+  const maxPhp = convertUsdToPhpWithdrawal(10000);
+  return `$10 - $10,000 USD\n(₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP)`;
+}
+
+/**
+ * Get compact withdrawal limits for card display
+ * USD is ALWAYS the withdrawal amount for all methods
+ */
+export function getCompactWithdrawalLimits(paymentMethod: string): { primary: string; secondary: string } {
+  // USD is ALWAYS the withdrawal amount for all methods
+  // Show USD limits as primary with PHP equivalent using withdrawal rate
+  const minPhp = convertUsdToPhpWithdrawal(10);
+  const maxPhp = convertUsdToPhpWithdrawal(10000);
+  return {
+    primary: `$10 - $10,000 USD`,
+    secondary: `(₱${minPhp.toFixed(0)} - ₱${maxPhp.toFixed(0)} PHP)`
+  };
 }
 
 /**

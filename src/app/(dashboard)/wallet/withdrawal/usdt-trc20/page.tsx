@@ -31,6 +31,7 @@ import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import WalletService, { WalletBalance } from '@/lib/services/walletService';
+import { convertUsdToPhpWithdrawal, formatCurrency, getWithdrawalConversionDisplay } from '@/lib/utils/currency';
 
 export default function UsdtTrc20WithdrawalPage() {
   const router = useRouter();

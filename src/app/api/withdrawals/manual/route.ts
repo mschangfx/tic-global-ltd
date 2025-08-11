@@ -4,6 +4,7 @@ import { createClient as createRegularClient } from '@/lib/supabase/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { v4 as uuidv4 } from 'uuid';
+import { convertUsdToPhpWithdrawal, validateWithdrawalAmount } from '@/lib/utils/currency';
 
 // Helper function to get authenticated user email from both auth methods
 async function getAuthenticatedUserEmail(): Promise<string | null> {
@@ -82,6 +83,15 @@ export async function POST(request: NextRequest) {
     if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid withdrawal amount' },
+        { status: 400 }
+      );
+    }
+
+    // Validate withdrawal amount using standard validation
+    const validation = validateWithdrawalAmount(withdrawalAmount, method);
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { success: false, error: validation.error || 'Invalid withdrawal amount' },
         { status: 400 }
       );
     }

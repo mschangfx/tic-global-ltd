@@ -59,6 +59,15 @@ import WalletService, { WalletBalance } from '@/lib/services/walletService';
 import TransactionService from '@/lib/services/transactionService';
 import { createClient } from '@/lib/supabase/client';
 import { getSession } from 'next-auth/react';
+import {
+  formatCurrency,
+  convertUsdToPhp,
+  convertUsdToPhpWithdrawal,
+  parseWithdrawalAmount,
+  validateWithdrawalAmount,
+  getWithdrawalConversionDisplay,
+  getCompactWithdrawalLimits
+} from '@/lib/utils/currency';
 
 // Define NetworkFeeData interface locally since we're not importing the service
 interface NetworkFeeData {
@@ -141,11 +150,11 @@ export default function WithdrawalPage() {
       {
       id: 'usdt-trc20',
       name: 'USDT',
-      symbol: 'USDT',
+      symbol: 'USD', // USD is always the withdrawal amount
       network: 'TRC20',
       processingTime: '3-5 minutes',
       fee: '10% gas fee',
-      limits: '10 - 1,000,000 USD',
+      limits: getCompactWithdrawalLimits('usdt-trc20').primary + '\n' + getCompactWithdrawalLimits('usdt-trc20').secondary,
       icon: '/img/USDT-TRC20.png',
       tronNetwork: 'tron',
       tokenSymbol: 'USDT'
@@ -153,11 +162,11 @@ export default function WithdrawalPage() {
     {
       id: 'usdt-bep20',
       name: 'USDT',
-      symbol: 'USDT',
+      symbol: 'USD', // USD is always the withdrawal amount
       network: 'BEP20',
       processingTime: '3-5 minutes',
       fee: '10% gas fee',
-      limits: '10 - 750,000 USD',
+      limits: getCompactWithdrawalLimits('usdt-bep20').primary + '\n' + getCompactWithdrawalLimits('usdt-bep20').secondary,
       icon: '/img/USDT-BEP20-1.png',
       tronNetwork: 'bsc',
       tokenSymbol: 'USDT'
@@ -165,11 +174,11 @@ export default function WithdrawalPage() {
     {
       id: 'usdt-polygon',
       name: 'USDT',
-      symbol: 'USDT',
+      symbol: 'USD', // USD is always the withdrawal amount
       network: 'Polygon',
       processingTime: '2-3 minutes',
       fee: '10% gas fee',
-      limits: '10 - 500,000 USD',
+      limits: getCompactWithdrawalLimits('usdt-polygon').primary + '\n' + getCompactWithdrawalLimits('usdt-polygon').secondary,
       icon: '/img/USDT-Polygon.png',
       tronNetwork: 'polygon',
       tokenSymbol: 'USDT'
@@ -177,21 +186,21 @@ export default function WithdrawalPage() {
     {
       id: 'gcash',
       name: 'GCash',
-      symbol: 'PHP',
+      symbol: 'USD', // USD is always the withdrawal amount
       network: 'Digital Wallet',
       processingTime: '5-30 minutes',
       fee: '10% gas fee',
-      limits: '500 - 50,000 PHP',
+      limits: getCompactWithdrawalLimits('gcash').primary + '\n' + getCompactWithdrawalLimits('gcash').secondary,
       icon: '/img/gcash.png'
     },
     {
       id: 'paymaya',
       name: 'PayMaya',
-      symbol: 'PHP',
+      symbol: 'USD', // USD is always the withdrawal amount
       network: 'Digital Wallet',
       processingTime: '5-30 minutes',
       fee: '10% gas fee',
-      limits: '500 - 50,000 PHP',
+      limits: getCompactWithdrawalLimits('paymaya').primary + '\n' + getCompactWithdrawalLimits('paymaya').secondary,
       icon: '/img/paymaya.jpg'
     }
   ];
@@ -743,6 +752,14 @@ export default function WithdrawalPage() {
     if (isNaN(amount) || amount <= 0) {
       console.log('❌ Invalid amount');
       setError('Please enter a valid withdrawal amount.');
+      return;
+    }
+
+    // Validate withdrawal amount using standard validation
+    const validation = validateWithdrawalAmount(amount, selectedMethod.id);
+    if (!validation.isValid) {
+      console.log('❌ Amount validation failed:', validation.error);
+      setError(validation.error || 'Invalid withdrawal amount.');
       return;
     }
 
@@ -1475,7 +1492,10 @@ export default function WithdrawalPage() {
 
               <FormControl isInvalid={!!error} mt={4}>
                 <FormLabel htmlFor="withdrawalAmount" color={textColor}>
-                  Amount to Withdraw ({selectedMethod.name}) *
+                  Amount to Withdraw (USD) *
+                  <Text fontSize="xs" color="gray.500" fontWeight="normal">
+                    Enter amount in USD - all withdrawals are processed in USD
+                  </Text>
                 </FormLabel>
                 <InputGroup>
                   <InputLeftAddon>$</InputLeftAddon>
@@ -1485,8 +1505,23 @@ export default function WithdrawalPage() {
                     placeholder="e.g., 100"
                     value={withdrawalAmount}
                     onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    step="0.01"
+                    min="10"
+                    max="10000"
                   />
                 </InputGroup>
+                {withdrawalAmount && parseFloat(withdrawalAmount) > 0 && (
+                  <FormHelperText color="blue.500">
+                    {(() => {
+                      const { usdAmount, phpAmount } = parseWithdrawalAmount(parseFloat(withdrawalAmount), selectedMethod.id);
+                      if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
+                        return `Withdrawal: ${formatCurrency(usdAmount, 'USD')} → You receive: ${formatCurrency(phpAmount, 'PHP')} (Rate: $1 = ₱60)`;
+                      } else {
+                        return `Withdrawal: ${formatCurrency(usdAmount, 'USD')} → You receive: ${formatCurrency(usdAmount, 'USD')} USDT (≈₱${phpAmount.toFixed(0)} PHP)`;
+                      }
+                    })()}
+                  </FormHelperText>
+                )}
                 {error && <FormHelperText color="red.500">{error}</FormHelperText>}
               </FormControl>
 
