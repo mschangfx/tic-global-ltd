@@ -259,8 +259,11 @@
             <div id="dashboardSection" class="content hidden">
                 <div class="controls">
                     <h2>⚡ Admin Dashboard</h2>
-                    <div>
-                        <button onclick="loadTransactions()" class="btn btn-primary">🔄 Refresh</button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="autoRefreshStatus" style="font-size: 12px; color: #27ae60; font-weight: bold;">
+                            🔄 Auto-refresh: ON (every 10s)
+                        </span>
+                        <button onclick="manualRefresh()" class="btn btn-primary">🔄 Refresh</button>
                         <button onclick="logout()" class="btn btn-danger">🚪 Logout</button>
                     </div>
                 </div>
@@ -306,12 +309,89 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTQxODAsImV4cCI6MjA2NDI3MDE4MH0.8q5bAO2_-8tMa7WLgVawMhr2SjCyljSxvk6qrHhq08I';
         const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY5NDE4MCwiZXhwIjoyMDY0MjcwMTgwfQ.ZryoITxcPfjWYWXQfou8ymnafpT7EZc7B4Rr0YsGEK8';
 
+        // Auto-refresh configuration
+        let autoRefreshInterval = null;
+        let countdownInterval = null;
+        const AUTO_REFRESH_SECONDS = 10;
+        let nextRefreshTime = 0;
+
         function showMessage(message, type = 'success') {
             const messageArea = document.getElementById('messageArea');
             messageArea.innerHTML = `<div class="${type}">${message}</div>`;
             setTimeout(() => {
                 messageArea.innerHTML = '';
             }, 5000);
+        }
+
+        function updateCountdown() {
+            const now = Date.now();
+            const timeLeft = Math.max(0, Math.ceil((nextRefreshTime - now) / 1000));
+
+            const statusElement = document.getElementById('autoRefreshStatus');
+            if (statusElement && timeLeft > 0) {
+                statusElement.innerHTML = `🔄 Auto-refresh: ON (next in ${timeLeft}s)`;
+            } else if (statusElement && timeLeft === 0) {
+                statusElement.innerHTML = `🔄 Auto-refresh: ON (refreshing...)`;
+            }
+        }
+
+        function startAutoRefresh() {
+            // Clear any existing intervals
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            // Set next refresh time
+            nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS * 1000);
+
+            // Start auto-refresh interval
+            autoRefreshInterval = setInterval(() => {
+                loadTransactions(true); // Pass true to indicate this is an auto-refresh
+                nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS * 1000); // Reset countdown
+            }, AUTO_REFRESH_SECONDS * 1000);
+
+            // Start countdown interval (update every second)
+            countdownInterval = setInterval(updateCountdown, 1000);
+
+            // Initial countdown update
+            updateCountdown();
+
+            console.log(`Auto-refresh started: every ${AUTO_REFRESH_SECONDS} seconds`);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+
+            // Update status indicator
+            const statusElement = document.getElementById('autoRefreshStatus');
+            if (statusElement) {
+                statusElement.innerHTML = '⏸️ Auto-refresh: OFF';
+                statusElement.style.color = '#e74c3c';
+            }
+
+            console.log('Auto-refresh stopped');
+        }
+
+        function manualRefresh() {
+            // Load transactions manually
+            loadTransactions(false);
+
+            // Reset the countdown timer if auto-refresh is active
+            if (autoRefreshInterval) {
+                nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS * 1000);
+                updateCountdown();
+            }
         }
 
         function login() {
@@ -322,21 +402,25 @@
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('dashboardSection').classList.remove('hidden');
                 loadTransactions();
+                startAutoRefresh(); // Start auto-refresh after login
             } else {
                 alert('❌ Invalid credentials. Please check your username and password.');
             }
         }
 
         function logout() {
+            stopAutoRefresh(); // Stop auto-refresh before logout
             document.getElementById('loginSection').classList.remove('hidden');
             document.getElementById('dashboardSection').classList.add('hidden');
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
         }
 
-        async function loadTransactions() {
+        async function loadTransactions(isAutoRefresh = false) {
             try {
-                showMessage('🔄 Loading transactions...', 'success');
+                if (!isAutoRefresh) {
+                    showMessage('🔄 Loading transactions...', 'success');
+                }
                 
                 // Use service role key for admin operations
                 const headers = {
@@ -742,6 +826,22 @@
                 console.log('✅ Supabase connection test:', response.ok ? 'SUCCESS' : 'FAILED');
             } catch (error) {
                 console.error('❌ Supabase connection test failed:', error);
+            }
+        });
+
+        // Cleanup auto-refresh when page is closed or refreshed
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+        });
+
+        // Also cleanup on page visibility change (when tab becomes hidden)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Page is hidden, you might want to reduce refresh frequency or stop
+                console.log('Page hidden - auto-refresh continues');
+            } else {
+                // Page is visible again
+                console.log('Page visible - auto-refresh active');
             }
         });
     </script>
