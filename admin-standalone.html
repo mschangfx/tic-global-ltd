@@ -684,64 +684,14 @@
                         throw new Error(`Failed to update deposit status: ${errorText}`);
                     }
 
-                    // If approved, credit the user's wallet
+                    // If approved, the database trigger will automatically credit the wallet
+                    // No manual wallet crediting needed - the trigger handles it
                     if (action === 'approve') {
-                        // Find user by email if user_id is null
-                        let userId = deposit.user_id;
-
-                        if (!userId && deposit.user_email) {
-                            const userResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${deposit.user_email}&select=id`, {
-                                headers: headers
-                            });
-
-                            if (userResponse.ok) {
-                                const users = await userResponse.json();
-                                if (users.length > 0) {
-                                    userId = users[0].id;
-                                }
-                            }
-                        }
-
-                        if (userId) {
-                            // Get or create wallet
-                            const walletResponse = await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}`, {
-                                headers: headers
-                            });
-
-                            if (walletResponse.ok) {
-                                const wallets = await walletResponse.json();
-                                let currentBalance = 0;
-
-                                if (wallets.length > 0) {
-                                    // Update existing wallet
-                                    currentBalance = parseFloat(wallets[0].balance || 0);
-                                    const newBalance = currentBalance + parseFloat(deposit.amount);
-
-                                    await fetch(`${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${userId}`, {
-                                        method: 'PATCH',
-                                        headers: headers,
-                                        body: JSON.stringify({
-                                            balance: newBalance.toString(),
-                                            updated_at: new Date().toISOString()
-                                        })
-                                    });
-                                } else {
-                                    // Create new wallet
-                                    await fetch(`${SUPABASE_URL}/rest/v1/wallets`, {
-                                        method: 'POST',
-                                        headers: headers,
-                                        body: JSON.stringify({
-                                            user_id: userId,
-                                            balance: deposit.amount.toString(),
-                                            created_at: new Date().toISOString(),
-                                            updated_at: new Date().toISOString()
-                                        })
-                                    });
-                                }
-                            }
-                        } else {
-                            console.warn('Could not find user ID for wallet crediting');
-                        }
+                        console.log('✅ Deposit approved - wallet will be credited automatically by database trigger');
+                        // The credit_wallet_on_deposit_completion trigger will handle:
+                        // 1. Calling credit_user_wallet() function
+                        // 2. Creating wallet transaction record
+                        // 3. Sending user notification
                     }
 
                     showMessage(`✅ Deposit ${action === 'approve' ? 'approved and completed' : 'rejected'} successfully!`, 'success');
