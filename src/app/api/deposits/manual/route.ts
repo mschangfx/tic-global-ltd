@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate minimum amount based on payment method
+    // Validate minimum amount based on payment method (fixed for GCash/PayMaya USD amounts)
     const { amount: depositAmount, paymentMethod } = validatedData;
 
     if (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
