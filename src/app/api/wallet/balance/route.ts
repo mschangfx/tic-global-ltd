@@ -29,48 +29,50 @@ async function getWalletBalance(userEmail: string) {
     throw new Error('User email is required');
   }
 
-  console.log('🔍 Getting wallet balance for:', userEmail);
+  console.log('🔍 Getting calculated wallet balance for:', userEmail);
 
-  // Get user wallet balance using maybeSingle() to avoid errors when no rows exist
-  const { data: walletData, error: walletError } = await supabaseAdmin
-    .from('user_wallets')
-    .select('user_email, total_balance, tic_balance, gic_balance, staking_balance, partner_wallet_balance, last_updated')
-    .eq('user_email', userEmail)
-    .maybeSingle();
+  // Get real-time calculated balance from transactions
+  const { data: calculatedBalance, error: balanceError } = await supabaseAdmin
+    .rpc('get_calculated_wallet_balance', {
+      user_email_param: userEmail
+    });
 
-  if (walletError) {
-    console.error('❌ Error querying wallet balance for', userEmail, ':', walletError);
-    throw new Error('Failed to query wallet balance');
+  if (balanceError) {
+    console.error('❌ Error calculating wallet balance for', userEmail, ':', balanceError);
+    throw new Error('Failed to calculate wallet balance');
   }
 
-  // If wallet doesn't exist, create one
-  if (!walletData) {
-    console.log('📝 Creating new wallet for:', userEmail);
-
-    const { data: newWallet, error: createError } = await supabaseAdmin
-      .from('user_wallets')
-      .insert({
-        user_email: userEmail,
-        total_balance: 0,
-        tic_balance: 0,
-        gic_balance: 0,
-        staking_balance: 0,
-        partner_wallet_balance: 0
-      })
-      .select('user_email, total_balance, tic_balance, gic_balance, staking_balance, partner_wallet_balance, last_updated')
-      .single();
-
-    if (createError) {
-      console.error('❌ Error creating wallet for', userEmail, ':', createError);
-      throw new Error('Failed to create wallet');
-    }
-
-    console.log('✅ Created new wallet for:', userEmail);
-    return newWallet;
+  if (!calculatedBalance || calculatedBalance.length === 0) {
+    console.log('📝 No transactions found for user, returning zero balance:', userEmail);
+    return {
+      user_email: userEmail,
+      total_balance: '0',
+      tic_balance: '0',
+      gic_balance: '0',
+      staking_balance: '0',
+      partner_wallet_balance: '0',
+      last_updated: new Date().toISOString()
+    };
   }
 
-  console.log('✅ Retrieved wallet balance for:', userEmail);
-  return walletData;
+  const balance = calculatedBalance[0];
+
+  console.log('✅ Calculated wallet balance for:', userEmail, {
+    total: balance.total_balance,
+    status: balance.balance_status,
+    transactions: balance.transaction_count
+  });
+
+  // Return the calculated balance
+  return {
+    user_email: balance.user_email,
+    total_balance: balance.total_balance?.toString() || '0',
+    tic_balance: balance.tic_balance?.toString() || '0',
+    gic_balance: balance.gic_balance?.toString() || '0',
+    staking_balance: balance.staking_balance?.toString() || '0',
+    partner_wallet_balance: balance.partner_wallet_balance?.toString() || '0',
+    last_updated: balance.last_transaction_date?.toISOString() || new Date().toISOString()
+  };
 }
 
 // GET - Get user wallet balance via query parameter
