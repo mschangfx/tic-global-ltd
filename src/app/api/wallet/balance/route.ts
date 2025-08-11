@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 
 // Initialize Supabase admin client with proper configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -89,6 +91,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Verify the user is authenticated and requesting their own data
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email || session.user.email !== userEmail) {
+      console.error('❌ Unauthorized balance request:', {
+        sessionEmail: session?.user?.email,
+        requestedEmail: userEmail
+      });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    console.log('✅ Authenticated balance request for:', userEmail);
     const walletData = await getWalletBalance(userEmail);
 
     return NextResponse.json({
@@ -118,17 +134,34 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userEmail } = body;
+    const { userEmail, email } = body;
 
-    if (!userEmail) {
-      console.error('❌ No userEmail provided in request body');
+    // Support both userEmail and email parameters for compatibility
+    const requestedEmail = userEmail || email;
+
+    if (!requestedEmail) {
+      console.error('❌ No userEmail or email provided in request body');
       return NextResponse.json(
         { error: 'User email is required' },
         { status: 400 }
       );
     }
 
-    const walletData = await getWalletBalance(userEmail);
+    // Verify the user is authenticated and requesting their own data
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email || session.user.email !== requestedEmail) {
+      console.error('❌ Unauthorized balance request:', {
+        sessionEmail: session?.user?.email,
+        requestedEmail
+      });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    console.log('✅ Authenticated balance request for:', requestedEmail);
+    const walletData = await getWalletBalance(requestedEmail);
 
     return NextResponse.json({
       wallet: walletData
