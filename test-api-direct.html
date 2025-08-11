@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Direct API Test</h1>
+        <p>Test the balance API directly to see what it returns.</p>
+        <div class="result success">
+            <strong>✅ DATABASE CONFIRMED:</strong><br>
+            Function returns: $3,549.54 with 61 transactions<br>
+            <small>If API still returns $0.00, there's a frontend/API issue.</small>
+        </div>
+        
+        <div>
+            <label>User Email:</label>
+            <input type="email" id="userEmail" value="mschangfx@gmail.com" placeholder="Enter user email">
+            <button onclick="testAPI()">Test API Direct</button>
+            <button onclick="testWithFetch()">Test with Fetch</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addResult(title, content, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<strong>${title}</strong>\n${content}`;
+            results.appendChild(div);
+        }
+
+        async function testAPI() {
+            const userEmail = document.getElementById('userEmail').value;
+            addResult('🔄 Testing API...', `Calling /api/wallet/balance for ${userEmail}`);
+            
+            try {
+                const response = await fetch('/api/wallet/balance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    body: JSON.stringify({ userEmail })
+                });
+
+                const responseText = await response.text();
+                addResult(`📊 API Response (${response.status})`, 
+                    `Status: ${response.status} ${response.statusText}\n` +
+                    `Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}\n` +
+                    `Body: ${responseText}`
+                );
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        if (data.wallet) {
+                            addResult('✅ Parsed Wallet Data', 
+                                `Total Balance: $${data.wallet.total_balance}\n` +
+                                `TIC Balance: $${data.wallet.tic_balance}\n` +
+                                `GIC Balance: $${data.wallet.gic_balance}\n` +
+                                `Staking Balance: $${data.wallet.staking_balance}\n` +
+                                `Partner Wallet: $${data.wallet.partner_wallet_balance}\n` +
+                                `Last Updated: ${data.wallet.last_updated}`
+                            );
+                        } else {
+                            addResult('❌ No Wallet Data', 'API response does not contain wallet data', true);
+                        }
+                    } catch (parseError) {
+                        addResult('❌ JSON Parse Error', parseError.message, true);
+                    }
+                } else {
+                    addResult('❌ API Error', `HTTP ${response.status}: ${responseText}`, true);
+                }
+            } catch (error) {
+                addResult('❌ Network Error', error.message, true);
+            }
+        }
+
+        async function testWithFetch() {
+            const userEmail = document.getElementById('userEmail').value;
+            addResult('🔄 Testing with Simple Fetch...', `Testing basic connectivity`);
+            
+            try {
+                // Test if the API endpoint exists
+                const response = await fetch('/api/wallet/balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userEmail })
+                });
+
+                addResult('📡 Fetch Response', 
+                    `URL: ${response.url}\n` +
+                    `Status: ${response.status}\n` +
+                    `OK: ${response.ok}\n` +
+                    `Type: ${response.type}\n` +
+                    `Redirected: ${response.redirected}`
+                );
+
+                const data = await response.json();
+                addResult('📄 Response Data', JSON.stringify(data, null, 2));
+
+            } catch (error) {
+                addResult('❌ Fetch Error', error.message, true);
+            }
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testAPI, 1000);
+        });
+    </script>
+</body>
+</html>
