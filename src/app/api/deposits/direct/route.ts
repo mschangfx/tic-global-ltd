@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { parseDepositAmount, CONVERSION_RATES } from '@/lib/utils/currency';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -80,11 +81,13 @@ export async function POST(request: NextRequest) {
       final_amount: depositAmount,
       confirmation_count: 0,
       required_confirmations: 1,
-      admin_notes: `Direct API deposit - $${depositAmount} USDT with receipt`,
+      admin_notes: `Direct API deposit - $${depositAmount} USDT with receipt (Standard rate: $1 = ₱${CONVERSION_RATES.USD_TO_PHP})`,
       request_metadata: {
         source: 'direct_api',
         amount: depositAmount,
         currency: currency || 'USDT',
+        standardConversionRate: CONVERSION_RATES.USD_TO_PHP,
+        phpEquivalent: depositAmount * CONVERSION_RATES.USD_TO_PHP,
         timestamp: now,
         hasReceipt: true
       },

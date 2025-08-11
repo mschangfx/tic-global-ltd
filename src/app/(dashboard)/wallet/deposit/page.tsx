@@ -49,6 +49,17 @@ import TRC20QRCode from '@/components/TRC20QRCode';
 // Removed web3DepositService - now using tronpy automation service
 import { useSafeToast } from '@/hooks/useSafeToast';
 import BlockchainFeeService, { NetworkFeeData } from '@/lib/services/blockchainFeeService';
+import {
+  convertUsdToPhp,
+  convertPhpToUsd,
+  formatCurrency,
+  getConversionDisplay,
+  getPhpConversionDisplay,
+  parseDepositAmount,
+  validateDepositAmount,
+  getDepositLimits,
+  CONVERSION_RATES
+} from '@/lib/utils/currency';
 
 interface DepositMethod {
   id: string;
@@ -226,7 +237,7 @@ export default function DepositPage() {
           address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: '10 - 200,000 USD',
+          limits: getDepositLimits('usdt-trc20'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/USDT-TRC20.png'
         },
         {
@@ -237,7 +248,7 @@ export default function DepositPage() {
           address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: '10 - 200,000 USD',
+          limits: getDepositLimits('usdt-bep20'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/USDT-BEP20-1.png'
         },
         {
@@ -248,7 +259,7 @@ export default function DepositPage() {
           address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: '10 - 200,000 USD',
+          limits: getDepositLimits('usdt-polygon'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/USDT-Polygon.png'
         },
         {
@@ -259,7 +270,7 @@ export default function DepositPage() {
           address: '09675131248',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: '500 - 50,000 PHP',
+          limits: getDepositLimits('gcash'), // ₱630 - ₱630,000 PHP ($10 - $10,000 USD)
           icon: '/img/gcash.png'
         },
         {
@@ -270,7 +281,7 @@ export default function DepositPage() {
           address: '09675131248',
           processingTime: '5-30 minutes',
           fee: 'Free',
-          limits: '500 - 50,000 PHP',
+          limits: getDepositLimits('paymaya'), // ₱630 - ₱630,000 PHP ($10 - $10,000 USD)
           icon: '/img/paymaya.jpg'
         }
       ];
@@ -819,18 +830,22 @@ export default function DepositPage() {
       return;
     }
 
-    // Validate minimum amounts based on payment method
-    if (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') {
-      if (amount < 10) {
-        setError('Minimum USDT deposit amount is $10.');
-        return;
-      }
-    } else if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
-      if (amount < 10) {
-        setError('Minimum deposit amount is $10 (≈₱555) for digital wallet payments.');
-        return;
-      }
+    // Validate deposit amount using new currency conversion system
+    const validation = validateDepositAmount(amount, selectedMethod.id);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid deposit amount');
+      return;
     }
+
+    // Parse the deposit amount and get conversion details
+    const { usdAmount, phpAmount, originalCurrency } = parseDepositAmount(amount, selectedMethod.id);
+    console.log('💱 Deposit conversion:', {
+      inputAmount: amount,
+      usdAmount,
+      phpAmount,
+      originalCurrency,
+      conversionRate: CONVERSION_RATES.USD_TO_PHP
+    });
 
     setIsSubmitting(true);
 
@@ -856,20 +871,21 @@ export default function DepositPage() {
 
         if (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') {
           const networkName = selectedMethod.network;
-          setSuccessMessage(`Please send $${amount} USDT (${networkName}) to the address: ${selectedMethod.address}. After payment, upload your transaction screenshot for verification.`);
+          setSuccessMessage(`Please send $${usdAmount.toFixed(2)} USDT (${networkName}) to the address: ${selectedMethod.address}. Equivalent: ${getConversionDisplay(usdAmount)}. After payment, upload your transaction screenshot for verification.`);
           // Generate QR code for USDT address
           await generateDepositQR();
         } else {
-          setSuccessMessage(`Please send ₱${(amount * 55.5).toLocaleString()} to ${selectedMethod.name} account: ${selectedMethod.address}. After payment, upload your receipt for verification.`);
+          // For PHP methods (GCash/PayMaya)
+          setSuccessMessage(`Please send ${formatCurrency(phpAmount, 'PHP')} to ${selectedMethod.name} account: ${selectedMethod.address}. Equivalent: ${getPhpConversionDisplay(phpAmount)}. After payment, upload your receipt for verification.`);
           // Generate QR code for the payment details
-          await generateManualQRCode(selectedMethod.address, depositAmount, selectedMethod.name);
+          await generateManualQRCode(selectedMethod.address, phpAmount.toString(), selectedMethod.name);
         }
 
         toast({
           title: 'Payment Instructions Generated',
           description: (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
-            ? `Send USDT to the address and upload transaction screenshot for verification.`
-            : `Send payment to ${selectedMethod.name} account and upload receipt for verification.`,
+            ? `Send $${usdAmount.toFixed(2)} USDT (${getConversionDisplay(usdAmount)}) to the address and upload transaction screenshot for verification.`
+            : `Send ${formatCurrency(phpAmount, 'PHP')} (${getPhpConversionDisplay(phpAmount)}) to ${selectedMethod.name} account and upload receipt for verification.`,
           status: 'info',
           duration: 8000,
           isClosable: true,
@@ -1045,6 +1061,17 @@ export default function DepositPage() {
               <Text fontSize="lg" color={subtleTextColor} maxW="600px">
                 Choose your preferred deposit method to add funds to your wallet:
               </Text>
+
+              {/* Conversion Rate Notice */}
+              <Alert status="info" borderRadius="lg" maxW="500px">
+                <AlertIcon />
+                <Box>
+                  <AlertTitle fontSize="sm">Standard Conversion Rate</AlertTitle>
+                  <AlertDescription fontSize="xs">
+                    $1 USD = ₱63 PHP • All deposits are credited to your wallet in USD
+                  </AlertDescription>
+                </Box>
+              </Alert>
             </VStack>
 
 
@@ -1744,8 +1771,12 @@ export default function DepositPage() {
                         // Submit deposit with receipt using manual API
                         const formData = new FormData();
                         formData.append('userEmail', user.email);
-                        formData.append('amount', depositAmount);
-                        formData.append('currency', selectedMethod.symbol || 'USD');
+                        // Always send USD amount to API for consistent wallet crediting
+                        formData.append('amount', usdAmount.toString());
+                        formData.append('currency', 'USD'); // Always USD for wallet crediting
+                        formData.append('originalAmount', amount.toString()); // Original input amount
+                        formData.append('originalCurrency', originalCurrency); // Original currency
+                        formData.append('conversionRate', CONVERSION_RATES.USD_TO_PHP.toString());
                         formData.append('paymentMethod', selectedMethod.id);
                         formData.append('network', selectedMethod.network);
                         formData.append('accountNumber', selectedMethod.address);
@@ -1829,40 +1860,46 @@ export default function DepositPage() {
                       )}
                     </FormLabel>
                     <InputGroup>
-                      <InputLeftAddon>$</InputLeftAddon>
+                      <InputLeftAddon>
+                        {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ? '₱' : '$'}
+                      </InputLeftAddon>
                       <Input
                         id="depositAmount"
                         type="number"
                         placeholder={
                           selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
-                            ? "e.g., 10 (≈₱555)"
+                            ? `e.g., 630 (≈$10 USD)`
                             : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
-                            ? "e.g., 100 (≈100 USDT)"
+                            ? `e.g., 100 (≈₱${convertUsdToPhp(100).toFixed(0)} PHP)`
                             : "e.g., 100"
                         }
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                       />
                     </InputGroup>
-                    {(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') && depositAmount && (
+                    {depositAmount && parseFloat(depositAmount) > 0 && (
                       <FormHelperText color="blue.500">
-                        You will pay: ₱{(parseFloat(depositAmount) * 55.5).toLocaleString()} to {selectedMethod.name}
-                      </FormHelperText>
-                    )}
-                    {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && depositAmount && (
-                      <FormHelperText color="green.500">
-                        You will send: ${depositAmount} USDT ({selectedMethod.network}) to the address
+                        {(() => {
+                          const { usdAmount, phpAmount, originalCurrency } = parseDepositAmount(parseFloat(depositAmount), selectedMethod.id);
+                          if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
+                            return `You will pay: ${formatCurrency(phpAmount, 'PHP')} → Wallet credit: ${formatCurrency(usdAmount, 'USD')} (Rate: $1 = ₱63)`;
+                          } else {
+                            return `You will send: ${formatCurrency(usdAmount, 'USD')} USDT → Equivalent: ${formatCurrency(phpAmount, 'PHP')} (Rate: $1 = ₱63)`;
+                          }
+                        })()}
                       </FormHelperText>
                     )}
                     {error && <FormHelperText color="red.500">{error}</FormHelperText>}
                   </FormControl>
 
                   <Text fontSize="sm" color={subtleTextColor} mt={2}>
+                    <strong>Conversion Rate:</strong> $1 USD = ₱63 PHP
+                    <br />
                     {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
-                      ? 'After payment confirmation, funds will be credited to your wallet balance in USD.'
+                      ? 'After payment confirmation, funds will be credited to your wallet balance in USD at the standard rate.'
                       : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
                       ? 'After transaction confirmation, funds will be credited to your wallet balance in USD.'
-                      : 'Funds will be credited to your wallet balance.'
+                      : 'Funds will be credited to your wallet balance in USD.'
                     }
                   </Text>
 

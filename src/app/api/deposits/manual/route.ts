@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { parseDepositAmount, CONVERSION_RATES } from '@/lib/utils/currency';
 
 // Force dynamic rendering and use Node.js runtime for file handling
 export const dynamic = 'force-dynamic';
@@ -193,10 +194,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate USD amount for storage
-    let usdAmount = depositAmount;
-    let originalCurrency = validatedData.currency;
+    // Calculate USD amount using standard conversion rate ($1 = ₱63)
+    // The frontend now sends the correct USD amount, but we'll validate the conversion
+    let usdAmount = depositAmount; // Frontend sends USD amount
+    let originalCurrency = validatedData.originalCurrency || validatedData.currency;
     let conversionRate = 1;
+
+    // Get conversion details from form data if available
+    const originalAmount = parseFloat(formData.get('originalAmount') as string || depositAmount.toString());
+    const submittedConversionRate = parseFloat(formData.get('conversionRate') as string || '1');
 
     if (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
       // USDT is already in USD
@@ -204,26 +210,34 @@ export async function POST(request: NextRequest) {
       originalCurrency = 'USD';
       conversionRate = 1;
     } else if (paymentMethod === 'gcash' || paymentMethod === 'paymaya') {
-      // GCash/PayMaya deposits are submitted in USD, no conversion needed
-      usdAmount = depositAmount;
-      originalCurrency = 'USD';
-      conversionRate = 1;
-    } else {
-      // Only convert if the currency is actually PHP
-      if (validatedData.currency === 'PHP') {
-        // Convert PHP to USD (approximate rate: 1 PHP = 0.018 USD)
-        usdAmount = depositAmount * 0.018;
+      // For PHP methods, validate the conversion rate
+      if (submittedConversionRate === CONVERSION_RATES.USD_TO_PHP) {
+        // Frontend used correct conversion rate
+        usdAmount = depositAmount; // Already converted to USD by frontend
         originalCurrency = 'PHP';
-        conversionRate = 0.018;
+        conversionRate = CONVERSION_RATES.PHP_TO_USD;
       } else {
-        // For other USD-based methods, no conversion needed
-        usdAmount = depositAmount;
-        originalCurrency = validatedData.currency;
-        conversionRate = 1;
+        // Fallback: use our standard conversion
+        const { usdAmount: convertedUsd } = parseDepositAmount(originalAmount, paymentMethod);
+        usdAmount = convertedUsd;
+        originalCurrency = 'PHP';
+        conversionRate = CONVERSION_RATES.PHP_TO_USD;
       }
+    } else {
+      // For other methods, assume USD
+      usdAmount = depositAmount;
+      originalCurrency = validatedData.currency;
+      conversionRate = 1;
     }
 
-    console.log('💱 Currency conversion:', { depositAmount, usdAmount, originalCurrency, conversionRate });
+    console.log('💱 Standard currency conversion:', {
+      originalAmount,
+      depositAmount,
+      usdAmount,
+      originalCurrency,
+      conversionRate,
+      standardRate: `$1 USD = ₱${CONVERSION_RATES.USD_TO_PHP} PHP`
+    });
 
     // Create deposit record in Supabase
     const depositId = uuidv4();
@@ -249,9 +263,12 @@ export async function POST(request: NextRequest) {
           receiptUrl: receiptPath,
           accountNumber: validatedData.accountNumber,
           accountName: validatedData.accountName,
-          originalAmount: depositAmount,
+          originalAmount: originalAmount,
           originalCurrency: originalCurrency,
           conversionRate: conversionRate,
+          standardConversionRate: CONVERSION_RATES.USD_TO_PHP,
+          phpEquivalent: originalCurrency === 'USD' ? usdAmount * CONVERSION_RATES.USD_TO_PHP : originalAmount,
+          usdEquivalent: usdAmount,
           submittedAt: new Date().toISOString()
         },
         admin_notes: (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon')
