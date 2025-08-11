@@ -37,6 +37,9 @@ interface WithdrawalDetails {
   processingTime?: string;
   isTronpy?: boolean;
   network?: string;
+  processingFee?: number;
+  finalAmount?: number;
+  originalAmount?: number;
 }
 
 function WithdrawalStatusContent() {
@@ -65,6 +68,17 @@ function WithdrawalStatusContent() {
 
         if (data.success && data.withdrawal) {
           const newStatus = data.withdrawal.status;
+          const withdrawal = data.withdrawal;
+
+          // Update withdrawal details with fee information from database
+          if (withdrawalDetails) {
+            setWithdrawalDetails({
+              ...withdrawalDetails,
+              processingFee: withdrawal.processing_fee || 0,
+              finalAmount: withdrawal.final_amount || parseFloat(withdrawalDetails.amount),
+              originalAmount: withdrawal.amount || parseFloat(withdrawalDetails.amount)
+            });
+          }
 
           if (newStatus !== currentStatus) {
             setCurrentStatus(newStatus);
@@ -126,6 +140,9 @@ function WithdrawalStatusContent() {
 
       setWithdrawalDetails(details);
       setCurrentStatus(details.status);
+
+      // Fetch fee information from database
+      checkWithdrawalStatus(transactionId);
     }
 
     setIsLoading(false);
@@ -346,6 +363,49 @@ function WithdrawalStatusContent() {
               </HStack>
 
               <Divider />
+
+              {/* Fee Breakdown - Only show for manual methods with fees */}
+              {withdrawalDetails.processingFee !== undefined && withdrawalDetails.processingFee > 0 && (
+                <>
+                  <VStack spacing={3} align="stretch">
+                    <Text fontSize="lg" fontWeight="bold" color={textColor} textAlign="center">
+                      Fee Breakdown:
+                    </Text>
+
+                    <Box
+                      p={4}
+                      bg={useColorModeValue('orange.50', 'orange.900')}
+                      borderRadius="lg"
+                      border="1px solid"
+                      borderColor={useColorModeValue('orange.200', 'orange.600')}
+                    >
+                      <VStack spacing={2} align="stretch">
+                        <HStack justify="space-between">
+                          <Text fontSize="sm" color={subtleTextColor}>Original Amount:</Text>
+                          <Text fontSize="sm" fontWeight="bold" color={textColor}>
+                            ${(withdrawalDetails.originalAmount || parseFloat(withdrawalDetails.amount)).toFixed(2)}
+                          </Text>
+                        </HStack>
+                        <HStack justify="space-between">
+                          <Text fontSize="sm" color={subtleTextColor}>Processing Fee (10%):</Text>
+                          <Text fontSize="sm" fontWeight="bold" color="red.500">
+                            -${withdrawalDetails.processingFee.toFixed(2)}
+                          </Text>
+                        </HStack>
+                        <Divider borderColor={useColorModeValue('orange.300', 'orange.600')} />
+                        <HStack justify="space-between">
+                          <Text fontSize="md" fontWeight="bold" color={textColor}>You Will Receive:</Text>
+                          <Text fontSize="md" fontWeight="bold" color="green.500">
+                            ${(withdrawalDetails.finalAmount || (parseFloat(withdrawalDetails.amount) - withdrawalDetails.processingFee)).toFixed(2)}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                    </Box>
+                  </VStack>
+
+                  <Divider />
+                </>
+              )}
 
               {/* Destination Address */}
               <VStack spacing={4} align="stretch">
