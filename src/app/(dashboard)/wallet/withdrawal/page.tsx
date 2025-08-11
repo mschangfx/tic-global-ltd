@@ -1057,7 +1057,7 @@ export default function WithdrawalPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} maxW="1200px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter((method): method is WithdrawalMethod => method && method.id && method.name && !!method.tronNetwork).map((method) => {
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter((method): method is WithdrawalMethod => Boolean(method && method.id && method.name && method.tronNetwork)).map((method) => {
                   const limits = getCompactWithdrawalLimits(method.id);
                   return (
                   <Card
