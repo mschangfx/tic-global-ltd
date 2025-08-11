@@ -56,7 +56,9 @@ async function sendDepositNotification(deposit: any) {
 
 // Send withdrawal notification
 async function sendWithdrawalNotification(withdrawal: any) {
-  const message = `💸 **NEW WITHDRAWAL REQUEST**\n\n👤 User: ${withdrawal.user_email}\n💰 Amount: $${withdrawal.amount} ${withdrawal.currency}\n🏦 To: ${withdrawal.destination_address.substring(0, 20)}...\n🌐 Network: ${withdrawal.network || 'N/A'}\n📅 Time: ${new Date(withdrawal.created_at).toLocaleString()}\n🆔 ID: ${withdrawal.id.substring(0, 8)}...\n\n⚡ *Instant approval available below*`;
+  const finalAmount = withdrawal.final_amount || withdrawal.amount;
+  const processingFee = withdrawal.processing_fee || 0;
+  const message = `💸 **NEW WITHDRAWAL REQUEST**\n\n👤 User: ${withdrawal.user_email}\n💰 Send: $${finalAmount} ${withdrawal.currency}\n📊 Original: $${withdrawal.amount} - Fee: $${processingFee.toFixed(2)}\n🏦 To: ${withdrawal.destination_address.substring(0, 20)}...\n🌐 Network: ${withdrawal.network || 'N/A'}\n📅 Time: ${new Date(withdrawal.created_at).toLocaleString()}\n🆔 ID: ${withdrawal.id.substring(0, 8)}...\n\n⚡ *Instant approval available below*`;
 
   const keyboard = {
     inline_keyboard: [
