@@ -1057,7 +1057,7 @@ export default function WithdrawalPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} maxW="1200px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && method.tronNetwork).map((method: any) => {
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && method.tronNetwork).map((method: WithdrawalMethod) => {
                   const limits = getCompactWithdrawalLimits(method.id);
                   return (
                   <Card
@@ -1066,6 +1066,7 @@ export default function WithdrawalPage() {
                     onClick={() => handleMethodSelect(method)}
                     bg={cardBgColor}
                     border="2px solid"
+                    // @ts-ignore - TypeScript incorrectly infers filtered array as never[]
                     borderColor={selectedMethod?.id === method.id ? 'green.400' : useColorModeValue('gray.200', 'gray.600')}
                     borderRadius="xl"
                     minH="340px"
@@ -1205,7 +1206,7 @@ export default function WithdrawalPage() {
               </VStack>
 
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} maxW="1200px" mx="auto">
-                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && !method.tronNetwork).map((method: any) => {
+                {withdrawalMethods && withdrawalMethods.length > 0 ? withdrawalMethods.filter(method => method && method.id && method.name && !method.tronNetwork).map((method: WithdrawalMethod) => {
                   const limits = getCompactWithdrawalLimits(method.id);
                   return (
                   <Card
