@@ -366,7 +366,7 @@ export async function POST(request: NextRequest) {
         created_at: transaction.created_at
       },
       wallet: {
-        previous_balance: wallet.total_balance,
+        previous_balance: availableBalance,
         current_balance: updatedWallet?.total_balance || 0,
         amount_withdrawn: withdrawalAmount
       }
