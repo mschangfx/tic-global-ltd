@@ -203,11 +203,24 @@ export async function POST(request: NextRequest) {
       usdAmount = depositAmount;
       originalCurrency = 'USD';
       conversionRate = 1;
+    } else if (paymentMethod === 'gcash' || paymentMethod === 'paymaya') {
+      // GCash/PayMaya deposits are submitted in USD, no conversion needed
+      usdAmount = depositAmount;
+      originalCurrency = 'USD';
+      conversionRate = 1;
     } else {
-      // Convert PHP to USD (approximate rate: 1 PHP = 0.018 USD)
-      usdAmount = depositAmount * 0.018;
-      originalCurrency = validatedData.currency;
-      conversionRate = 0.018;
+      // Only convert if the currency is actually PHP
+      if (validatedData.currency === 'PHP') {
+        // Convert PHP to USD (approximate rate: 1 PHP = 0.018 USD)
+        usdAmount = depositAmount * 0.018;
+        originalCurrency = 'PHP';
+        conversionRate = 0.018;
+      } else {
+        // For other USD-based methods, no conversion needed
+        usdAmount = depositAmount;
+        originalCurrency = validatedData.currency;
+        conversionRate = 1;
+      }
     }
 
     console.log('💱 Currency conversion:', { depositAmount, usdAmount, originalCurrency, conversionRate });
