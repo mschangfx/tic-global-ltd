@@ -411,9 +411,18 @@
                             </span>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60;">
-                                $${transaction.amount} ${transaction.currency || 'USD'}
-                            </div>
+                            ${transaction.type === 'withdrawal' && transaction.final_amount ? `
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60;">
+                                    $${transaction.final_amount} ${transaction.currency || 'USD'}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #e74c3c; margin-top: 2px;">
+                                    Original: $${transaction.amount} - Fee: $${(transaction.processing_fee || 0).toFixed(2)}
+                                </div>
+                            ` : `
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60;">
+                                    $${transaction.amount} ${transaction.currency || 'USD'}
+                                </div>
+                            `}
                             <div style="font-size: 0.9rem; color: #7f8c8d;">
                                 ${new Date(transaction.created_at).toLocaleString()}
                             </div>
@@ -425,6 +434,7 @@
                         <div><strong>🆔 ID:</strong> ${transaction.id.substring(0, 8)}...</div>
                         ${transaction.network ? `<div><strong>🌐 Network:</strong> ${transaction.network}</div>` : ''}
                         ${transaction.method_name ? `<div><strong>💳 Method:</strong> ${transaction.method_name}</div>` : ''}
+                        ${transaction.type === 'withdrawal' && transaction.destination_address ? `<div><strong>📍 Send To:</strong> ${transaction.destination_address}</div>` : ''}
                         ${transaction.type === 'deposit' && (transaction.request_metadata?.receiptUrl || transaction.receipt_url) ? `
                             <div style="margin-top: 10px;">
                                 <strong>📄 Receipt:</strong>
@@ -436,6 +446,18 @@
                         ` : transaction.type === 'deposit' ? `
                             <div style="margin-top: 10px; color: #e74c3c; font-size: 12px;">
                                 📄 No receipt uploaded
+                            </div>
+                        ` : ''}
+                        ${transaction.type === 'withdrawal' && transaction.final_amount ? `
+                            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+                                <strong>💰 SEND TO USER:</strong>
+                                <span style="font-size: 1.1rem; font-weight: bold; color: #d63031;">
+                                    $${transaction.final_amount} ${transaction.currency || 'USD'}
+                                </span>
+                                <br>
+                                <small style="color: #636e72;">
+                                    (Original $${transaction.amount} - Processing Fee $${(transaction.processing_fee || 0).toFixed(2)})
+                                </small>
                             </div>
                         ` : ''}
                         ${transaction.admin_notes ? `<div style="margin-top: 8px;"><strong>📝 Notes:</strong> ${transaction.admin_notes}</div>` : ''}
