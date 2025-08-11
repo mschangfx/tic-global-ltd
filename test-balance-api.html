@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Wallet Balance API Test</h1>
+        <p>Test the wallet balance API to verify it's working correctly with the new transaction-based calculation.</p>
+        
+        <div>
+            <label>User Email:</label>
+            <input type="email" id="userEmail" value="mschangfx@gmail.com" placeholder="Enter user email">
+            <button onclick="testBalanceAPI()">Test Balance API</button>
+            <button onclick="testDebugAPI()">Test Debug API</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function testBalanceAPI() {
+            const userEmail = document.getElementById('userEmail').value;
+            if (!userEmail) {
+                addResult('❌ Please enter a user email', 'error');
+                return;
+            }
+
+            addResult('🔄 Testing balance API...', 'info');
+
+            try {
+                // Test POST endpoint (used by frontend)
+                const response = await fetch('/api/wallet/balance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userEmail: userEmail })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Balance API Success (POST):\n${JSON.stringify(data, null, 2)}`, 'success');
+                    
+                    // Also test GET endpoint
+                    const getResponse = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
+                    const getData = await getResponse.json();
+                    
+                    if (getResponse.ok) {
+                        addResult(`✅ Balance API Success (GET):\n${JSON.stringify(getData, null, 2)}`, 'success');
+                    } else {
+                        addResult(`❌ Balance API Error (GET):\n${JSON.stringify(getData, null, 2)}`, 'error');
+                    }
+                } else {
+                    addResult(`❌ Balance API Error (POST):\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDebugAPI() {
+            const userEmail = document.getElementById('userEmail').value;
+            if (!userEmail) {
+                addResult('❌ Please enter a user email', 'error');
+                return;
+            }
+
+            addResult('🔍 Testing debug API...', 'info');
+
+            try {
+                // Test debug endpoint (requires authentication)
+                const response = await fetch('/api/wallet/balance-debug', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Debug API Success:\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    addResult(`❌ Debug API Error:\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            addResult('🚀 Balance API Test Tool Loaded', 'info');
+            addResult('💡 This tool tests the new transaction-based balance calculation', 'info');
+            addResult('📊 Expected balance for mschangfx@gmail.com: $33,731.14', 'info');
+        };
+    </script>
+</body>
+</html>
