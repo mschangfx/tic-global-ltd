@@ -1185,8 +1185,7 @@ export default function WithdrawalPage() {
                     </CardBody>
                   </Card>
                   );
-                })
-                )) : (
+                }) : (
                   <Text color={subtleTextColor} textAlign="center">
                     No withdrawal methods available
                   </Text>
@@ -1312,8 +1311,7 @@ export default function WithdrawalPage() {
                     </CardBody>
                   </Card>
                   );
-                })
-                )) : null}
+                }) : null}
               </SimpleGrid>
             </VStack>
 
