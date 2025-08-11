@@ -801,7 +801,9 @@ export default function DepositPage() {
   // Generate QR code for manual payment methods
   const generateManualQRCode = async (accountNumber: string, amount: string, methodName: string) => {
     try {
-      const qrData = `${methodName}:${accountNumber}:₱${(parseFloat(amount) * 55.5).toLocaleString()}`;
+      // Use standard conversion rate: $1 USD = ₱63 PHP
+      const phpAmount = parseFloat(amount);
+      const qrData = `${methodName}:${accountNumber}:₱${phpAmount.toLocaleString()}`;
       const QRCode = (await import('qrcode')).default;
       const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
         width: 200,
@@ -1376,7 +1378,7 @@ export default function DepositPage() {
                       <AlertDescription display="block">
                         {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
                           ? `Send $${depositAmount} USDT (${selectedMethod.network}) to the address below.`
-                          : `Send ₱${(parseFloat(depositAmount) * 55.5).toLocaleString()} to the ${selectedMethod.name} account below.`
+                          : `Send ₱${convertUsdToPhp(parseFloat(depositAmount)).toLocaleString()} to the ${selectedMethod.name} account below.`
                         }
                       </AlertDescription>
                     </Box>
@@ -1455,7 +1457,7 @@ export default function DepositPage() {
                                 <Text fontWeight="bold" fontSize="xl" color="green.600" textAlign="center">
                                   {(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
                                     ? `$${depositAmount} USDT`
-                                    : `₱${(parseFloat(depositAmount) * 55.5).toLocaleString()}`
+                                    : `₱${convertUsdToPhp(parseFloat(depositAmount)).toLocaleString()}`
                                   }
                                 </Text>
                               </Box>
@@ -1631,7 +1633,7 @@ export default function DepositPage() {
                                   1
                                 </Box>
                                 <Text>
-                                  Send exactly <Text as="span" fontWeight="bold" color="green.600">₱{(parseFloat(depositAmount) * 55.5).toLocaleString()}</Text> using the account details or scan the QR code
+                                  Send exactly <Text as="span" fontWeight="bold" color="green.600">₱{convertUsdToPhp(parseFloat(depositAmount)).toLocaleString()}</Text> using the account details or scan the QR code
                                 </Text>
                               </HStack>
 

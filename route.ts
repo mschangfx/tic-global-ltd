@@ -103,24 +103,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate minimum amount based on payment method
+    // USD is ALWAYS the deposit amount for all methods
     const { amount: depositAmount, paymentMethod } = validatedData;
-    
-    if (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
-      // USDT minimum is $10
-      if (depositAmount < 10) {
-        return NextResponse.json(
-          { success: false, message: 'Minimum USDT deposit amount is $10' },
-          { status: 400 }
-        );
-      }
-    } else {
-      // PHP methods minimum is 500 PHP
-      if (depositAmount < 500) {
-        return NextResponse.json(
-          { success: false, message: 'Minimum deposit amount is ₱500 for digital wallet payments' },
-          { status: 400 }
-        );
-      }
+
+    // All methods now use USD input with $10 minimum
+    if (depositAmount < 10) {
+      return NextResponse.json(
+        { success: false, message: 'Minimum deposit amount is $10 USD (₱630 PHP) for all payment methods' },
+        { status: 400 }
+      );
+    }
+
+    // Maximum deposit limit
+    if (depositAmount > 10000) {
+      return NextResponse.json(
+        { success: false, message: 'Maximum deposit amount is $10,000 USD (₱630,000 PHP) for all payment methods' },
+        { status: 400 }
+      );
     }
 
     // Save receipt file to Supabase Storage

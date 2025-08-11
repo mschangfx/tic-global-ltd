@@ -36,6 +36,7 @@ import {
   FaQrcode
 } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
+import { convertUsdToPhp, formatCurrency, CONVERSION_RATES } from '@/lib/utils/currency';
 
 // Manual crypto payment methods - TRC20 (requires admin approval)
 const CRYPTO_METHODS = [
@@ -54,35 +55,35 @@ const CRYPTO_METHODS = [
   }
 ];
 
-// Manual payment methods - GCash and PayMaya
+// Manual payment methods - GCash and PayMaya (USD input, PHP payment)
 const MANUAL_METHODS = [
   {
     id: 'gcash',
     name: 'GCash',
-    symbol: 'PHP',
+    symbol: 'USD', // USD is always the deposit amount
     icon: '/img/gcash.png',
     qrCode: '/img/gcash qr.jpg',
     network: 'Digital Wallet',
-    minAmount: 500, // 500 PHP minimum
+    minAmount: 10, // $10 USD minimum
     fee: 0,
     processingTime: '5-30 minutes',
     iconColor: 'blue.500',
-    instructions: 'Send payment to GCash number and upload receipt',
+    instructions: 'Enter USD amount - you will pay PHP equivalent to GCash',
     accountNumber: '09675131248',
     accountName: 'Patricia Marie Joble'
   },
   {
     id: 'paymaya',
     name: 'PayMaya',
-    symbol: 'PHP',
+    symbol: 'USD', // USD is always the deposit amount
     icon: '/img/paymaya.jpg',
     qrCode: '/img/paymaya qr.jpg',
     network: 'Digital Wallet',
-    minAmount: 500, // 500 PHP minimum
+    minAmount: 10, // $10 USD minimum
     fee: 0,
     processingTime: '5-30 minutes',
     iconColor: 'green.500',
-    instructions: 'Send payment to PayMaya number and upload receipt',
+    instructions: 'Enter USD amount - you will pay PHP equivalent to PayMaya',
     accountNumber: '09675131248',
     accountName: 'Patricia Marie Joble'
   }
@@ -494,10 +495,10 @@ export default function DepositPage() {
                 </Alert>
 
                 <FormControl>
-                  <FormLabel color={textColor}>Amount ({selectedMethod.symbol})</FormLabel>
+                  <FormLabel color={textColor}>Amount (USD)</FormLabel>
                   <Input
                     type="number"
-                    placeholder={`Enter amount (min: ${selectedMethod.minAmount})`}
+                    placeholder={`Enter USD amount (min: $${selectedMethod.minAmount})`}
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     step="0.01"
@@ -511,9 +512,20 @@ export default function DepositPage() {
                     <Box>
                       <AlertTitle>Transaction Summary</AlertTitle>
                       <AlertDescription>
-                        Amount: {amount} {selectedMethod.symbol} | 
-                        Fee: {selectedMethod.fee} {selectedMethod.symbol} | 
-                        You'll receive: {(parseFloat(amount) - selectedMethod.fee).toFixed(6)} {selectedMethod.symbol}
+                        {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ? (
+                          <>
+                            Deposit: ${amount} USD |
+                            You'll pay: ₱{convertUsdToPhp(parseFloat(amount)).toFixed(2)} PHP |
+                            Fee: Free |
+                            Wallet credit: ${amount} USD
+                          </>
+                        ) : (
+                          <>
+                            Amount: {amount} {selectedMethod.symbol} |
+                            Fee: {selectedMethod.fee} {selectedMethod.symbol} |
+                            You'll receive: {(parseFloat(amount) - selectedMethod.fee).toFixed(6)} {selectedMethod.symbol}
+                          </>
+                        )}
                       </AlertDescription>
                     </Box>
                   </Alert>
