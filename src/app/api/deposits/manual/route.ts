@@ -19,6 +19,9 @@ const ManualDepositSchema = z.object({
     return num;
   }),
   currency: z.string().min(1, 'Currency is required'),
+  originalAmount: z.string().optional(),
+  originalCurrency: z.string().optional(),
+  conversionRate: z.string().optional(),
   paymentMethod: z.string().min(1, 'Payment method is required'),
   network: z.string().optional(),
   accountNumber: z.string().min(1, 'Account number is required'),
@@ -198,11 +201,11 @@ export async function POST(request: NextRequest) {
     // The frontend now sends the correct USD amount, but we'll validate the conversion
     let usdAmount = depositAmount; // Frontend sends USD amount
     let originalCurrency = validatedData.originalCurrency || validatedData.currency;
-    let conversionRate = 1;
+    let conversionRate = parseFloat(validatedData.conversionRate || '1');
 
     // Get conversion details from form data if available
-    const originalAmount = parseFloat(formData.get('originalAmount') as string || depositAmount.toString());
-    const submittedConversionRate = parseFloat(formData.get('conversionRate') as string || '1');
+    const originalAmount = parseFloat(validatedData.originalAmount || depositAmount.toString());
+    const submittedConversionRate = conversionRate;
 
     if (paymentMethod === 'usdt_trc20' || paymentMethod === 'usdt-trc20' || paymentMethod === 'usdt-bep20' || paymentMethod === 'usdt-polygon') {
       // USDT is already in USD
