@@ -22,8 +22,22 @@ export function getSupabaseAdmin() {
   }
 
   try {
-    const client = createClient(url, key, { auth: { persistSession: false } });
-    console.log('✅ Supabase admin client created successfully');
+    const client = createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'Authorization': `Bearer ${key}`
+        }
+      }
+    });
+    console.log('✅ Supabase admin client created successfully with service role bypass');
     return client;
   } catch (error) {
     console.error('❌ Failed to create Supabase client:', error);
