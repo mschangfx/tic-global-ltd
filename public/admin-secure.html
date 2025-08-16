@@ -432,10 +432,23 @@
         // Silence wallet extension noise
         try { void window.ethereum; } catch (e) { console.warn("Wallet extension error ignored:", e); }
 
+        // Additional wallet extension noise suppression
+        const originalError = console.error;
+        console.error = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('inpage.js') ||
+                message.includes('binanceInjectedProvider') ||
+                message.includes('Cannot read properties of null') ||
+                message.includes('ethereum')) {
+                return; // Suppress wallet extension errors
+            }
+            originalError.apply(console, args);
+        };
+
         // Configuration
         let config = {
-            adminToken: localStorage.getItem('adminToken') || '',
-            apiBaseUrl: localStorage.getItem('apiBaseUrl') || window.location.origin
+            adminToken: localStorage.getItem('ADMIN_X_TOKEN') || localStorage.getItem('adminToken') || '',
+            apiBaseUrl: localStorage.getItem('ADMIN_API_BASE') || localStorage.getItem('apiBaseUrl') || window.location.origin
         };
 
         let countdownTimer;
@@ -462,7 +475,8 @@
                 ...options,
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-token': token,
+                    'x-admin-token': token,       // primary
+                    'Authorization': `Bearer ${token}`, // fallback accepted by backend
                     ...(options.headers || {})
                 }
             });
@@ -472,6 +486,12 @@
 
             if (!res.ok || (data && data.success === false)) {
                 const msg = (data && data.message) || text || `Request failed (${res.status})`;
+                // ⛔️ If 401: stop auto-refresh to avoid infinite loop and ask for token again
+                if (res.status === 401) {
+                    try { stopAutoRefresh?.(); } catch {}
+                    // show a quick inline banner/modal; keep simple here:
+                    alert("Unauthorized (401). Please re-enter Admin API Token in Settings.");
+                }
                 throw new Error(`HTTP ${res.status}: ${msg}`);
             }
             return data ?? {};
@@ -479,17 +499,17 @@
 
         // Helper functions for config
         function getToken() {
-            return config.adminToken;
+            return (localStorage.getItem('ADMIN_X_TOKEN') || '').trim();
         }
 
         function getApiBase() {
-            return config.apiBaseUrl;
+            return (localStorage.getItem('ADMIN_API_BASE') || '').replace(/\/+$/, '');
         }
 
         // Settings
         function loadSettings() {
-            document.getElementById('adminToken').value = config.adminToken;
-            document.getElementById('apiBaseUrl').value = config.apiBaseUrl;
+            document.getElementById('adminToken').value = getToken();
+            document.getElementById('apiBaseUrl').value = getApiBase() || window.location.origin;
         }
 
         function openSettings() {
@@ -501,13 +521,19 @@
         }
 
         function saveSettings() {
-            config.adminToken = document.getElementById('adminToken').value.trim();
-            config.apiBaseUrl = document.getElementById('apiBaseUrl').value.trim() || window.location.origin;
+            const t = document.getElementById('adminToken').value.trim();
+            const b = document.getElementById('apiBaseUrl').value.trim().replace(/\/+$/,'') || window.location.origin;
 
-            localStorage.setItem('adminToken', config.adminToken);
-            localStorage.setItem('apiBaseUrl', config.apiBaseUrl);
+            if (t) localStorage.setItem('ADMIN_X_TOKEN', t);
+            if (b) localStorage.setItem('ADMIN_API_BASE', b);
 
-            if (config.adminToken) {
+            // Update legacy config for compatibility
+            config.adminToken = t;
+            config.apiBaseUrl = b;
+            localStorage.setItem('adminToken', t);
+            localStorage.setItem('apiBaseUrl', b);
+
+            if (t) {
                 closeSettings();
                 showToast('Settings saved successfully!', 'success');
                 startAutoRefresh();
