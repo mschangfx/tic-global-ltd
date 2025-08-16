@@ -415,7 +415,7 @@ function TransferPageWithParams() {
 
     // Double-check restrictions on frontend
     const subWalletAccounts = ['tic-wallet', 'gic-wallet', 'partner-wallet', 'staking-wallet'];
-    const accountNames = {
+    const accountNames: Record<string, string> = {
       'tic-wallet': 'TIC Wallet',
       'gic-wallet': 'GIC Wallet',
       'partner-wallet': 'Partner Wallet',
