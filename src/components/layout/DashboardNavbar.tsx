@@ -738,4 +738,4 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
 // Example: import { FaChevronDown } from 'react-icons/fa';
 // For simplicity, I've added it as a comment. You might need to add it to the import statement.
 // Updated: Environment variables configured for admin panel deployment
-// Redeployment triggered with correct SUPABASE_URL
+// Redeployment triggered with correct SUPABASE_URL and updated service key
