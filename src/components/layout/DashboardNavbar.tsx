@@ -737,3 +737,4 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
 // Note: FaChevronDown needs to be imported if used for the currency dropdown arrow.
 // Example: import { FaChevronDown } from 'react-icons/fa';
 // For simplicity, I've added it as a comment. You might need to add it to the import statement.
+// Updated: Environment variables configured for admin panel deployment
