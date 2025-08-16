@@ -1499,7 +1499,7 @@ export default function DepositPage() {
                             Scan QR Code
                           </Heading>
 
-                          {(manualQrCodeDataUrl || ((selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && qrCodeDataUrl) || selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme') ? (
+                          {(manualQrCodeDataUrl || qrCodeDataUrl || ['gcash', 'paymaya', 'gotyme'].includes(selectedMethod.id)) ? (
                             <Box
                               bg="white"
                               p={4}
@@ -1540,7 +1540,7 @@ export default function DepositPage() {
                               <VStack spacing={2}>
                                 <Spinner size="lg" color="blue.500" />
                                 <Text fontSize="sm" color="gray.500" textAlign="center">
-                                  {(selectedMethod?.id === 'gcash' || selectedMethod?.id === 'paymaya' || selectedMethod?.id === 'gotyme') ? 'Loading QR Code...' : 'Generating QR Code...'}
+                                  {['gcash', 'paymaya', 'gotyme'].includes(selectedMethod?.id || '') ? 'Loading QR Code...' : 'Generating QR Code...'}
                                 </Text>
                               </VStack>
                             </Box>
