@@ -1540,7 +1540,7 @@ export default function DepositPage() {
                               <VStack spacing={2}>
                                 <Spinner size="lg" color="blue.500" />
                                 <Text fontSize="sm" color="gray.500" textAlign="center">
-                                  {(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme') ? 'Loading QR Code...' : 'Generating QR Code...'}
+                                  {(selectedMethod?.id === 'gcash' || selectedMethod?.id === 'paymaya' || selectedMethod?.id === 'gotyme') ? 'Loading QR Code...' : 'Generating QR Code...'}
                                 </Text>
                               </VStack>
                             </Box>
