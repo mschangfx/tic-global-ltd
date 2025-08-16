@@ -1,113 +1,90 @@
-// app/api/admin/withdrawals/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-export const dynamic = "force-dynamic";
-
-function admin() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    return { missingEnv: true, info: { hasUrl: !!url, hasKey: !!key, availableUrl: process.env.NEXT_PUBLIC_SUPABASE_URL } } as any;
-  }
-  return createClient(url, key, { auth: { persistSession: false } });
-}
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
-}
+import { getSupabaseAdmin } from "../../_lib/supabase";
+import { requireAdmin } from "../../_lib/auth";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const unauthorized = requireAdmin(req);
+  if (unauthorized) return unauthorized;
+
+  const supabase = getSupabaseAdmin();
   const id = params.id;
-  let body: any = {};
-  try { body = await req.json(); } catch (e: any) {
-    return NextResponse.json({ error: "Invalid JSON", details: String(e) }, { status: 400, headers: corsHeaders });
+  const body = await req.json().catch(() => ({} as any));
+  const { action, transaction_hash, admin_notes } = body as {
+    action: "approve"|"reject"; transaction_hash?: string; admin_notes?: string;
+  };
+
+  if (!["approve","reject"].includes(action)) {
+    return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 });
   }
 
-  const { action, reason, tx_hash } = body || {};
-  if (!id || !action) return NextResponse.json({ error: "Missing id or action" }, { status: 400, headers: corsHeaders });
+  // load
+  const { data: rows, error: readErr } = await supabase
+    .from("withdrawal_requests").select("*").eq("id", id).limit(1);
+  if (readErr) return NextResponse.json({ success: false, message: readErr.message }, { status: 500 });
+  const w = rows?.[0];
+  if (!w) return NextResponse.json({ success: false, message: "Withdrawal not found" }, { status: 404 });
 
-  // env check
-  const cli: any = admin();
-  if ((cli as any).missingEnv) {
-    return NextResponse.json({ error: "ENV_MISSING", details: (cli as any).info }, { status: 500, headers: corsHeaders });
-  }
-  const supabase = cli as ReturnType<typeof createClient>;
-  const projectRef = process.env.SUPABASE_URL?.match(/https:\/\/([a-z0-9-]+)\.supabase\.co/i)?.[1];
+  const now = new Date().toISOString();
+  const adminEmail = "admin@ticgloballtd.com";
 
-  // v2 API supports schema scoping:
-  const db = (supabase as any).schema ? (supabase as any).schema('public') : supabase;
+  if (action === "approve") {
+    const tx = transaction_hash || "PENDING_TX";
+    const { error: upErr } = await supabase
+      .from("withdrawal_requests")
+      .update({
+        status: "completed",
+        transaction_hash: tx,
+        approved_by: adminEmail,
+        approved_at: now,
+        updated_at: now,
+        admin_notes: admin_notes || "Approved via admin API",
+      })
+      .eq("id", id);
 
-  // READ by id only
-  const read = await db.from("withdrawal_requests")
-    .select("id,status")
-    .eq("id", id)
-    .maybeSingle();
+    if (upErr) return NextResponse.json({ success: false, message: upErr.message }, { status: 500 });
 
-  if (read.error) {
-    return NextResponse.json({ error: "READ_ERROR", projectRef, details: read.error }, { status: 500, headers: corsHeaders });
-  }
-  if (!read.data) {
-    return NextResponse.json({ error: "Withdrawal not found", projectRef }, { status: 404, headers: corsHeaders });
-  }
-  if (read.data.status !== "pending") {
-    return NextResponse.json({ error: "Already processed", status: read.data.status, projectRef }, { status: 409, headers: corsHeaders });
-  }
+    await supabase.from("admin_audit_logs").insert({
+      action: "withdrawal_approve",
+      target_table: "withdrawal_requests",
+      target_id: id,
+      admin_email: adminEmail,
+      notes: admin_notes || null,
+      created_at: now,
+    });
 
-  // Build patch
-  const patch: Record<string, any> = { processed_at: new Date().toISOString() };
-  if (action === "reject") {
-    patch.status = "rejected";
-    patch.reject_reason = reason ?? null;
-  } else if (action === "approve") {
-    patch.status = "approved";
-    patch.tx_hash = tx_hash ?? null; // harmless even if null
-  } else {
-    return NextResponse.json({ error: "Invalid action", projectRef }, { status: 400, headers: corsHeaders });
+    return NextResponse.json({ success: true });
   }
 
-  // UPDATE with race guard
-  const upd = await db.from("withdrawal_requests")
-    .update(patch)
-    .eq("id", id)
-    .eq("status", "pending")
-    .select("id,status,processed_at,reject_reason,tx_hash")
-    .maybeSingle();
-
-  if (upd.error) {
-    return NextResponse.json({ error: "UPDATE_ERROR", projectRef, patch, details: upd.error }, { status: 500, headers: corsHeaders });
-  }
-  if (!upd.data) {
-    return NextResponse.json({ error: "Already processed", projectRef }, { status: 409, headers: corsHeaders });
-  }
-
-  return NextResponse.json({ ok: true, projectRef, ...upd.data }, { headers: corsHeaders });
-}
-
-// GET - Fetch withdrawal details
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
-  const supabase = admin();
-
-  const { data: withdrawal, error } = await supabase
+  // reject: mark rejected then refund via RPC
+  const { error: rejErr } = await supabase
     .from("withdrawal_requests")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+    .update({
+      status: "rejected",
+      rejected_by: adminEmail,
+      rejected_at: now,
+      updated_at: now,
+      admin_notes: admin_notes || "Rejected via admin API - funds refunded to wallet",
+    })
+    .eq("id", id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
+  if (rejErr) return NextResponse.json({ success: false, message: rejErr.message }, { status: 500 });
+
+  // refund via RPC (implement this function in DB)
+  const { data: refundData, error: refundErr } = await supabase
+    .rpc("refund_withdrawal_amount", { withdrawal_id_param: id });
+
+  if (refundErr) {
+    return NextResponse.json({ success: false, message: refundErr.message }, { status: 500 });
   }
 
-  if (!withdrawal) {
-    return NextResponse.json({ error: "Withdrawal not found" }, { status: 404, headers: corsHeaders });
-  }
+  await supabase.from("admin_audit_logs").insert({
+    action: "withdrawal_reject",
+    target_table: "withdrawal_requests",
+    target_id: id,
+    admin_email: adminEmail,
+    notes: admin_notes || null,
+    created_at: now,
+  });
 
-  return NextResponse.json({ success: true, withdrawal }, { headers: corsHeaders });
+  return NextResponse.json({ success: true, refunded: refundData?.refunded ?? null });
 }

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIC Global - Secure Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .refresh-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .countdown {
+            background: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #3182ce;
+            transform: translateY(-1px);
+        }
+
+        .btn-settings {
+            background: #718096;
+        }
+
+        .btn-settings:hover {
+            background: #4a5568;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .transactions {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+
+        .transaction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .transaction-type {
+            background: #4299e1;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .transaction-type.withdrawal {
+            background: #f56565;
+        }
+
+        .transaction-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .transaction-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            color: #2d3748;
+            word-break: break-all;
+        }
+
+        .transaction-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-approve {
+            background: #48bb78;
+        }
+
+        .btn-approve:hover {
+            background: #38a169;
+        }
+
+        .btn-reject {
+            background: #f56565;
+        }
+
+        .btn-reject:hover {
+            background: #e53e3e;
+        }
+
+        .btn-receipt {
+            background: #805ad5;
+        }
+
+        .btn-receipt:hover {
+            background: #6b46c1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: #f56565;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .receipt-image {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .transaction-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .transaction-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 TIC Global - Secure Admin Panel</h1>
+            <div class="status-bar">
+                <div class="refresh-info">
+                    <span>Auto-refresh in: <span class="countdown" id="countdown">10</span>s</span>
+                    <button class="btn" onclick="refreshData()">🔄 Refresh Now</button>
+                </div>
+                <button class="btn btn-settings" onclick="openSettings()">⚙️ Settings</button>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalPending">-</div>
+                <div class="stat-label">Total Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pendingDeposits">-</div>
+                <div class="stat-label">Pending Deposits</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pendingWithdrawals">-</div>
+                <div class="stat-label">Pending Withdrawals</div>
+            </div>
+        </div>
+
+        <div class="transactions">
+            <h2 style="margin-bottom: 20px; color: #2d3748;">📋 Pending Transactions</h2>
+            <div id="transactionsList">
+                <div class="empty-state">
+                    <p>Loading transactions...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚙️ Settings</h3>
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Admin API Token</label>
+                <input type="password" class="form-input" id="adminToken" placeholder="Enter your admin token">
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Base URL</label>
+                <input type="text" class="form-input" id="apiBaseUrl" placeholder="https://your-domain.com">
+            </div>
+            <button class="btn" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal" id="receiptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📄 Receipt</h3>
+                <button class="close-btn" onclick="closeReceipt()">&times;</button>
+            </div>
+            <div id="receiptContent">
+                <p>Loading receipt...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Configuration
+        let config = {
+            adminToken: localStorage.getItem('adminToken') || '',
+            apiBaseUrl: localStorage.getItem('apiBaseUrl') || window.location.origin
+        };
+
+        let countdownTimer;
+        let refreshInterval;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            if (config.adminToken) {
+                startAutoRefresh();
+                refreshData();
+            } else {
+                openSettings();
+            }
+        });
+
+        // API Helper
+        async function apiFetch(endpoint, options = {}) {
+            const url = `${config.apiBaseUrl}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                'x-admin-token': config.adminToken,
+                ...options.headers
+            };
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Settings
+        function loadSettings() {
+            document.getElementById('adminToken').value = config.adminToken;
+            document.getElementById('apiBaseUrl').value = config.apiBaseUrl;
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            config.adminToken = document.getElementById('adminToken').value.trim();
+            config.apiBaseUrl = document.getElementById('apiBaseUrl').value.trim() || window.location.origin;
+
+            localStorage.setItem('adminToken', config.adminToken);
+            localStorage.setItem('apiBaseUrl', config.apiBaseUrl);
+
+            if (config.adminToken) {
+                closeSettings();
+                showToast('Settings saved successfully!', 'success');
+                startAutoRefresh();
+                refreshData();
+            } else {
+                showToast('Please enter an admin token', 'error');
+            }
+        }
+
+        // Auto-refresh
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            
+            let countdown = 10;
+            document.getElementById('countdown').textContent = countdown;
+            
+            countdownTimer = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown;
+                
+                if (countdown <= 0) {
+                    refreshData();
+                    countdown = 10;
+                }
+            }, 1000);
+        }
+
+        function stopAutoRefresh() {
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+        }
+
+        // Data fetching
+        async function refreshData() {
+            if (!config.adminToken) {
+                showToast('Please configure your admin token first', 'error');
+                openSettings();
+                return;
+            }
+
+            try {
+                document.body.classList.add('loading');
+                
+                const data = await apiFetch('/api/admin/pending');
+                
+                if (data.success) {
+                    updateStats(data.transactions);
+                    renderTransactions(data.transactions);
+                    startAutoRefresh(); // Reset countdown
+                } else {
+                    throw new Error(data.message || 'Failed to fetch data');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showToast(`Error: ${error.message}`, 'error');
+                
+                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    showToast('Invalid admin token. Please check your settings.', 'error');
+                    openSettings();
+                }
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        // Update statistics
+        function updateStats(transactions) {
+            const deposits = transactions.filter(t => t.type === 'deposit');
+            const withdrawals = transactions.filter(t => t.type === 'withdrawal');
+            
+            document.getElementById('totalPending').textContent = transactions.length;
+            document.getElementById('pendingDeposits').textContent = deposits.length;
+            document.getElementById('pendingWithdrawals').textContent = withdrawals.length;
+        }
+
+        // Render transactions
+        function renderTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>🎉 No pending transactions</p></div>';
+                return;
+            }
+
+            container.innerHTML = transactions.map(transaction => `
+                <div class="transaction-card">
+                    <div class="transaction-header">
+                        <div>
+                            <span class="transaction-type ${transaction.type}">${transaction.type}</span>
+                            <span class="transaction-amount">$${parseFloat(transaction.amount || 0).toFixed(2)}</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666;">
+                            ${new Date(transaction.created_at).toLocaleString()}
+                        </div>
+                    </div>
+                    
+                    <div class="transaction-details">
+                        <div class="detail-item">
+                            <span class="detail-label">User</span>
+                            <span class="detail-value">${transaction.user_email || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Method</span>
+                            <span class="detail-value">${transaction.method_name || transaction.method || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Network</span>
+                            <span class="detail-value">${transaction.network || 'N/A'}</span>
+                        </div>
+                        ${transaction.type === 'withdrawal' ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Account</span>
+                            <span class="detail-value">${transaction.account_number || 'N/A'}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="transaction-actions">
+                        <button class="btn btn-approve" onclick="processTransaction('${transaction.id}', '${transaction.type}', 'approve')">
+                            ✅ Approve
+                        </button>
+                        <button class="btn btn-reject" onclick="processTransaction('${transaction.id}', '${transaction.type}', 'reject')">
+                            ❌ Reject
+                        </button>
+                        ${transaction.receipt_url ? `
+                        <button class="btn btn-receipt" onclick="viewReceipt('${transaction.receipt_url}')">
+                            📄 View Receipt
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Process transaction
+        async function processTransaction(id, type, action) {
+            const notes = prompt(`${action === 'approve' ? 'Approve' : 'Reject'} this ${type}?\n\nOptional admin notes:`);
+            if (notes === null) return; // User cancelled
+
+            let transactionHash = '';
+            if (type === 'withdrawal' && action === 'approve') {
+                transactionHash = prompt('Enter transaction hash (leave empty for PENDING_TX):') || 'PENDING_TX';
+            }
+
+            try {
+                document.body.classList.add('loading');
+                
+                const endpoint = `/api/admin/${type}s/${id}`;
+                const body = {
+                    action,
+                    admin_notes: notes || undefined,
+                    ...(transactionHash && { transaction_hash: transactionHash })
+                };
+
+                const result = await apiFetch(endpoint, {
+                    method: 'PATCH',
+                    body: JSON.stringify(body)
+                });
+
+                if (result.success) {
+                    showToast(`${type} ${action}d successfully!`, 'success');
+                    refreshData(); // Immediate refresh
+                } else {
+                    throw new Error(result.message || `Failed to ${action} ${type}`);
+                }
+            } catch (error) {
+                console.error('Process error:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        // Receipt viewing
+        function viewReceipt(receiptUrl) {
+            const modal = document.getElementById('receiptModal');
+            const content = document.getElementById('receiptContent');
+            
+            content.innerHTML = `<img src="${receiptUrl}" alt="Receipt" class="receipt-image" />`;
+            modal.style.display = 'block';
+        }
+
+        function closeReceipt() {
+            document.getElementById('receiptModal').style.display = 'none';
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const settingsModal = document.getElementById('settingsModal');
+            const receiptModal = document.getElementById('receiptModal');
+            
+            if (event.target === settingsModal) {
+                closeSettings();
+            }
+            if (event.target === receiptModal) {
+                closeReceipt();
+            }
+        }
+    </script>
+</body>
+</html>
