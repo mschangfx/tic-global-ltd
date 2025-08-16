@@ -471,7 +471,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
               <VStack spacing={1} mb={3} key={`tic-${refreshKey}`}>
                 <HStack justify="space-between" w="full">
                   <HStack spacing={2}>
-                    <Image src="/img/tic icon copy.png" alt="TIC" boxSize={5} />
+                    <Image src="/img/TIC ICON copy.png" alt="TIC" boxSize={5} />
                     <Text fontSize="sm" fontWeight="medium" color="white">TIC</Text>
                   </HStack>
                   <VStack spacing={0} align="flex-end">
@@ -506,7 +506,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
               <VStack spacing={1} mb={3}>
                 <HStack justify="space-between" w="full">
                   <HStack spacing={2}>
-                    <Image src="/img/gic icon copy.png" alt="GIC" boxSize={5} />
+                    <Image src="/img/GIC ICON copy.png" alt="GIC" boxSize={5} />
                     <Text fontSize="sm" fontWeight="medium" color="white">GIC</Text>
                   </HStack>
                   <VStack spacing={0} align="flex-end">
