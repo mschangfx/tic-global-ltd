@@ -10,7 +10,7 @@ const testEmailForAllUsers = async () => {
 
   // Test with multiple email addresses
   const testEmails = [
-    'mschangfx@gmail.com', // Your existing user
+    'user1@example.com',   // Test user 1
     'test@example.com',    // Non-existent user (should still return success for security)
     'admin@ticglobal.com', // Another test email
   ];

@@ -6,16 +6,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-// POST - Sync wallet balance for any user (DEVELOPMENT ONLY)
+// POST - Sync wallet balance for any user
 export async function POST(request: NextRequest) {
   try {
-    // Only allow in development environment
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json(
-        { error: 'This endpoint is only available in development' },
-        { status: 403 }
-      );
-    }
+    // Note: This endpoint is now available in production for wallet synchronization
 
     const body = await request.json();
     const { userEmail } = body;

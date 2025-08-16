@@ -35,7 +35,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { FaSearch, FaFilter, FaCalendarAlt, FaDownload, FaCoins, FaCheckCircle, FaClock, FaTimesCircle, FaArrowCircleDown, FaArrowCircleUp, FaUserFriends, FaPiggyBank, FaSync, FaTrophy, FaUnlock, FaDatabase, FaLock, FaCog, FaExchangeAlt, FaGift, FaChartLine } from 'react-icons/fa'; // Added more transaction icons
+import { FaSearch, FaFilter, FaCalendarAlt, FaDownload, FaCoins, FaCheckCircle, FaClock, FaTimesCircle, FaArrowCircleDown, FaArrowCircleUp, FaUserFriends, FaPiggyBank, FaSync, FaTrophy, FaUnlock, FaDatabase, FaLock, FaCog, FaExchangeAlt, FaGift, FaChartLine, FaCreditCard } from 'react-icons/fa'; // Added more transaction icons
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Define a type for our transaction data for better type safety
@@ -107,7 +107,7 @@ export default function TransactionHistoryPage() {
   const [isLoading, setIsLoading] = useState(false); // Start with false so UI shows immediately
   const [error, setError] = useState<string | null>(null);
 
-  const allTransactionTypes = ["All transaction types", "Deposit", "Withdrawal", "Transfer", "TIC", "GIC", "Staking", "Trader"];
+  const allTransactionTypes = ["All transaction types", "Deposit", "Withdrawal", "Transfer", "Payment", "Plan Purchase", "TIC", "GIC", "Staking", "Trader"];
   const allStatuses = ["All statuses", "Done", "Pending", "Failed"];
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>(allTransactionTypes[0]);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>(allStatuses[0]);
@@ -159,6 +159,8 @@ export default function TransactionHistoryPage() {
           "Deposit": "deposit",
           "Withdrawal": "withdrawal",
           "Transfer": "transfer",
+          "Payment": "payment",
+          "Plan Purchase": "plan",
           "TIC": "tic",
           "GIC": "gic",
           "Staking": "staking",
@@ -206,6 +208,7 @@ export default function TransactionHistoryPage() {
           if (tx.type === 'Deposit') icon = FaArrowCircleDown;
           else if (tx.type === 'Withdrawal') icon = FaArrowCircleUp;
           else if (tx.type.includes('Transfer')) icon = FaExchangeAlt;
+          else if (tx.type.includes('Plan Purchase') || tx.type.includes('Wallet Payment')) icon = FaCreditCard;
           else if (tx.type.includes('Trader')) icon = FaTrophy;
           else if (tx.type.includes('TIC') || tx.type.includes('Tic')) icon = FaCoins;
           else if (tx.type.includes('GIC') || tx.type.includes('Gic')) icon = FaDatabase;

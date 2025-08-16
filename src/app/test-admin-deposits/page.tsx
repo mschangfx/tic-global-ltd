@@ -233,8 +233,11 @@ export default function TestAdminDepositsPage() {
                 </FormControl>
 
                 <FormControl>
-                  <FormLabel>Admin Email:</FormLabel>
+                  <FormLabel htmlFor="admin-email">Admin Email:</FormLabel>
                   <Input
+                    id="admin-email"
+                    name="adminEmail"
+                    type="email"
                     value={testAdminEmail}
                     onChange={(e) => setTestAdminEmail(e.target.value)}
                     placeholder="Admin email"
@@ -242,8 +245,10 @@ export default function TestAdminDepositsPage() {
                 </FormControl>
 
                 <FormControl>
-                  <FormLabel>Admin Notes:</FormLabel>
+                  <FormLabel htmlFor="admin-notes">Admin Notes:</FormLabel>
                   <Textarea
+                    id="admin-notes"
+                    name="adminNotes"
                     value={testAdminNotes}
                     onChange={(e) => setTestAdminNotes(e.target.value)}
                     placeholder="Admin notes for actions"

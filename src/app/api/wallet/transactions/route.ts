@@ -70,3 +70,60 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const { user_email, transaction_type, amount, currency, description, metadata } = await request.json();
+
+    console.log('🔄 POST: Creating wallet transaction for:', user_email);
+    console.log('🔍 POST: Transaction details:', { transaction_type, amount, currency, description });
+
+    if (!user_email || !transaction_type || !amount) {
+      return NextResponse.json(
+        { success: false, message: 'Missing required fields: user_email, transaction_type, amount' },
+        { status: 400 }
+      );
+    }
+
+    // Generate a unique transaction ID
+    const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create wallet transaction record
+    const { data: transaction, error } = await supabase
+      .from('wallet_transactions')
+      .insert({
+        user_email,
+        transaction_id: transactionId,
+        transaction_type,
+        amount: parseFloat(amount),
+        currency: currency || 'USD',
+        description: description || `${transaction_type} transaction`,
+        metadata: metadata || {},
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ POST: Error creating wallet transaction:', error);
+      return NextResponse.json(
+        { success: false, message: 'Failed to create transaction record' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ POST: Successfully created wallet transaction:', transaction.id);
+
+    return NextResponse.json({
+      success: true,
+      transaction
+    });
+
+  } catch (error) {
+    console.error('❌ POST: Error in wallet transactions API:', error);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

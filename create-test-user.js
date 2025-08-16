@@ -22,7 +22,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const createTestUser = async () => {
   const testUser = {
-    email: 'mschangfx@gmail.com',
+    email: 'test-user@example.com', // Generic test email - replace with actual user email
     name: 'Test User',
     provider: 'email',
     created_at: new Date().toISOString(),

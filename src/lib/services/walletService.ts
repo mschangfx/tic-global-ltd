@@ -8,6 +8,7 @@ export interface WalletBalance {
   gic: number;
   staking: number;
   partner_wallet: number;
+  portfolio_value?: number; // Stable total value that doesn't change with internal transfers
   lastUpdated: Date;
 }
 
@@ -186,6 +187,7 @@ class WalletService {
           gic: parseFloat(data.gic_balance) || 0,
           staking: parseFloat(data.staking_balance) || 0,
           partner_wallet: parseFloat(data.partner_wallet_balance) || 0,
+          portfolio_value: parseFloat(data.portfolio_value) || undefined,
           lastUpdated: new Date(data.last_updated)
         };
 
@@ -370,8 +372,10 @@ class WalletService {
         };
       }
 
-      // Refresh balance after payment
-      const newBalance = await this.refreshBalance();
+      // Force refresh balance after payment to ensure UI updates immediately
+      console.log('🔄 Force refreshing balance after payment...');
+      const newBalance = await this.forceRefreshBalance();
+      console.log('✅ Balance refreshed after payment:', newBalance);
 
       return {
         success: true,

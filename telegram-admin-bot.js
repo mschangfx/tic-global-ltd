@@ -272,7 +272,19 @@ async function rejectTransaction(type, txnId, ctx) {
       ctx.reply(`❌ **DEPOSIT REJECTED**\n\n👤 User: ${data.user_email}\n💰 Amount: $${data.amount}\n⏰ Rejected at: ${new Date().toLocaleString()}`);
 
     } else if (type === 'withdrawal') {
-      const { data, error } = await supabase
+      // First get withdrawal details
+      const { data: withdrawal, error: fetchError } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .eq('id', txnId)
+        .single();
+
+      if (fetchError || !withdrawal) {
+        throw new Error('Withdrawal not found');
+      }
+
+      // Update withdrawal status
+      const { error } = await supabase
         .from('withdrawal_requests')
         .update({
           status: 'rejected',
@@ -280,14 +292,29 @@ async function rejectTransaction(type, txnId, ctx) {
           processed_by: adminEmail,
           processed_at: timestamp
         })
-        .eq('id', txnId)
-        .select()
-        .single();
+        .eq('id', txnId);
 
       if (error) throw error;
 
-      ctx.answerCbQuery('❌ Withdrawal rejected');
-      ctx.reply(`❌ **WITHDRAWAL REJECTED**\n\n👤 User: ${data.user_email}\n💰 Amount: $${data.amount}\n⏰ Rejected at: ${new Date().toLocaleString()}`);
+      // Refund the amount to user's wallet using the proper function with unique transaction ID
+      const refundTransactionId = `refund-${txnId}-${Date.now()}`;
+      const { error: refundError } = await supabase
+        .rpc('credit_user_wallet', {
+          user_email_param: withdrawal.user_email,
+          amount_param: withdrawal.amount,
+          transaction_id_param: refundTransactionId,
+          description_param: `Withdrawal rejection refund: $${withdrawal.amount}`
+        });
+
+      if (refundError) {
+        console.error('Error refunding withdrawal:', refundError);
+        // Still report success but mention refund issue
+        ctx.answerCbQuery('❌ Withdrawal rejected (refund failed)');
+        ctx.reply(`❌ **WITHDRAWAL REJECTED**\n\n👤 User: ${withdrawal.user_email}\n💰 Amount: $${withdrawal.amount}\n⏰ Rejected at: ${new Date().toLocaleString()}\n\n⚠️ **Warning**: Refund failed - manual intervention required`);
+      } else {
+        ctx.answerCbQuery('❌ Withdrawal rejected');
+        ctx.reply(`❌ **WITHDRAWAL REJECTED**\n\n👤 User: ${withdrawal.user_email}\n💰 Amount: $${withdrawal.amount}\n⏰ Rejected at: ${new Date().toLocaleString()}\n💰 **Refunded**: $${withdrawal.amount} has been returned to user's wallet`);
+      }
     }
 
   } catch (error) {

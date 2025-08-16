@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, updates } = await request.json();
+
+    console.log('🔄 Wallet update API called for:', email);
+    console.log('🔍 Updates requested:', updates);
 
     if (!email) {
       return NextResponse.json(
@@ -19,9 +22,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = supabaseAdmin;
 
     // Get current wallet data
+    console.log('🔍 Fetching current wallet for:', email);
     const { data: currentWallet, error: fetchError } = await supabase
       .from('user_wallets')
       .select('*')
@@ -29,12 +33,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchError) {
-      console.error('Error fetching current wallet:', fetchError);
+      console.error('❌ Error fetching current wallet:', fetchError);
       return NextResponse.json(
         { error: 'Failed to fetch current wallet data' },
         { status: 500 }
       );
     }
+
+    console.log('✅ Current wallet fetched:', currentWallet);
 
     if (!currentWallet) {
       return NextResponse.json(
@@ -103,6 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the wallet
+    console.log('🔄 Updating wallet with data:', updateData);
     const { data: updatedWallet, error: updateError } = await supabase
       .from('user_wallets')
       .update(updateData)
@@ -111,12 +118,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('Error updating wallet:', updateError);
+      console.error('❌ Error updating wallet:', updateError);
       return NextResponse.json(
         { error: 'Failed to update wallet balance' },
         { status: 500 }
       );
     }
+
+    console.log('✅ Wallet updated successfully:', updatedWallet);
 
     return NextResponse.json({
       success: true,

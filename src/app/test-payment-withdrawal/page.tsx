@@ -60,8 +60,8 @@ export default function TestPaymentWithdrawalPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planId: selectedPlan,
-          userEmail: 'test@example.com'
+          planId: selectedPlan
+          // userEmail is now obtained from session server-side for security
         })
       });
 

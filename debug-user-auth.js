@@ -23,7 +23,7 @@ const debugUserAuth = async () => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const userEmail = 'mschangfx@gmail.com';
+    const userEmail = 'test-user@example.com'; // Replace with actual user email for testing
     console.log(`🔍 Investigating user: ${userEmail}\n`);
 
     // Get detailed user info from Supabase Auth

@@ -651,8 +651,10 @@ function SupportHubPageContent() {
 
                     {/* Subject */}
                     <FormControl isRequired>
-                      <FormLabel color="black" fontSize="sm">Subject *</FormLabel>
+                      <FormLabel htmlFor="contact-subject" color="black" fontSize="sm">Subject *</FormLabel>
                       <Input
+                        id="contact-subject"
+                        name="subject"
                         placeholder="Inquiry about TIC Token"
                         value={contactForm.subject}
                         onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
@@ -664,8 +666,10 @@ function SupportHubPageContent() {
 
                     {/* Message */}
                     <FormControl isRequired>
-                      <FormLabel color="black" fontSize="sm">Comment / Message *</FormLabel>
+                      <FormLabel htmlFor="contact-message" color="black" fontSize="sm">Comment / Message *</FormLabel>
                       <Textarea
+                        id="contact-message"
+                        name="message"
                         placeholder="Your message here..."
                         value={contactForm.message}
                         onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}

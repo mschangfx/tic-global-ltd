@@ -62,6 +62,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
   const cardBg = useColorModeValue('white', 'gray.700');
   const textColor = useColorModeValue('gray.800', 'white');
   const subtleTextColor = useColorModeValue('gray.600', 'gray.400');
+  const distributionItemBg = useColorModeValue('gray.50', 'gray.600');
 
   useEffect(() => {
     const fetchDistributions = async () => {
@@ -96,7 +97,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
   }, [userEmail, subscription.plan_id]);
 
   const planAllocation = TOKEN_ALLOCATIONS[subscription.plan_id as keyof typeof TOKEN_ALLOCATIONS] || 0;
-  const dailyAllocation = Math.round((planAllocation / 365) * 1000) / 1000; // Round to nearest 3 decimal places
+  const dailyAllocation = planAllocation / 365; // Exact daily allocation without rounding
 
   // Calculate progress (how much of the 12-month period has passed)
   const startDate = new Date(subscription.start_date);
@@ -157,20 +158,20 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
           <Stat>
             <StatLabel color={subtleTextColor}>Daily Tokens</StatLabel>
-            <StatNumber color={textColor} fontSize="lg">{dailyAllocation}</StatNumber>
+            <StatNumber color={textColor} fontSize="lg">{dailyAllocation.toFixed(2)}</StatNumber>
             <StatHelpText color={subtleTextColor}>TIC/day ({formatCurrency(dailyAllocation * TIC_PRICE, language)})</StatHelpText>
           </Stat>
 
           <Stat>
             <StatLabel color={subtleTextColor}>Received</StatLabel>
             <StatNumber color={textColor} fontSize="lg">{totalTokensReceived.toFixed(2)}</StatNumber>
-            <StatHelpText color={subtleTextColor}>TIC ({formatCurrency(totalTokensReceived * TIC_PRICE, language)})</StatHelpText>
+            <StatHelpText color={subtleTextColor}>TIC (${(totalTokensReceived * TIC_PRICE).toFixed(2)})</StatHelpText>
           </Stat>
 
           <Stat>
             <StatLabel color={subtleTextColor}>Plan Allocation</StatLabel>
             <StatNumber color={textColor} fontSize="lg">{planAllocation}</StatNumber>
-            <StatHelpText color={subtleTextColor}>TIC (${(planAllocation * TIC_PRICE).toFixed(2)})</StatHelpText>
+            <StatHelpText color={subtleTextColor}>TIC (${planAllocation * TIC_PRICE})</StatHelpText>
           </Stat>
 
           <Stat>
@@ -194,10 +195,10 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
           />
           <HStack justify="space-between">
             <Text fontSize="xs" color={subtleTextColor}>
-              Expected: {expectedTokens.toFixed(2)} TIC (${(expectedTokens * TIC_PRICE).toFixed(2)})
+              Expected: {expectedTokens} TIC (${expectedTokens * TIC_PRICE})
             </Text>
             <Text fontSize="xs" color={subtleTextColor}>
-              Target: {planAllocation} TIC (${(planAllocation * TIC_PRICE).toFixed(2)})
+              Target: {planAllocation} TIC (${planAllocation * TIC_PRICE})
             </Text>
           </HStack>
         </VStack>
@@ -211,7 +212,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
                 Recent Distributions (Last 5)
               </Text>
               {distributions.slice(0, 5).map((dist) => (
-                <HStack key={dist.id} justify="space-between" p={2} bg={useColorModeValue('gray.50', 'gray.600')} borderRadius="md">
+                <HStack key={dist.id} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
                   <HStack spacing={2}>
                     <Icon as={FaCalendarAlt} color={subtleTextColor} boxSize={3} />
                     <Text fontSize="xs" color={subtleTextColor}>
@@ -220,7 +221,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
                   </HStack>
                   <HStack spacing={2}>
                     <Text fontSize="xs" fontWeight="medium" color={textColor}>
-                      +{dist.token_amount} TIC
+                      +{parseFloat(dist.token_amount.toString()).toFixed(2)} TIC
                     </Text>
                     <Badge
                       size="sm"

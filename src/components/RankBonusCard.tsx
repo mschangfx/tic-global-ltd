@@ -193,19 +193,19 @@ export default function RankBonusCard() {
               <HStack justify="space-between">
                 <Text fontSize="sm" color={subtleTextColor}>Bonus Amount:</Text>
                 <Text fontWeight="bold" color="green.500">
-                  ${summary.totalBonusReceived.toLocaleString()}
+                  ${summary.totalBonusReceived.toFixed(2)}
                 </Text>
               </HStack>
               <HStack justify="space-between">
                 <Text fontSize="sm" color={subtleTextColor}>TIC Tokens:</Text>
                 <Text fontWeight="bold" color="orange.500">
-                  {summary.totalTicReceived.toLocaleString()} TIC
+                  {summary.totalTicReceived.toFixed(2)} TIC
                 </Text>
               </HStack>
               <HStack justify="space-between">
                 <Text fontSize="sm" color={subtleTextColor}>GIC Tokens:</Text>
                 <Text fontWeight="bold" color="purple.500">
-                  {summary.totalGicReceived.toLocaleString()} GIC
+                  {summary.totalGicReceived.toFixed(2)} GIC
                 </Text>
               </HStack>
             </VStack>
@@ -266,9 +266,9 @@ export default function RankBonusCard() {
                             {item.rank}
                           </Badge>
                         </Td>
-                        <Td>${parseFloat(item.bonus_amount).toLocaleString()}</Td>
-                        <Td>{parseFloat(item.tic_amount).toLocaleString()} TIC</Td>
-                        <Td>{parseFloat(item.gic_amount).toLocaleString()} GIC</Td>
+                        <Td>${parseFloat(item.bonus_amount).toFixed(2)}</Td>
+                        <Td>{parseFloat(item.tic_amount).toFixed(2)} TIC</Td>
+                        <Td>{parseFloat(item.gic_amount).toFixed(2)} GIC</Td>
                         <Td>
                           <Badge 
                             colorScheme={item.status === 'completed' ? 'green' : 'yellow'} 

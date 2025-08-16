@@ -463,12 +463,13 @@ export async function PUT(request: NextRequest) {
       })
       .eq('id', withdrawal.transaction_id);
 
-    // Refund the amount to user's wallet
+    // Refund the amount to user's wallet with unique transaction ID
+    const refundTransactionId = `refund-${withdrawalId}-${Date.now()}`;
     await supabase
       .rpc('credit_user_wallet', {
         user_email_param: userEmail,
         amount_param: withdrawal.amount,
-        transaction_id_param: withdrawal.transaction_id,
+        transaction_id_param: refundTransactionId,
         description_param: `Withdrawal cancellation refund: $${withdrawal.amount}`
       });
 

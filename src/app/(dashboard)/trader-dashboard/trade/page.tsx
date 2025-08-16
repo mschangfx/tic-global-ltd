@@ -313,7 +313,7 @@ function GICTradePageContent() {
                 
                 <Stat>
                   <StatLabel>GIC Balance</StatLabel>
-                  <StatNumber>{gicBalance.toFixed(8)}</StatNumber>
+                  <StatNumber>{gicBalance.toFixed(2)}</StatNumber>
                   <StatHelpText>Available for selling</StatHelpText>
                 </Stat>
               </SimpleGrid>
@@ -383,7 +383,7 @@ function GICTradePageContent() {
                         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
                           <Stat textAlign="center">
                             <StatLabel>GIC Amount</StatLabel>
-                            <StatNumber>{calculation.gicAmount.toFixed(8)}</StatNumber>
+                            <StatNumber>{calculation.gicAmount.toFixed(2)}</StatNumber>
                             <StatHelpText>tokens</StatHelpText>
                           </Stat>
                           

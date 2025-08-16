@@ -4,8 +4,8 @@
 -- This creates sample transactions to test the transaction history page
 -- Run this AFTER running TRANSACTION_HISTORY_SETUP.sql
 
--- Replace 'your-email@example.com' with your actual email address
--- You can find your email by checking your Google OAuth login or manual login
+-- GENERIC TEST DATA - Replace 'test-user@example.com' with actual user email for testing
+-- This file creates sample transaction data for testing purposes only
 
 -- 1. Insert sample deposits (replace email with your actual email)
 INSERT INTO public.deposits (
@@ -23,23 +23,23 @@ INSERT INTO public.deposits (
     created_at
 ) VALUES 
 -- Completed deposit
-('your-email@example.com', 100.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20', 
- 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 
+('test-user@example.com', 100.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20',
+ 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF',
  100.00, 'completed', 'Test completed deposit', NOW() - INTERVAL '2 days'),
 
 -- Pending deposit
-('your-email@example.com', 50.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20', 
- 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 
+('test-user@example.com', 50.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20',
+ 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF',
  50.00, 'pending', NULL, NOW() - INTERVAL '1 day'),
 
 -- Rejected deposit
-('your-email@example.com', 25.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20', 
- 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 
+('test-user@example.com', 25.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20',
+ 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF',
  25.00, 'rejected', 'Insufficient payment received', NOW() - INTERVAL '3 days'),
 
 -- Another completed deposit
-('your-email@example.com', 200.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20', 
- 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 
+('test-user@example.com', 200.00, 'USD', 'usdt-trc20', 'USDT', 'TRC20',
+ 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF', 'TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF',
  200.00, 'completed', 'Large deposit approved', NOW() - INTERVAL '5 days');
 
 -- 2. Insert sample withdrawal requests (replace email with your actual email)

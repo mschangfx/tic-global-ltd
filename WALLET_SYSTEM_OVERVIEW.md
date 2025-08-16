@@ -60,7 +60,7 @@ Handles **ranking bonuses** and token distributions from achievement-based rewar
 ### **Key Features**
 - ✅ **Qualification Maintenance:** Monthly requirement verification
 - ✅ **Automatic Token Distribution:** 50/50 TIC/GIC split
-- ✅ **Direct Wallet Credit:** Tokens appear in "My Assets"
+- ✅ **Direct Wallet Credit:** Tokens appear in "My Wallet"
 - ✅ **Transaction History:** Complete record with rank source information
 - ✅ **Eligibility Tracking:** Prevents bonuses for unqualified users
 
@@ -105,7 +105,7 @@ Handles **ranking bonuses** and token distributions from achievement-based rewar
 - **Ranking Bonus Card:** Shows current rank and bonus claiming
 - **Ranking Maintenance Card:** Shows qualification status and history
 
-### **My Assets Page**
+### **My Wallet Page**
 - **TIC Balance:** Shows tokens from ranking bonuses
 - **GIC Balance:** Shows tokens from ranking bonuses
 - **Transaction History:** Shows all token transactions with sources

@@ -106,7 +106,7 @@ export default function BalanceRefreshNotification({
 
         toast({
           title: '✅ Balance Updated',
-          description: `Current balance: $${newBalance.toFixed(2)}`,
+          description: `Current balance: $${newBalance}`,
           status: 'info',
           duration: 3000,
           isClosable: true,

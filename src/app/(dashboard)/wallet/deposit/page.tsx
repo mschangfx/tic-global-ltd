@@ -284,6 +284,17 @@ export default function DepositPage() {
           fee: 'Free',
           limits: getDepositLimits('paymaya'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/paymaya.jpg'
+        },
+        {
+          id: 'gotyme',
+          name: 'GoTyme',
+          symbol: 'USD', // USD is always the deposit amount
+          network: 'Digital Wallet',
+          address: '09675131248',
+          processingTime: '5-30 minutes',
+          fee: 'Free',
+          limits: getDepositLimits('gotyme'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
+          icon: '/img/GOTYME ICON LOGO.jpg'
         }
       ];
 
@@ -360,6 +371,17 @@ export default function DepositPage() {
             fee: 'Free',
             limits: '500 - 50,000 PHP',
             icon: '/img/paymaya.jpg'
+          },
+          {
+            id: 'gotyme',
+            name: 'GoTyme',
+            symbol: 'PHP',
+            network: 'Digital Wallet',
+            address: '09675131248',
+            processingTime: '5-30 minutes',
+            fee: 'Free',
+            limits: '500 - 50,000 PHP',
+            icon: '/img/GOTYME ICON LOGO.jpg'
           }
         ]);
       }
@@ -863,8 +885,8 @@ export default function DepositPage() {
         throw new Error('No deposit method selected');
       }
 
-      // Check if this is a manual method (GCash/PayMaya/USDT variants)
-      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+      // Check if this is a manual method (GCash/PayMaya/GoTyme/USDT variants)
+      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                              selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' ||
                              selectedMethod.id === 'usdt-polygon';
 
@@ -878,10 +900,12 @@ export default function DepositPage() {
           // Generate QR code for USDT address
           await generateDepositQR();
         } else {
-          // For PHP methods (GCash/PayMaya) - USD deposit, PHP payment
+          // For PHP methods (GCash/PayMaya/GoTyme) - USD deposit, PHP payment
           setSuccessMessage(`Deposit Amount: $${usdAmount.toFixed(2)} USD. Please send ${formatCurrency(phpAmount, 'PHP')} to ${selectedMethod.name} account: ${selectedMethod.address}. Payment equivalent of your $${usdAmount.toFixed(2)} USD deposit. After payment, upload your receipt for verification.`);
-          // Generate QR code for the payment details
-          await generateManualQRCode(selectedMethod.address, phpAmount.toString(), selectedMethod.name);
+          // Generate QR code for the payment details (skip for GCash/PayMaya/GoTyme - use static images)
+          if (selectedMethod.id !== 'gcash' && selectedMethod.id !== 'paymaya' && selectedMethod.id !== 'gotyme') {
+            await generateManualQRCode(selectedMethod.address, phpAmount.toString(), selectedMethod.name);
+          }
         }
 
         toast({
@@ -1368,7 +1392,7 @@ export default function DepositPage() {
                 </Button>
               </HStack>
 
-              {showPaymentInstructions && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+              {showPaymentInstructions && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                 selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
                 <VStack spacing={4} align="stretch">
                   <Alert status="info" borderRadius="md">
@@ -1475,7 +1499,7 @@ export default function DepositPage() {
                             Scan QR Code
                           </Heading>
 
-                          {(manualQrCodeDataUrl || ((selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && qrCodeDataUrl)) ? (
+                          {(manualQrCodeDataUrl || ((selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && qrCodeDataUrl) || selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme') ? (
                             <Box
                               bg="white"
                               p={4}
@@ -1485,7 +1509,17 @@ export default function DepositPage() {
                               shadow="sm"
                             >
                               <Image
-                                src={(selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? qrCodeDataUrl : manualQrCodeDataUrl}
+                                src={
+                                  selectedMethod.id === 'gcash'
+                                    ? '/img/GCASH QR CODE.jpg'
+                                    : selectedMethod.id === 'paymaya'
+                                    ? '/img/PAYMAYA QR CODE.jpg'
+                                    : selectedMethod.id === 'gotyme'
+                                    ? '/img/GOTYME QR CODE.jpg'
+                                    : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
+                                    ? qrCodeDataUrl
+                                    : manualQrCodeDataUrl
+                                }
                                 alt={`${selectedMethod.name} QR Code`}
                                 boxSize="200px"
                                 objectFit="contain"
@@ -1506,7 +1540,7 @@ export default function DepositPage() {
                               <VStack spacing={2}>
                                 <Spinner size="lg" color="blue.500" />
                                 <Text fontSize="sm" color="gray.500" textAlign="center">
-                                  Generating QR Code...
+                                  {(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme') ? 'Loading QR Code...' : 'Generating QR Code...'}
                                 </Text>
                               </VStack>
                             </Box>
@@ -1872,7 +1906,7 @@ export default function DepositPage() {
                 </VStack>
               )}
 
-              {isSuccess && !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+              {isSuccess && !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                 selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') && (
                 <Alert status="success" borderRadius="md" mb={4}>
                   <AlertIcon />
@@ -1886,7 +1920,7 @@ export default function DepositPage() {
               )}
 
               {/* Step 1: Amount Input (for manual methods) or Direct Form (for crypto methods) */}
-              {(!showPaymentInstructions || !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+              {(!showPaymentInstructions || !(selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                 selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')) && (
                 <>
                   <FormControl isInvalid={!!error} mt={4}>
@@ -1915,7 +1949,7 @@ export default function DepositPage() {
                       <FormHelperText color="blue.500">
                         {(() => {
                           const { usdAmount, phpAmount } = parseDepositAmount(parseFloat(depositAmount), selectedMethod.id);
-                          if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
+                          if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme') {
                             return `Deposit: ${formatCurrency(usdAmount, 'USD')} → You pay: ${formatCurrency(phpAmount, 'PHP')} (Rate: $1 = ₱63)`;
                           } else {
                             return `Deposit: ${formatCurrency(usdAmount, 'USD')} → You send: ${formatCurrency(usdAmount, 'USD')} USDT (≈₱${phpAmount.toFixed(0)} PHP)`;
@@ -1929,7 +1963,7 @@ export default function DepositPage() {
                   <Text fontSize="sm" color={subtleTextColor} mt={2}>
                     <strong>Conversion Rate:</strong> $1 USD = ₱63 PHP
                     <br />
-                    {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+                    {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme'
                       ? 'After payment confirmation, funds will be credited to your wallet balance in USD at the standard rate.'
                       : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
                       ? 'After transaction confirmation, funds will be credited to your wallet balance in USD.'
@@ -1938,7 +1972,7 @@ export default function DepositPage() {
                   </Text>
 
                   <Button
-                    colorScheme={isSuccess ? "green" : (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                    colorScheme={isSuccess ? "green" : (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                       selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ? "blue" : "blue"}
                     onClick={handleDepositSubmit}
                     isLoading={isSubmitting}
@@ -1948,7 +1982,7 @@ export default function DepositPage() {
                     w="full"
                   >
                     {isSuccess ? "Deposit Successful - Redirecting..." :
-                     (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+                     (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                       selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon') ?
                      "Continue" :
                      `Confirm Deposit (${selectedMethod?.network || 'Method'})`}

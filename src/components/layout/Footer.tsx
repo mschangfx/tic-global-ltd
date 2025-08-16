@@ -64,11 +64,15 @@ export default function Footer() {
               <Text fontWeight="bold" color={headingColor} fontSize="lg">Subscribe to TIC GLOBAL</Text>
               <HStack as="form" onSubmit={(e) => e.preventDefault()} w="full"> {/* Visual form */}
                 <Input
+                  id="newsletter-email"
+                  name="email"
+                  type="email"
                   placeholder="your.email@example.com"
                   bg={inputBg}
                   borderColor={inputBorder}
                   _placeholder={{ color: 'gray.500' }}
                   color="white"
+                  aria-label="Email address for newsletter subscription"
                 />
                 <Button type="submit" colorScheme="blue" px={8}>
                   Subscribe

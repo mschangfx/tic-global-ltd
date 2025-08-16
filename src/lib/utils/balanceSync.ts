@@ -111,8 +111,8 @@ export const syncAfterDeposit = (amount?: number) =>
 export const syncAfterWithdrawal = (amount?: number) => 
   balanceSyncManager.syncAfterTransaction('withdrawal', amount);
 
-export const syncAfterTransfer = (amount?: number) => 
-  balanceSyncManager.syncAfterTransaction('transfer', amount);
+export const syncAfterTransfer = (amount?: number) =>
+  balanceSyncManager.syncAfterTransaction('transfer', amount, 2000); // Longer delay for transfers
 
 export const syncAfterPayment = (amount?: number) => 
   balanceSyncManager.syncAfterTransaction('payment', amount);

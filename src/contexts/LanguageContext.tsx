@@ -38,7 +38,7 @@ const defaultTranslations: Translations = {
   },
   navbar: {
     overview: 'Overview',
-    myAccounts: 'My Accounts',
+    myDashboard: 'My Dashboard',
     deposit: 'Deposit',
     withdrawal: 'Withdrawal',
     transactionHistory: 'Transaction History',

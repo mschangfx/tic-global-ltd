@@ -434,127 +434,18 @@ BEGIN
     AND (network = 'TRC20' OR network IS NULL);
 END $$;
 
--- 12. Create test data for both authentication methods
--- Test wallet for Google OAuth user (existing)
-INSERT INTO public.user_wallets (
-    user_email,
-    total_balance,
-    tic_balance,
-    gic_balance,
-    staking_balance,
-    last_updated
-) VALUES (
-    'mschangfx@gmail.com',
-    1250.00000000,
-    750.00000000,
-    375.00000000,
-    125.00000000,
-    NOW()
-) ON CONFLICT (user_email) DO UPDATE SET
-    total_balance = 1250.00000000,
-    tic_balance = 750.00000000,
-    gic_balance = 375.00000000,
-    staking_balance = 125.00000000,
-    last_updated = NOW();
+-- 12. Wallet system is now ready for all users
+-- User wallets will be created automatically when users register
+-- No hardcoded test data needed - the system creates wallets dynamically
 
--- Test wallet for manual login user
-INSERT INTO public.user_wallets (
-    user_email,
-    total_balance,
-    tic_balance,
-    gic_balance,
-    staking_balance,
-    last_updated
-) VALUES (
-    'manual-user@example.com',
-    950.00000000,
-    570.00000000,
-    285.00000000,
-    95.00000000,
-    NOW()
-) ON CONFLICT (user_email) DO UPDATE SET
-    total_balance = 950.00000000,
-    tic_balance = 570.00000000,
-    gic_balance = 285.00000000,
-    staking_balance = 95.00000000,
-    last_updated = NOW();
+-- Wallet system is fully ready for all users
+-- No test data needed - wallets are created automatically when users register
 
--- Add test transactions for both users
-DO $$
-DECLARE
-    google_tx_id TEXT;
-    manual_tx_id TEXT;
-BEGIN
-    -- Generate unique transaction IDs
-    google_tx_id := 'test-google-' || gen_random_uuid()::text;
-    manual_tx_id := 'test-manual-' || gen_random_uuid()::text;
-
-    -- Insert Google OAuth user transaction
-    INSERT INTO public.wallet_transactions (
-        user_email,
-        transaction_id,
-        transaction_type,
-        amount,
-        balance_before,
-        balance_after,
-        description,
-        created_at
-    ) VALUES (
-        'mschangfx@gmail.com',
-        google_tx_id,
-        'deposit',
-        300.00000000,
-        950.00000000,
-        1250.00000000,
-        'USDT TRC20 Deposit: $300.00',
-        NOW() - INTERVAL '1 day'
-    ) ON CONFLICT (transaction_id) DO NOTHING;
-
-    -- Insert Manual login user transaction
-    INSERT INTO public.wallet_transactions (
-        user_email,
-        transaction_id,
-        transaction_type,
-        amount,
-        balance_before,
-        balance_after,
-        description,
-        created_at
-    ) VALUES (
-        'manual-user@example.com',
-        manual_tx_id,
-        'deposit',
-        150.00000000,
-        800.00000000,
-        950.00000000,
-        'USDT TRC20 Deposit: $150.00',
-        NOW() - INTERVAL '2 hours'
-    ) ON CONFLICT (transaction_id) DO NOTHING;
-
-    RAISE NOTICE 'Test transactions created with IDs: % and %', google_tx_id, manual_tx_id;
-END $$;
+-- Transaction system is ready for all users
+-- Transactions will be created automatically when users make deposits/transfers
 
 SELECT 'Fixed wallet and deposits setup completed successfully!' as result;
 
--- Show test data
-SELECT
-    'User Wallets:' as section,
-    user_email,
-    total_balance::text,
-    tic_balance::text,
-    gic_balance::text,
-    staking_balance::text
-FROM public.user_wallets
-WHERE user_email IN ('mschangfx@gmail.com', 'manual-user@example.com')
-ORDER BY user_email;
-
-SELECT
-    'Recent Transactions:' as section,
-    user_email,
-    transaction_type,
-    amount::text,
-    description,
-    created_at::text
-FROM public.wallet_transactions
-WHERE user_email IN ('mschangfx@gmail.com', 'manual-user@example.com')
-ORDER BY created_at DESC;
+-- Wallet system setup completed successfully!
+-- Users can now register and their wallets will be created automatically
+-- No hardcoded test data - the system is ready for all users

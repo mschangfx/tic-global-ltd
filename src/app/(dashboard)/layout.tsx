@@ -24,7 +24,7 @@ export default function DashboardLayout({
 
   const dashboardNavItems = [
     { icon: FaHome, label: t('navbar.overview'), href: '/dashboard' },
-    { icon: FaTachometerAlt, label: t('navbar.myAccounts'), href: '/my-accounts' },
+    { icon: FaTachometerAlt, label: t('navbar.myDashboard'), href: '/my-accounts' },
     { icon: FaArrowCircleDown, label: t('navbar.deposit'), href: '/wallet/deposit' },
     { icon: FaArrowCircleUp, label: t('navbar.withdrawal'), href: '/wallet/withdrawal' },
     { icon: FaHistory, label: t('navbar.transactionHistory'), href: '/wallet/history' },

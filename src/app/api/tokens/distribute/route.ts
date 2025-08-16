@@ -12,7 +12,7 @@ const TOKEN_ALLOCATIONS = {
 // Calculate daily token amount (yearly amount / 365 days)
 const getDailyTokenAmount = (planId: string): number => {
   const yearlyAmount = TOKEN_ALLOCATIONS[planId as keyof typeof TOKEN_ALLOCATIONS] || 0;
-  return Math.round((yearlyAmount / 365) * 1000) / 1000; // Round to nearest 3 decimal places
+  return yearlyAmount / 365; // Exact value without rounding
 };
 
 // POST - Distribute daily tokens to all active subscribers

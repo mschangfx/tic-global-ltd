@@ -309,15 +309,15 @@ export default function UserDepositsPage() {
                 <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4} w="full">
                   <Stat textAlign="center">
                     <StatLabel>Total Balance</StatLabel>
-                    <StatNumber color="green.500">${wallet.total_balance.toFixed(2)}</StatNumber>
+                    <StatNumber color="green.500">${parseFloat(wallet.total_balance.toString()).toFixed(2)}</StatNumber>
                   </Stat>
                   <Stat textAlign="center">
                     <StatLabel>TIC Balance</StatLabel>
-                    <StatNumber color="blue.500">${wallet.tic_balance.toFixed(2)}</StatNumber>
+                    <StatNumber color="blue.500">${(wallet.tic_balance * 0.02).toFixed(2)}</StatNumber>
                   </Stat>
                   <Stat textAlign="center">
                     <StatLabel>GIC Balance</StatLabel>
-                    <StatNumber color="purple.500">${wallet.gic_balance.toFixed(2)}</StatNumber>
+                    <StatNumber color="purple.500">${parseFloat(wallet.gic_balance.toString()).toFixed(2)}</StatNumber>
                   </Stat>
                 </SimpleGrid>
                 <Text fontSize="sm" color="gray.500">

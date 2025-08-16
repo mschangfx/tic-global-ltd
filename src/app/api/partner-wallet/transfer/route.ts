@@ -86,6 +86,8 @@ export async function POST(request: NextRequest) {
       console.error('Error fetching updated wallet:', updateError);
     }
 
+    console.log('✅ Partner wallet transfer completed and recorded in transaction history');
+
     return NextResponse.json({
       success: true,
       message: `Successfully transferred $${amount.toFixed(2)} from Partner Wallet to Main Wallet`,

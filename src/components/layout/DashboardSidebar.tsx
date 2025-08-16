@@ -117,8 +117,7 @@ export default function DashboardSidebar() {
 
   const menuItems = [
     { icon: FaHome, label: 'Overview', href: '/dashboard' },
-    { icon: FaUser, label: 'My accounts', href: '/my-accounts' },
-    { icon: FaWallet, label: 'Wallet', href: '/wallet' },
+    { icon: FaUser, label: 'My Dashboard', href: '/my-accounts' },
     { icon: FaChartLine, label: 'Trading', href: '/trading' },
     { icon: FaGamepad, label: 'Games', href: '/games' },
     { icon: FaUserFriends, label: 'Referrals', href: '/referrals' },

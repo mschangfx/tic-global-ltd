@@ -121,11 +121,12 @@ export default function ToUserTransferPage() {
           const balanceData = await balanceResponse.json();
           if (balanceData.wallet) {
             const balance: WalletBalance = {
-              total: balanceData.wallet.total_balance,
-              tic: balanceData.wallet.tic_balance,
-              gic: balanceData.wallet.gic_balance,
-              staking: balanceData.wallet.staking_balance,
-              partner_wallet: balanceData.wallet.partner_wallet_balance || 0,
+              total: parseFloat(balanceData.wallet.total_balance) || 0,
+              tic: parseFloat(balanceData.wallet.tic_balance) || 0,
+              gic: parseFloat(balanceData.wallet.gic_balance) || 0,
+              staking: parseFloat(balanceData.wallet.staking_balance) || 0,
+              partner_wallet: parseFloat(balanceData.wallet.partner_wallet_balance) || 0,
+              portfolio_value: balanceData.wallet.portfolio_value ? parseFloat(balanceData.wallet.portfolio_value) : undefined,
               lastUpdated: new Date(balanceData.wallet.last_updated || new Date())
             };
             setWalletBalance(balance);
@@ -511,10 +512,12 @@ export default function ToUserTransferPage() {
 
                   {/* Recipient Address */}
                   <FormControl>
-                    <FormLabel color={textColor} fontSize="sm" fontWeight="medium">
+                    <FormLabel htmlFor="recipient-address" color={textColor} fontSize="sm" fontWeight="medium">
                       Recipient wallet address
                     </FormLabel>
                     <Input
+                      id="recipient-address"
+                      name="recipientAddress"
                       value={recipientAddress}
                       onChange={(e) => handleRecipientAddressChange(e.target.value)}
                       placeholder="Enter recipient's wallet address (e.g., WLT1234567890)"

@@ -45,40 +45,67 @@ async function getWalletBalance(userEmail: string) {
     throw new Error('Failed to calculate wallet balance');
   }
 
-  if (!calculatedBalance || calculatedBalance.length === 0) {
-    console.log('📝 No transactions found for user, returning zero balance:', userEmail);
-    return {
-      user_email: userEmail,
-      total_balance: '0',
-      tic_balance: '0',
-      gic_balance: '0',
-      staking_balance: '0',
-      partner_wallet_balance: '0',
-      last_updated: new Date().toISOString()
-    };
+  // Get TIC, GIC, and other token balances from user_wallets table
+  const { data: walletData, error: walletError } = await supabaseAdmin
+    .from('user_wallets')
+    .select('total_balance, tic_balance, gic_balance, staking_balance, partner_wallet_balance, last_updated')
+    .eq('user_email', userEmail)
+    .single();
+
+  console.log('🔍 Wallet API: Raw wallet data from DB:', walletData);
+  console.log('🔍 Wallet API: Wallet error:', walletError);
+
+  if (walletError && walletError.code !== 'PGRST116') { // PGRST116 = no rows found
+    console.error('❌ Error getting wallet data for', userEmail, ':', walletError);
   }
 
-  const balance = calculatedBalance[0];
+  // Get total balance - prioritize user_wallets.total_balance if it exists, otherwise use calculated balance
+  const walletTotalBalance = walletData?.total_balance?.toString();
+  const calculatedTotalBalance = calculatedBalance && calculatedBalance.length > 0
+    ? calculatedBalance[0].total_balance?.toString()
+    : null;
 
-  console.log('✅ Calculated wallet balance for:', userEmail, {
-    total: balance.total_balance,
-    status: balance.balance_status,
-    transactions: balance.transaction_count
+  const totalBalance = walletTotalBalance || calculatedTotalBalance || '0';
+
+  console.log('🔍 Balance source comparison for:', userEmail, {
+    walletTotalBalance,
+    calculatedTotalBalance,
+    finalTotalBalance: totalBalance
   });
 
-  // Return the calculated balance
+  // Get token balances from user_wallets or default to 0
+  const ticBalance = walletData?.tic_balance?.toString() || '0';
+  const gicBalance = walletData?.gic_balance?.toString() || '0';
+  const stakingBalance = walletData?.staking_balance?.toString() || '0';
+  const partnerWalletBalance = walletData?.partner_wallet_balance?.toString() || '0';
+
+  console.log('🔍 Wallet API: Extracted balances:', {
+    ticBalance,
+    gicBalance,
+    stakingBalance,
+    partnerWalletBalance
+  });
+  const lastUpdated = walletData?.last_updated ||
+    (calculatedBalance && calculatedBalance.length > 0 && calculatedBalance[0].last_transaction_date) ||
+    new Date().toISOString();
+
+  console.log('✅ Combined balance result for:', userEmail, {
+    total_balance: totalBalance,
+    tic_balance: ticBalance,
+    gic_balance: gicBalance,
+    staking_balance: stakingBalance,
+    partner_wallet_balance: partnerWalletBalance
+  });
+
+  // Return the combined balance
   return {
-    user_email: balance.user_email,
-    total_balance: balance.total_balance?.toString() || '0',
-    tic_balance: balance.tic_balance?.toString() || '0',
-    gic_balance: balance.gic_balance?.toString() || '0',
-    staking_balance: balance.staking_balance?.toString() || '0',
-    partner_wallet_balance: balance.partner_wallet_balance?.toString() || '0',
-    last_updated: balance.last_transaction_date ?
-      (typeof balance.last_transaction_date === 'string' ?
-        balance.last_transaction_date :
-        balance.last_transaction_date.toISOString()) :
-      new Date().toISOString()
+    user_email: userEmail,
+    total_balance: totalBalance,
+    tic_balance: ticBalance,
+    gic_balance: gicBalance,
+    staking_balance: stakingBalance,
+    partner_wallet_balance: partnerWalletBalance,
+    last_updated: typeof lastUpdated === 'string' ? lastUpdated : lastUpdated.toISOString()
   };
 }
 

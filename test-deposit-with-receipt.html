@@ -23,25 +23,25 @@
         <h3>Create Test Deposit with Receipt</h3>
         <form id="depositForm">
             <div class="form-group">
-                <label>User Email:</label>
+                <label for="userEmail">User Email:</label>
                 <input type="email" id="userEmail" value="test@ticglobal.com" required>
             </div>
-            
+
             <div class="form-group">
-                <label>Amount:</label>
+                <label for="amount">Amount:</label>
                 <input type="number" id="amount" value="50" min="10" required>
             </div>
-            
+
             <div class="form-group">
-                <label>Currency:</label>
+                <label for="currency">Currency:</label>
                 <select id="currency" required>
                     <option value="USDT">USDT</option>
                     <option value="PHP">PHP</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
-                <label>Payment Method:</label>
+                <label for="paymentMethod">Payment Method:</label>
                 <select id="paymentMethod" required>
                     <option value="usdt_trc20">USDT TRC20</option>
                     <option value="gcash">GCash</option>
@@ -50,22 +50,22 @@
             </div>
             
             <div class="form-group">
-                <label>Network:</label>
+                <label for="network">Network:</label>
                 <input type="text" id="network" value="TRC20">
             </div>
-            
+
             <div class="form-group">
-                <label>Account Number:</label>
+                <label for="accountNumber">Account Number:</label>
                 <input type="text" id="accountNumber" value="TBpga5zct6vKAenvPecepzUfuK8raGA3Jh">
             </div>
-            
+
             <div class="form-group">
-                <label>Account Name:</label>
+                <label for="accountName">Account Name:</label>
                 <input type="text" id="accountName" value="USDT TRC20 Wallet">
             </div>
-            
+
             <div class="form-group">
-                <label>Receipt File:</label>
+                <label for="receipt">Receipt File:</label>
                 <input type="file" id="receipt" accept="image/*,application/pdf" required>
             </div>
             

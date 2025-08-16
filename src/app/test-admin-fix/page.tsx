@@ -253,8 +253,10 @@ export default function TestAdminFixPage() {
                 <Heading size="md">Test Controls</Heading>
                 
                 <FormControl>
-                  <FormLabel>Test Deposit ID</FormLabel>
+                  <FormLabel htmlFor="test-deposit-id">Test Deposit ID</FormLabel>
                   <Input
+                    id="test-deposit-id"
+                    name="testDepositId"
                     value={testDepositId}
                     onChange={(e) => setTestDepositId(e.target.value)}
                     placeholder="Will be auto-filled when you create a test deposit"

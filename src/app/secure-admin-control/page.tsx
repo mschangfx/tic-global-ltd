@@ -115,45 +115,63 @@ export default function SecureAdminControl() {
 
   const approveWithdrawal = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('withdrawal_requests')
-        .update({
-          status: 'approved',
-          admin_notes: `Approved via admin panel at ${new Date().toISOString()}`,
-          processed_by: 'admin@ticgloballtd.com',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      // Prompt for transaction hash (required for approval)
+      const transactionHash = prompt('Enter the blockchain transaction hash for this withdrawal:');
+      if (!transactionHash) {
+        alert('Transaction hash is required to approve withdrawal');
+        return;
+      }
 
-      if (error) throw error;
-      
+      const response = await fetch(`/api/admin/withdrawals/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'approve',
+          transaction_hash: transactionHash,
+          admin_notes: `Approved via admin panel at ${new Date().toISOString()}`
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to approve withdrawal');
+      }
+
       alert('Withdrawal approved successfully!');
       loadTransactions();
     } catch (error) {
       console.error('Error approving withdrawal:', error);
-      alert('Error approving withdrawal');
+      alert(`Error approving withdrawal: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const rejectWithdrawal = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('withdrawal_requests')
-        .update({
-          status: 'rejected',
-          admin_notes: `Rejected via admin panel at ${new Date().toISOString()}`,
-          processed_by: 'admin@ticgloballtd.com',
-          processed_at: new Date().toISOString()
+      const response = await fetch(`/api/admin/withdrawals/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'reject',
+          admin_notes: `Rejected via admin panel at ${new Date().toISOString()}`
         })
-        .eq('id', id);
+      });
 
-      if (error) throw error;
-      
-      alert('Withdrawal rejected successfully!');
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reject withdrawal');
+      }
+
+      alert(`Withdrawal rejected successfully! ${result.refunded ? `$${result.refunded} has been refunded to the user's wallet.` : ''}`);
       loadTransactions();
     } catch (error) {
       console.error('Error rejecting withdrawal:', error);
-      alert('Error rejecting withdrawal');
+      alert(`Error rejecting withdrawal: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

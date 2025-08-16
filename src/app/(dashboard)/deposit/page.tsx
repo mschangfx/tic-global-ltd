@@ -62,7 +62,7 @@ const MANUAL_METHODS = [
     name: 'GCash',
     symbol: 'USD', // USD is always the deposit amount
     icon: '/img/gcash.png',
-    qrCode: '/img/gcash qr.jpg',
+    qrCode: '/img/GCASH QR CODE.jpg',
     network: 'Digital Wallet',
     minAmount: 10, // $10 USD minimum
     fee: 0,
@@ -77,13 +77,28 @@ const MANUAL_METHODS = [
     name: 'PayMaya',
     symbol: 'USD', // USD is always the deposit amount
     icon: '/img/paymaya.jpg',
-    qrCode: '/img/paymaya qr.jpg',
+    qrCode: '/img/PAYMAYA QR CODE.jpg',
     network: 'Digital Wallet',
     minAmount: 10, // $10 USD minimum
     fee: 0,
     processingTime: '5-30 minutes',
     iconColor: 'green.500',
     instructions: 'Enter USD amount - you will pay PHP equivalent to PayMaya',
+    accountNumber: '09675131248',
+    accountName: 'Patricia Marie Joble'
+  },
+  {
+    id: 'gotyme',
+    name: 'GoTyme',
+    symbol: 'USD', // USD is always the deposit amount
+    icon: '/img/GOTYME ICON LOGO.jpg',
+    qrCode: '/img/GOTYME QR CODE.jpg',
+    network: 'Digital Wallet',
+    minAmount: 10, // $10 USD minimum
+    fee: 0,
+    processingTime: '5-30 minutes',
+    iconColor: 'purple.500',
+    instructions: 'Enter USD amount - you will pay PHP equivalent to GoTyme',
     accountNumber: '09675131248',
     accountName: 'Patricia Marie Joble'
   }

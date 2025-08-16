@@ -46,7 +46,7 @@ async function getAuthenticatedUserEmail(request: NextRequest): Promise<string |
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const transactionType = searchParams.get('type') || 'all'; // all, deposit, withdrawal, transfer, tic, gic, staking
+    const transactionType = searchParams.get('type') || 'all'; // all, deposit, withdrawal, transfer, payment, plan, tic, gic, staking
     const status = searchParams.get('status') || 'all';
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -192,7 +192,161 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. Fetch TIC Token Transactions (from plan purchases, daily distributions, etc.)
+    // 4. Fetch Between-Accounts Transfers from wallet_transactions
+    if (transactionType === 'all' || transactionType === 'transfer') {
+      try {
+        // Fetch between-accounts transfers from wallet_transactions table
+        const { data: betweenAccountsTransfers, error: betweenAccountsError } = await supabaseAdmin
+          .from('wallet_transactions')
+          .select('*')
+          .eq('user_email', userEmail)
+          .eq('transaction_type', 'transfer_between_accounts')
+          .order('created_at', { ascending: false });
+
+        if (!betweenAccountsError && betweenAccountsTransfers) {
+          console.log(`Found ${betweenAccountsTransfers.length} between-accounts transfers for user ${userEmail}`);
+
+          const formattedBetweenAccountsTransfers = betweenAccountsTransfers.map(tx => ({
+            id: tx.id,
+            type: 'Account Transfer',
+            amount: `${Number(tx.amount).toFixed(2)} ${tx.currency || 'USD'}`,
+            currency: tx.currency || 'USD',
+            status: 'Done',
+            date: new Date(tx.created_at).toISOString().split('T')[0],
+            time: new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+            invoiceId: tx.transaction_id || tx.id,
+            fromSystem: tx.metadata?.from_account === 'total' ? 'Main Wallet' :
+                       tx.metadata?.from_account === 'tic' ? 'TIC Wallet' :
+                       tx.metadata?.from_account === 'gic' ? 'GIC Wallet' :
+                       tx.metadata?.from_account === 'staking' ? 'Staking Wallet' :
+                       tx.metadata?.from_account === 'partner_wallet' ? 'Partner Wallet' :
+                       tx.metadata?.from_account || 'Unknown',
+            toSystem: tx.metadata?.to_account === 'total' ? 'Main Wallet' :
+                     tx.metadata?.to_account === 'tic' ? 'TIC Wallet' :
+                     tx.metadata?.to_account === 'gic' ? 'GIC Wallet' :
+                     tx.metadata?.to_account === 'staking' ? 'Staking Wallet' :
+                     tx.metadata?.to_account === 'partner_wallet' ? 'Partner Wallet' :
+                     tx.metadata?.to_account || 'Unknown',
+            details: {
+              description: tx.description,
+              from_account: tx.metadata?.from_account,
+              to_account: tx.metadata?.to_account,
+              from_balance_before: tx.metadata?.from_balance_before,
+              from_balance_after: tx.metadata?.from_balance_after,
+              to_balance_before: tx.metadata?.to_balance_before,
+              to_balance_after: tx.metadata?.to_balance_after
+            },
+            created_at: tx.created_at
+          }));
+          allTransactions.push(...formattedBetweenAccountsTransfers);
+        } else if (betweenAccountsError) {
+          console.error('Error fetching between-accounts transfers:', betweenAccountsError);
+        }
+      } catch (error) {
+        console.error('Error fetching between-accounts transfers:', error);
+      }
+    }
+
+    // 5. Fetch Plan Purchase Payments (from payment_transactions table)
+    if (transactionType === 'all' || transactionType === 'payment' || transactionType === 'plan') {
+      try {
+        const { data: paymentTransactions, error: paymentError } = await supabaseAdmin
+          .from('payment_transactions')
+          .select('*')
+          .eq('user_email', userEmail)
+          .order('created_at', { ascending: false });
+
+        if (!paymentError && paymentTransactions) {
+          console.log(`Found ${paymentTransactions.length} payment transactions for user ${userEmail}`);
+
+          const formattedPayments = paymentTransactions.map(payment => ({
+            id: payment.id,
+            type: `Plan Purchase - ${payment.plan_name}`,
+            amount: `-${Number(payment.amount).toFixed(2)} ${payment.currency || 'USD'}`,
+            currency: payment.currency || 'USD',
+            status: payment.status === 'completed' ? 'Done' :
+                   payment.status === 'failed' ? 'Failed' :
+                   payment.status === 'pending' ? 'Pending' : payment.status,
+            date: new Date(payment.created_at).toISOString().split('T')[0],
+            time: new Date(payment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+            invoiceId: payment.id,
+            fromSystem: 'My Wallet',
+            toSystem: `${payment.plan_name} Subscription`,
+            details: {
+              plan_id: payment.plan_id,
+              plan_name: payment.plan_name,
+              payment_method: payment.payment_method,
+              wallet_balance_before: payment.wallet_balance_before,
+              wallet_balance_after: payment.wallet_balance_after,
+              wallet_transaction_id: payment.wallet_transaction_id,
+              // Add additional context for single transaction display
+              transaction_summary: `Purchased ${payment.plan_name} for $${Number(payment.amount).toFixed(2)} from wallet balance`,
+              balance_change: `Balance: $${Number(payment.wallet_balance_before || 0).toFixed(2)} → $${Number(payment.wallet_balance_after || 0).toFixed(2)}`
+            },
+            created_at: payment.created_at
+          }));
+          allTransactions.push(...formattedPayments);
+        }
+      } catch (error) {
+        console.error('Error fetching payment transactions:', error);
+      }
+    }
+
+    // 6. Fetch Wallet Transactions for Plan Purchases (ONLY if no payment_transactions exist)
+    // This prevents duplicate transactions - we prioritize payment_transactions for plan purchases
+    if (transactionType === 'all' || transactionType === 'payment' || transactionType === 'plan') {
+      try {
+        // Only fetch wallet payment transactions that don't have corresponding payment_transactions
+        const { data: walletPayments, error: walletPaymentError } = await supabaseAdmin
+          .from('wallet_transactions')
+          .select('*')
+          .eq('user_email', userEmail)
+          .eq('transaction_type', 'payment')
+          .order('created_at', { ascending: false });
+
+        if (!walletPaymentError && walletPayments) {
+          console.log(`Found ${walletPayments.length} wallet payment transactions for user ${userEmail}`);
+
+          // Get all payment transaction IDs to avoid duplicates
+          const existingPaymentTransactions = allTransactions
+            .filter(tx => tx.type.includes('Plan Purchase'))
+            .map(tx => tx.details?.wallet_transaction_id);
+
+          // Only include wallet transactions that don't have a corresponding payment transaction
+          const uniqueWalletPayments = walletPayments.filter(tx =>
+            !existingPaymentTransactions.includes(tx.transaction_id)
+          );
+
+          console.log(`Filtered to ${uniqueWalletPayments.length} unique wallet payment transactions (avoiding duplicates)`);
+
+          const formattedWalletPayments = uniqueWalletPayments.map(tx => ({
+            id: `wallet_${tx.id}`,
+            type: `Plan Purchase - ${tx.description.replace('Plan purchase: ', '')}`,
+            amount: `${Number(tx.amount).toFixed(2)} USD`,
+            currency: tx.currency || 'USD',
+            status: 'Done',
+            date: new Date(tx.created_at).toISOString().split('T')[0],
+            time: new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+            invoiceId: tx.transaction_id,
+            fromSystem: 'My Wallet',
+            toSystem: 'Plan Subscription',
+            details: {
+              description: tx.description,
+              transaction_type: tx.transaction_type,
+              balance_before: tx.balance_before,
+              balance_after: tx.balance_after,
+              transaction_id: tx.transaction_id
+            },
+            created_at: tx.created_at
+          }));
+          allTransactions.push(...formattedWalletPayments);
+        }
+      } catch (error) {
+        console.error('Error fetching wallet payment transactions:', error);
+      }
+    }
+
+    // 7. Fetch TIC Token Transactions (from plan purchases, daily distributions, etc.)
     if (transactionType === 'all' || transactionType === 'tic') {
       try {
         // Fetch TIC transactions from wallet_transactions table
@@ -284,7 +438,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 5. Fetch GIC Token Transactions (from trading activities)
+    // 6. Fetch GIC Token Transactions (from trading activities)
     if (transactionType === 'all' || transactionType === 'gic') {
       try {
         // Fetch GIC transactions from wallet_transactions table
@@ -358,7 +512,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 6. Fetch Staking Transactions
+    // 7. Fetch Staking Transactions
     if (transactionType === 'all' || transactionType === 'staking') {
       try {
         // Fetch staking transactions from wallet_transactions table

@@ -17,7 +17,7 @@
   },
   "navbar": {
     "overview": "Tổng quan",
-    "myAccounts": "Tài khoản của tôi",
+    "myDashboard": "Bảng điều khiển của tôi",
     "deposit": "Nạp tiền",
     "withdrawal": "Rút tiền",
     "transactionHistory": "Lịch sử giao dịch",

@@ -195,8 +195,10 @@ export default function RankingBonusCard() {
   };
 
   const formatTokenAmount = (amount: number, currency: string) => {
-    if (currency === 'TIC' || currency === 'GIC') {
-      return `${amount.toFixed(4)} ${currency}`;
+    if (currency === 'TIC') {
+      return `${amount.toFixed(2)} ${currency}`; // Display TIC with 2 decimal places
+    } else if (currency === 'GIC') {
+      return `${amount.toFixed(2)} ${currency}`; // Display GIC with 2 decimal places
     }
     return `$${amount.toFixed(2)}`;
   };

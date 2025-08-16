@@ -33,6 +33,7 @@ import { FaPlus, FaListUl, FaThLarge, FaBoxOpen, FaCheckCircle, FaTimesCircle, F
 import Link from 'next/link'; // Added
 import { useRouter } from 'next/navigation'; // Added
 import TokenDistributionCard from '@/components/TokenDistributionCard'; // Added
+import TestTicDistribution from '@/components/TestTicDistribution'; // Added for testing
 import { useSession } from 'next-auth/react'; // Added
 
 // Data for plans (copied from app/(routes)/plan/page.tsx)
@@ -149,10 +150,10 @@ export default function MyAccountsPage() {
     <Box p={{ base: 4, md: 6 }} bg={bgColor} minH="calc(100vh - 60px)">
       {/* Main Content Area */}
       <VStack spacing={6} align="stretch">
-        {/* Header: My Accounts */}
+        {/* Header: My Dashboard */}
         <Flex justify="space-between" align="center">
           <Heading as="h1" size="xl" color={textColor}>
-            My accounts
+            My Dashboard
           </Heading>
         </Flex>
 
@@ -231,6 +232,9 @@ export default function MyAccountsPage() {
                           </VStack>
                         </CardBody>
                       </Card>
+
+                      {/* Test TIC Distribution Component */}
+                      <TestTicDistribution />
                     </VStack>
                   ) : (
                     // Empty state when no subscriptions
@@ -259,7 +263,7 @@ export default function MyAccountsPage() {
                   <VStack spacing={8} align="stretch" py={6}>
                     <HStack spacing={3} cursor="pointer" onClick={() => setShowPlanSelection(false)} _hover={{ color: 'blue.500' }} alignSelf="flex-start">
                       <Icon as={FaArrowLeft} />
-                      <Text fontWeight="medium">Back to My Accounts Overview</Text> {/* Updated text */}
+                      <Text fontWeight="medium">Back to My Dashboard Overview</Text> {/* Updated text */}
                     </HStack>
                     <Heading as="h2" size="lg" fontFamily="var(--font-titles)" color={textColor} textAlign="center">
                        Set up your account

@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
+// Initialize Supabase admin client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseAdmin = createServiceClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,10 +43,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    console.log('🔄 Transfer to user request:', {
+      senderEmail,
+      recipientEmail,
+      recipientWalletAddress,
+      transferAmount,
+      fee
+    });
 
     // Get sender's current wallet balance
-    const { data: senderWallet, error: senderError } = await supabase
+    const { data: senderWallet, error: senderError } = await supabaseAdmin
       .from('user_wallets')
       .select('*')
       .eq('user_email', senderEmail)
@@ -52,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get recipient's current wallet balance
-    const { data: recipientWallet, error: recipientError } = await supabase
+    const { data: recipientWallet, error: recipientError } = await supabaseAdmin
       .from('user_wallets')
       .select('*')
       .eq('user_email', recipientEmail)
@@ -67,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify recipient wallet address matches
-    const { data: recipientAddress, error: addressError } = await supabase
+    const { data: recipientAddress, error: addressError } = await supabaseAdmin
       .from('user_wallet_addresses')
       .select('wallet_address')
       .eq('user_email', recipientEmail)
@@ -94,46 +109,52 @@ export async function POST(request: NextRequest) {
     const newSenderBalance = senderWallet.total_balance - totalDeducted;
     const newRecipientBalance = recipientWallet.total_balance + transferAmount;
 
-    // Update sender's balance (deduct transfer amount + fee)
-    const { error: senderUpdateError } = await supabase
-      .from('user_wallets')
-      .update({
-        total_balance: newSenderBalance,
-        last_updated: new Date().toISOString()
-      })
-      .eq('user_email', senderEmail);
+    // Generate unique transaction ID for this transfer
+    const transferTransactionId = crypto.randomUUID();
 
-    if (senderUpdateError) {
-      console.error('Error updating sender balance:', senderUpdateError);
+    // Debit sender's wallet (this affects portfolio_value since it's a transfer to another user)
+    const { error: senderDebitError } = await supabaseAdmin
+      .rpc('debit_user_wallet', {
+        user_email_param: senderEmail,
+        amount_param: totalDeducted,
+        transaction_id_param: transferTransactionId,
+        transaction_type_param: 'transfer_to_user', // This will decrease portfolio_value
+        description_param: `Transfer to ${recipientEmail} (${recipientWalletAddress})${note ? ` - ${note}` : ''}`
+      });
+
+    if (senderDebitError) {
+      console.error('Error debiting sender wallet:', senderDebitError);
       return NextResponse.json(
-        { error: 'Failed to update sender balance' },
+        { error: 'Failed to process transfer - insufficient funds or wallet error' },
         { status: 500 }
       );
     }
 
-    // Update recipient's balance (add transfer amount)
-    const { error: recipientUpdateError } = await supabase
-      .from('user_wallets')
-      .update({
-        total_balance: newRecipientBalance,
-        last_updated: new Date().toISOString()
-      })
-      .eq('user_email', recipientEmail);
+    // Credit recipient's wallet (this affects portfolio_value since it's a transfer from another user)
+    const { error: recipientCreditError } = await supabaseAdmin
+      .rpc('credit_user_wallet', {
+        user_email_param: recipientEmail,
+        amount_param: transferAmount,
+        transaction_id_param: transferTransactionId,
+        transaction_type_param: 'transfer_from_user', // This will increase portfolio_value
+        description_param: `Transfer from ${senderEmail}${note ? ` - ${note}` : ''}`
+      });
 
-    if (recipientUpdateError) {
-      console.error('Error updating recipient balance:', recipientUpdateError);
-      
-      // Rollback sender balance update
-      await supabase
-        .from('user_wallets')
-        .update({
-          total_balance: senderWallet.total_balance,
-          last_updated: new Date().toISOString()
-        })
-        .eq('user_email', senderEmail);
+    if (recipientCreditError) {
+      console.error('Error crediting recipient wallet:', recipientCreditError);
+
+      // Rollback sender debit by crediting back the amount
+      await supabaseAdmin
+        .rpc('credit_user_wallet', {
+          user_email_param: senderEmail,
+          amount_param: totalDeducted,
+          transaction_id_param: `${transferTransactionId}_rollback`,
+          transaction_type_param: 'transfer_rollback',
+          description_param: `Rollback failed transfer to ${recipientEmail}`
+        });
 
       return NextResponse.json(
-        { error: 'Failed to update recipient balance' },
+        { error: 'Failed to process transfer to recipient' },
         { status: 500 }
       );
     }
@@ -151,7 +172,7 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString()
     };
 
-    const { error: recordError } = await supabase
+    const { error: recordError } = await supabaseAdmin
       .from('user_transfers')
       .insert(transferRecord);
 
@@ -160,18 +181,21 @@ export async function POST(request: NextRequest) {
       // Don't fail the transfer if recording fails, just log it
     }
 
+    // Transaction recording is now handled automatically by the wallet functions
+    console.log('✅ Transfer completed successfully using wallet functions with portfolio_value tracking');
+
     return NextResponse.json({
       success: true,
-      message: 'Transfer completed successfully',
+      message: 'Transfer completed successfully - Portfolio values updated for both users',
       transfer: {
         senderEmail,
         recipientEmail,
         transferAmount,
         fee,
         totalDeducted,
-        senderNewBalance: newSenderBalance,
-        recipientNewBalance: newRecipientBalance,
-        timestamp: new Date().toISOString()
+        transactionId: transferTransactionId,
+        timestamp: new Date().toISOString(),
+        note: 'Portfolio values have been properly adjusted for this external transfer'
       }
     });
 

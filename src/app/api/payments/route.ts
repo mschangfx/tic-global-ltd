@@ -106,60 +106,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user wallet to check balance
-    const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets')
-      .select('*')
-      .eq('user_email', userEmail)
-      .single();
+    // Get user's calculated wallet balance using the same function as balance API
+    const { data: balanceData, error: balanceError } = await supabase
+      .rpc('get_calculated_wallet_balance', { user_email_param: userEmail });
 
-    if (walletError || !wallet) {
+    if (balanceError) {
+      console.error('Error getting wallet balance:', balanceError);
       return NextResponse.json(
-        { error: 'User wallet not found' },
-        { status: 404 }
+        { error: 'Failed to get wallet balance' },
+        { status: 500 }
       );
     }
 
+    const currentBalance = balanceData?.[0]?.total_balance || 0;
+
+    console.log('🔍 Payment processing for user:', userEmail);
+    console.log('💰 Current balance:', currentBalance);
+    console.log('💳 Plan price:', plan.price);
+
     // Check sufficient balance
-    if (wallet.total_balance < plan.price) {
+    if (currentBalance < plan.price) {
       return NextResponse.json(
-        { 
+        {
           error: 'Insufficient balance',
           required: plan.price,
-          available: wallet.total_balance,
-          shortfall: plan.price - wallet.total_balance
+          available: currentBalance,
+          shortfall: plan.price - currentBalance
         },
         { status: 400 }
       );
     }
 
-    // Manual payment processing (without database function for now)
+    const newBalance = currentBalance - plan.price;
 
-    // Get current wallet balance using the transaction-based system
-    console.log('🔍 Fetching wallet balance for user:', userEmail);
-    const { data: balanceData, error: balanceError } = await supabase
-      .rpc('get_calculated_wallet_balance', { user_email_param: userEmail });
+    // CRITICAL: Update the actual wallet balance in user_wallets table
+    console.log(`💰 Deducting $${plan.price} from wallet balance: ${currentBalance} -> ${newBalance}`);
 
-    if (balanceError || !balanceData || balanceData.length === 0) {
-      console.error('❌ Error fetching wallet balance:', balanceError);
+    const { error: walletUpdateError } = await supabase
+      .from('user_wallets')
+      .update({
+        total_balance: newBalance,
+        last_updated: new Date().toISOString()
+      })
+      .eq('user_email', userEmail);
+
+    if (walletUpdateError) {
+      console.error('❌ Error updating wallet balance:', walletUpdateError);
       return NextResponse.json(
-        { error: 'Unable to fetch wallet balance' },
+        { error: 'Failed to deduct from wallet balance', details: walletUpdateError.message },
         { status: 500 }
       );
     }
 
-    const currentBalance = parseFloat(balanceData[0].total_balance) || 0;
-    console.log('💰 Current wallet balance:', currentBalance, 'Plan price:', plan.price);
-
-    // Check sufficient balance
-    if (currentBalance < plan.price) {
-      return NextResponse.json(
-        { error: `Insufficient balance. Required: $${plan.price}, Available: $${currentBalance.toFixed(2)}` },
-        { status: 400 }
-      );
-    }
-
-    const newBalance = currentBalance - plan.price;
+    console.log('✅ Wallet balance updated successfully');
 
     // Create a withdrawal transaction for the plan purchase
     const transactionId = `plan-purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -170,7 +169,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_email: userEmail,
         transaction_id: transactionId,
-        transaction_type: 'withdrawal',
+        transaction_type: 'payment',
         amount: -plan.price, // Negative amount for withdrawal/deduction
         balance_before: currentBalance,
         balance_after: newBalance,
@@ -180,13 +179,11 @@ export async function POST(request: NextRequest) {
 
     if (walletTransactionError) {
       console.error('❌ Error creating wallet transaction:', walletTransactionError);
-      return NextResponse.json(
-        { error: 'Failed to deduct from wallet balance' },
-        { status: 500 }
-      );
+      // Don't fail the payment if transaction recording fails, but log it
+      console.log('⚠️ Payment succeeded but transaction recording failed');
+    } else {
+      console.log('✅ Wallet transaction created successfully');
     }
-
-    console.log('✅ Wallet transaction created successfully');
 
     // Create payment transaction record
     const { data: paymentTransaction, error: transactionError } = await supabase
@@ -258,7 +255,26 @@ export async function POST(request: NextRequest) {
       // Don't fail the payment if notification fails
     }
 
-    // Trigger wallet sync to ensure accurate balance calculation
+    // Note: Partner commissions are NOT triggered by plan purchases
+    // Partner commissions come from daily unilevel commissions:
+    // - $0.44 per VIP account per day
+    // - Distributed via /api/cron/daily-unilevel-commissions
+    // - Based on referral network structure, not plan purchases
+
+    // Get updated wallet balance to confirm the deduction
+    const { data: updatedWallet, error: balanceCheckError } = await supabase
+      .from('user_wallets')
+      .select('*')
+      .eq('user_email', userEmail)
+      .single();
+
+    if (balanceCheckError) {
+      console.error('❌ Error fetching updated wallet balance:', balanceCheckError);
+    } else {
+      console.log(`✅ Wallet balance after payment: $${updatedWallet.total_balance} (was $${currentBalance})`);
+    }
+
+    // Trigger wallet sync to ensure accurate balance calculation across all systems
     try {
       const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:8000'}/api/dev/sync-wallet`, {
         method: 'POST',
@@ -272,13 +288,6 @@ export async function POST(request: NextRequest) {
     } catch (syncError) {
       console.error('Error syncing wallet after payment:', syncError);
     }
-
-    // Get updated wallet balance
-    const { data: updatedWallet } = await supabase
-      .from('user_wallets')
-      .select('*')
-      .eq('user_email', userEmail)
-      .single();
 
     // Calculate referral commissions for VIP plans
     let commissionResult = null;

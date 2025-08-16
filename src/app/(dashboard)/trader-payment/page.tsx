@@ -309,7 +309,7 @@ export default function TraderPaymentPage() {
                         <Text fontWeight="bold">Wallet Balance</Text>
                       </HStack>
                       <Text fontWeight="bold" color={hasInsufficientBalance ? "red.500" : "green.500"}>
-                        ${walletBalance?.total_balance?.toFixed(2) || '0.00'}
+                        ${walletBalance?.total_balance || '0'}
                       </Text>
                     </HStack>
                     {hasInsufficientBalance && (

@@ -190,11 +190,11 @@ export default function Web3TransactionHistory({ userEmail }: Web3TransactionHis
                 </HStack>
               </Td>
               <Td>
-                <Text 
-                  fontWeight="bold" 
+                <Text
+                  fontWeight="bold"
                   color={type === 'deposit' ? 'green.500' : 'red.500'}
                 >
-                  {type === 'deposit' ? '+' : '-'}{tx.amount}
+                  {type === 'deposit' ? '+' : '-'}{parseFloat(tx.amount).toFixed(2)}
                 </Text>
               </Td>
               <Td>

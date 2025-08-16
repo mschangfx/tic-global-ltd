@@ -52,7 +52,7 @@ The TIC Global platform now features a **comprehensive dual-wallet system** that
 #### **Key Features:**
 - ✅ Monthly qualification maintenance requirement
 - ✅ Automatic 50/50 TIC/GIC token distribution
-- ✅ Direct crediting to "My Assets" TIC/GIC balances
+- ✅ Direct crediting to "My Wallet" TIC/GIC balances
 - ✅ Complete transaction history with rank source info
 - ✅ Eligibility verification prevents unqualified distributions
 

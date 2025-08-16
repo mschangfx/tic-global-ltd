@@ -53,8 +53,8 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { FaDollarSign, FaWallet, FaCopy, FaSync } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
 import WalletService, { WalletBalance } from '@/lib/services/walletService';
 import TransactionService from '@/lib/services/transactionService';
 import { createClient } from '@/lib/supabase/client';
@@ -92,13 +92,14 @@ interface WithdrawalMethod {
   tokenSymbol?: string; // Add token symbol for TRC20
 }
 
-export default function WithdrawalPage() {
+function WithdrawalPageWithParams() {
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const cardBgColor = useColorModeValue('white', 'gray.700');
   const textColor = useColorModeValue('black', 'white');
   const subtleTextColor = useColorModeValue('black', 'white');
   const accentColor = 'green.400';
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
 
   const [selectedMethod, setSelectedMethod] = useState<WithdrawalMethod | null>(null);
@@ -202,6 +203,16 @@ export default function WithdrawalPage() {
       fee: '10% gas fee',
       limits: getCompactWithdrawalLimits('paymaya').primary + '\n' + getCompactWithdrawalLimits('paymaya').secondary,
       icon: '/img/paymaya.jpg'
+    },
+    {
+      id: 'gotyme',
+      name: 'GoTyme',
+      symbol: 'USD', // USD is always the withdrawal amount
+      network: 'Digital Wallet',
+      processingTime: '5-30 minutes',
+      fee: '10% gas fee',
+      limits: getCompactWithdrawalLimits('gotyme').primary + '\n' + getCompactWithdrawalLimits('gotyme').secondary,
+      icon: '/img/GOTYME ICON LOGO.jpg'
     }
   ];
 
@@ -266,6 +277,16 @@ export default function WithdrawalPage() {
       fee: '0%',
       limits: '100 - 50,000 PHP',
       icon: '/img/gcash.png'
+    },
+    {
+      id: 'gotyme',
+      name: 'GoTyme',
+      symbol: 'PHP',
+      network: 'Digital Wallet',
+      processingTime: 'Instant',
+      fee: '0%',
+      limits: '100 - 50,000 PHP',
+      icon: '/img/GOTYME ICON LOGO.jpg'
     }
     ];
 
@@ -430,11 +451,11 @@ export default function WithdrawalPage() {
     try {
       const withdrawalAmount = parseFloat(amount);
 
-      // Check if this is a manual method (GCash/PayMaya)
-      const isManualMethod = selectedMethod && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya');
+      // Check if this is a manual method (GCash/PayMaya/GoTyme)
+      const isManualMethod = selectedMethod && (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme');
 
       if (isManualMethod) {
-        // Manual calculation for GCash/PayMaya - 10% gas fee only
+        // Manual calculation for GCash/PayMaya/GoTyme - 10% gas fee only
         const gasFee = withdrawalAmount * 0.10;
         const networkFee = 0; // No network fee for manual methods
         const netAmount = withdrawalAmount - gasFee - networkFee;
@@ -734,9 +755,9 @@ export default function WithdrawalPage() {
       return;
     }
 
-    // For manual methods (GCash/PayMaya), wallet address is the account number
+    // For manual methods (GCash/PayMaya/GoTyme), wallet address is the account number
     if (!walletAddress.trim()) {
-      const addressLabel = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+      const addressLabel = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme'
         ? 'account number'
         : 'wallet address';
       console.log('❌ No wallet address/account number provided');
@@ -780,7 +801,7 @@ export default function WithdrawalPage() {
 
     try {
       // Handle different withdrawal types
-      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ||
+      const isManualMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ||
                              selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon';
       const isTronPyMethod = selectedMethod.id === 'usdt-trc20';
 
@@ -794,7 +815,7 @@ export default function WithdrawalPage() {
       let withdrawalData;
 
       if (isManualMethod) {
-        // Process manual withdrawal (GCash/PayMaya/BEP20/Polygon)
+        // Process manual withdrawal (GCash/PayMaya/GoTyme/BEP20/Polygon)
         const withdrawalResponse = await fetch('/api/withdrawals/manual', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -802,7 +823,7 @@ export default function WithdrawalPage() {
             method: selectedMethod.id,
             accountNumber: walletAddress,
             amount: amount,
-            currency: selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' ? 'USD' : 'USD', // All use USD
+            currency: selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme' ? 'USD' : 'USD', // All use USD
             network: selectedMethod.network
           })
         });
@@ -858,7 +879,7 @@ export default function WithdrawalPage() {
       }
 
       if (isManualMethod) {
-        const isPhpMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya';
+        const isPhpMethod = selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme';
         const addressLabel = isPhpMethod ? 'account' : 'wallet address';
         const methodDescription = isPhpMethod ? selectedMethod.name : `${selectedMethod.name} (${selectedMethod.network})`;
 
@@ -1465,7 +1486,7 @@ export default function WithdrawalPage() {
               <Divider />
 
               <Text fontSize="md" color={textColor}>
-                {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+                {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme'
                   ? `Enter your ${selectedMethod.name} account number and withdrawal amount:`
                   : `Enter your ${selectedMethod.network} wallet address and withdrawal amount:`
                 }
@@ -1488,7 +1509,7 @@ export default function WithdrawalPage() {
                 <Box flex="1">
                   <AlertTitle>Important!</AlertTitle>
                   <AlertDescription display="block">
-                    {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+                    {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme'
                       ? `Ensure you enter a valid ${selectedMethod.name} account number. Your withdrawal will be processed manually by our admin team.`
                       : `Ensure you enter a valid ${selectedMethod.network} wallet address. Sending to an incorrect address may result in permanent loss of funds.`
                     }
@@ -1498,14 +1519,14 @@ export default function WithdrawalPage() {
 
               <FormControl isInvalid={!!error} mt={4}>
                 <FormLabel htmlFor="walletAddress" color={textColor}>
-                  {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+                  {selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme'
                     ? `${selectedMethod.name} Account Number *`
                     : `${selectedMethod.network} Wallet Address *`
                   }
                 </FormLabel>
                 <Input
                   id="walletAddress"
-                  placeholder={selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya'
+                  placeholder={selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme'
                     ? `Enter your ${selectedMethod.name} account number (e.g., 09675131248)`
                     : `Enter your ${selectedMethod.network} wallet address`
                   }
@@ -1538,7 +1559,7 @@ export default function WithdrawalPage() {
                   <FormHelperText color="blue.500">
                     {(() => {
                       const { usdAmount, phpAmount } = parseWithdrawalAmount(parseFloat(withdrawalAmount), selectedMethod.id);
-                      if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya') {
+                      if (selectedMethod.id === 'gcash' || selectedMethod.id === 'paymaya' || selectedMethod.id === 'gotyme') {
                         return `Withdrawal: ${formatCurrency(usdAmount, 'USD')} → You receive: ${formatCurrency(phpAmount, 'PHP')} (Rate: $1 = ₱60)`;
                       } else {
                         return `Withdrawal: ${formatCurrency(usdAmount, 'USD')} → You receive: ${formatCurrency(usdAmount, 'USD')} USDT (≈₱${phpAmount.toFixed(0)} PHP)`;
@@ -1614,5 +1635,14 @@ export default function WithdrawalPage() {
         )}
       </VStack>
     </Box>
+  );
+}
+
+// Main export component with Suspense boundary
+export default function WithdrawalPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <WithdrawalPageWithParams />
+    </Suspense>
   );
 }

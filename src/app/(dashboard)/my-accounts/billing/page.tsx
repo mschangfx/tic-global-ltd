@@ -118,7 +118,7 @@ function BillingPageContent() {
     }
   };
 
-  // Fetch wallet balance on component mount using dev sync
+  // Fetch wallet balance on component mount
   useEffect(() => {
     const loadBalance = async () => {
       try {
@@ -132,40 +132,14 @@ function BillingPageContent() {
           return;
         }
 
-        const response = await fetch('/api/dev/sync-wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userEmail })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          const balance: WalletBalance = {
-            total: data.wallet.total_balance,
-            tic: data.wallet.tic_balance,
-            gic: data.wallet.gic_balance,
-            staking: data.wallet.staking_balance,
-            partner_wallet: data.wallet.partner_wallet_balance || 0,
-            lastUpdated: new Date(data.wallet.last_updated)
-          };
-          setWalletBalance(balance);
-        } else {
-          // Fallback to WalletService if dev sync fails
-          const balance = await walletService.getBalance();
-          setWalletBalance(balance);
-        }
+        // Use WalletService directly instead of dev sync API
+        // This works in both development and production
+        const balance = await walletService.getBalance();
+        setWalletBalance(balance);
 
         setIsLoadingBalance(false);
       } catch (error) {
         console.error('Error fetching wallet balance:', error);
-        // Fallback to WalletService
-        try {
-          const balance = await walletService.getBalance();
-          setWalletBalance(balance);
-        } catch (fallbackError) {
-          console.error('Fallback balance fetch failed:', fallbackError);
-        }
         setIsLoadingBalance(false);
       }
     };

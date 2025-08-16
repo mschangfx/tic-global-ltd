@@ -244,11 +244,11 @@
             <div id="loginSection" class="content">
                 <div class="login-form">
                     <div class="form-group">
-                        <label class="form-label">👤 Username</label>
+                        <label for="username" class="form-label">👤 Username</label>
                         <input type="text" id="username" class="form-input" placeholder="Enter admin username">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">🔑 Password</label>
+                        <label for="password" class="form-label">🔑 Password</label>
                         <input type="password" id="password" class="form-input" placeholder="Enter admin password">
                     </div>
                     <button onclick="login()" class="btn btn-primary">🚀 Login to Admin Panel</button>
@@ -309,6 +309,9 @@
         const SUPABASE_URL = 'https://clsowgswufspftizyjlc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTQxODAsImV4cCI6MjA2NDI3MDE4MH0.8q5bAO2_-8tMa7WLgVawMhr2SjCyljSxvk6qrHhq08I';
         const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY5NDE4MCwiZXhwIjoyMDY0MjcwMTgwfQ.ZryoITxcPfjWYWXQfou8ymnafpT7EZc7B4Rr0YsGEK8';
+
+        // API configuration
+        const API_BASE_URL = 'https://tic-global-mjf7re6wz-changs-projects-b6f8a2cc.vercel.app';
 
         // Auto-refresh configuration
         let autoRefreshInterval = null;
@@ -698,15 +701,23 @@
 
                 } else if (type === 'withdrawal') {
                     if (action === 'approve') {
-                        // Use the approve_withdrawal database function
-                        const approveResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/approve_withdrawal`, {
-                            method: 'POST',
-                            headers: headers,
+                        // Prompt for transaction hash (required for approval)
+                        const transactionHash = prompt('Enter the blockchain transaction hash for this withdrawal:');
+                        if (!transactionHash) {
+                            showMessage('❌ Transaction hash is required to approve withdrawal', 'error');
+                            return;
+                        }
+
+                        // Use the proper API endpoint for approval
+                        const approveResponse = await fetch(`${API_BASE_URL}/api/admin/withdrawals/${id}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
                             body: JSON.stringify({
-                                withdrawal_id_param: id,
-                                admin_email_param: 'admin@ticgloballtd.com',
-                                admin_notes_param: 'Approved via standalone admin panel',
-                                blockchain_hash_param: null
+                                action: 'approve',
+                                transaction_hash: transactionHash,
+                                admin_notes: 'Approved via standalone admin panel'
                             })
                         });
 
@@ -722,28 +733,30 @@
 
                         showMessage(`✅ Withdrawal approved and completed successfully!`, 'success');
                     } else {
-                        // Use the refund_cancelled_withdrawal database function for rejections
-                        const refundResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/refund_cancelled_withdrawal`, {
-                            method: 'POST',
-                            headers: headers,
+                        // Use the proper API endpoint for rejection with refund
+                        const rejectResponse = await fetch(`${API_BASE_URL}/api/admin/withdrawals/${id}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
                             body: JSON.stringify({
-                                withdrawal_id_param: id,
-                                admin_email_param: 'admin@ticgloballtd.com',
-                                admin_notes_param: 'Cancelled via standalone admin panel - funds refunded to wallet'
+                                action: 'reject',
+                                admin_notes: 'Rejected via standalone admin panel - funds refunded to wallet'
                             })
                         });
 
-                        if (!refundResponse.ok) {
-                            const errorText = await refundResponse.text();
-                            throw new Error(`Failed to cancel withdrawal: ${errorText}`);
+                        if (!rejectResponse.ok) {
+                            const errorText = await rejectResponse.text();
+                            throw new Error(`Failed to reject withdrawal: ${errorText}`);
                         }
 
-                        const refundResult = await refundResponse.json();
-                        if (!refundResult.success) {
-                            throw new Error(refundResult.message || 'Failed to cancel withdrawal');
+                        const rejectResult = await rejectResponse.json();
+                        if (!rejectResult.success) {
+                            throw new Error(rejectResult.message || 'Failed to reject withdrawal');
                         }
 
-                        showMessage(`✅ Withdrawal cancelled and $${refundResult.refund_amount} refunded to user wallet!`, 'success');
+                        const refundAmount = rejectResult.refunded || 'unknown amount';
+                        showMessage(`✅ Withdrawal rejected and $${refundAmount} refunded to user wallet!`, 'success');
                     }
                 }
 
