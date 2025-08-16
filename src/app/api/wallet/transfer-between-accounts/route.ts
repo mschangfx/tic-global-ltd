@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Rule 1: Sub-wallets can only transfer TO Main Wallet
     if (restrictedFromAccounts.includes(from_account) && to_account !== 'total') {
-      const accountNames = {
+      const accountNames: Record<string, string> = {
         'tic': 'TIC Wallet',
         'gic': 'GIC Wallet',
         'partner_wallet': 'Partner Wallet'
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     // Rule 2: Only Main Wallet can transfer TO sub-wallets
     if (restrictedToAccounts.includes(to_account) && from_account !== 'total') {
-      const accountNames = {
+      const accountNames: Record<string, string> = {
         'tic': 'TIC Wallet',
         'gic': 'GIC Wallet',
         'partner_wallet': 'Partner Wallet',
