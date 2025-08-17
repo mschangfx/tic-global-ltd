@@ -429,73 +429,74 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // Silence wallet extension noise
-        try { void window.ethereum; } catch (e) { console.warn("Wallet extension error ignored:", e); }
-
-        // Additional wallet extension noise suppression
-        const originalError = console.error;
-        console.error = function(...args) {
-            const message = args.join(' ');
-            if (message.includes('inpage.js') ||
-                message.includes('binanceInjectedProvider') ||
-                message.includes('Cannot read properties of null') ||
-                message.includes('ethereum')) {
-                return; // Suppress wallet extension errors
-            }
-            originalError.apply(console, args);
-        };
-
-        // Storage keys
+        /** ====== CONSTANTS / STATE ====== */
         const LS_TOKEN = 'ADMIN_X_TOKEN';
         const LS_BASE  = 'ADMIN_API_BASE';
+        const AUTO_REFRESH_SECONDS = 10;
 
-        function getToken() {
-            return (localStorage.getItem(LS_TOKEN) || '').trim();
+        let autoRefreshInterval = null;
+        let countdownInterval = null;
+        let nextRefreshTime = 0;
+
+        /** ====== DOM HELPERS ====== */
+        const $ = (id) => document.getElementById(id);
+        function showMessage(message, type='success') {
+            const box = document.createElement('div');
+            box.className = type;
+            box.style.marginBottom = '10px';
+            box.innerText = message;
+            const area = $('messageArea') || document.body;
+            area.prepend(box);
+            setTimeout(() => box.remove(), 4000);
         }
-        function getApiBase() {
-            // default to same origin if not set
+
+        /** ====== SETTINGS / AUTH ====== */
+        function getToken(){ return (localStorage.getItem(LS_TOKEN) || '').trim(); }
+        function getApiBase(){
             const raw = (localStorage.getItem(LS_BASE) || '').trim();
             return (raw || window.location.origin).replace(/\/+$/,'');
         }
-
         function setToken(v){ localStorage.setItem(LS_TOKEN, (v||'').trim()); }
         function setBase(v){ localStorage.setItem(LS_BASE, (v||'').trim().replace(/\/+$/,'')); }
 
-        // Legacy config for compatibility
-        let config = {
-            adminToken: getToken(),
-            apiBaseUrl: getApiBase()
-        };
-
-        let countdownTimer;
-        let refreshInterval;
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            loadSettings();
-            const hasToken = !!getToken();
-            if (!hasToken) {
-                // show settings/login UI and DO NOT start refresh
-                try { openSettings?.(); } catch {}
-                showToast?.('⚠️ Please set Admin API Token in Settings', 'error');
-                return;
+        function openSettings(){
+            // expects a modal with id="settingsModal" and inputs adminToken, apiBaseUrl
+            const m = $('settingsModal');
+            if (m) {
+                m.classList.remove('hidden');
+                m.style.display = 'block';
             }
-            const ok = await verifyAuthOnce();
-            if (!ok) {
-                try { openSettings?.(); } catch {}
-                showToast?.('⚠️ Invalid token. Update it in Settings.', 'error');
-                return;
+            const t = $('adminToken'), b = $('apiBaseUrl');
+            if (t) t.value = getToken();
+            if (b) b.value = getApiBase();
+        }
+        function closeSettings(){
+            const m = $('settingsModal');
+            if (m) {
+                m.classList.add('hidden');
+                m.style.display = 'none';
             }
-            // Only now load data + start auto-refresh
-            try {
-                await refreshData?.();
-                startAutoRefresh?.();
-            } catch (e) {
-                console.error(e);
-            }
-        });
+        }
+        function saveSettings(){
+            const t = ($('adminToken')?.value || '').trim();
+            const b = ($('apiBaseUrl')?.value || '').trim();
+            setToken(t);
+            setBase(b || window.location.origin);
+            closeSettings();
+            showMessage('✅ Settings saved', 'success');
+            // re-verify and (re)start
+            (async () => {
+                const ok = await verifyAuthOnce();
+                if (ok) {
+                    await refreshData();
+                    startAutoRefresh();
+                } else {
+                    showMessage('❌ Token invalid. Check ADMIN_PANEL_TOKEN on server.', 'error');
+                }
+            })();
+        }
 
-        // API Helper
+        /** ====== API LAYER ====== */
         async function apiFetch(path, options = {}) {
             const token = getToken();
             const base = getApiBase();
@@ -517,9 +518,8 @@
             if (!res.ok || (data && data.success === false)) {
                 const msg = (data && data.message) || text || `Request failed (${res.status})`;
                 if (res.status === 401) {
-                    try { stopAutoRefresh?.(); } catch {}
-                    // Optionally open settings modal automatically:
-                    try { openSettings?.(); } catch {}
+                    stopAutoRefresh();
+                    openSettings();
                     throw new Error('Unauthorized: please re-enter Admin API Token in Settings');
                 }
                 throw new Error(`HTTP ${res.status}: ${msg}`);
@@ -527,7 +527,6 @@
             return data ?? {};
         }
 
-        // Auth verification
         async function verifyAuthOnce() {
             try {
                 await apiFetch('/api/admin/ping', { method: 'GET' });
@@ -538,97 +537,77 @@
             }
         }
 
-
-
-        // Settings
-        function loadSettings() {
-            document.getElementById('adminToken').value = getToken();
-            document.getElementById('apiBaseUrl').value = getApiBase() || window.location.origin;
+        /** ====== AUTO REFRESH ====== */
+        function updateCountdown() {
+            const el = $('countdown'); if (!el) return;
+            const now = Date.now();
+            const left = Math.max(0, Math.ceil((nextRefreshTime - now)/1000));
+            el.textContent = left > 0 ? left : 0;
         }
-
-        function openSettings() {
-            document.getElementById('settingsModal').style.display = 'block';
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function saveSettings(){
-            const t = (document.getElementById('adminToken')?.value || '').trim();
-            const bRaw = (document.getElementById('apiBaseUrl')?.value || '').trim();
-            setToken(t);
-            setBase(bRaw || window.location.origin);
-
-            // Update legacy config for compatibility
-            config.adminToken = t;
-            config.apiBaseUrl = getApiBase();
-
-            document.getElementById('settingsModal')?.classList.remove('hidden');
-            document.getElementById('settingsModal').style.display = 'none';
-            showToast('✅ Settings saved', 'success');
-
-            // Re-verify and restart cycle
-            (async () => {
-                const ok = await verifyAuthOnce();
-                if (ok) {
-                    await refreshData?.();
-                    startAutoRefresh?.();
-                } else {
-                    showToast('❌ Token invalid. Please check Vercel ADMIN_PANEL_TOKEN & try again.', 'error');
-                }
-            })();
-        }
-
-        // Auto-refresh
         function startAutoRefresh() {
             stopAutoRefresh();
-            
-            let countdown = 10;
-            document.getElementById('countdown').textContent = countdown;
-            
-            countdownTimer = setInterval(() => {
-                countdown--;
-                document.getElementById('countdown').textContent = countdown;
-
-                if (countdown <= 0) {
-                    refreshData(true); // Pass isAuto=true for auto-refresh
-                    countdown = 10;
-                }
-            }, 1000);
+            nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS*1000);
+            autoRefreshInterval = setInterval(() => {
+                refreshData(true);
+                nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS*1000);
+            }, AUTO_REFRESH_SECONDS*1000);
+            countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown();
         }
-
         function stopAutoRefresh() {
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+            autoRefreshInterval = countdownInterval = null;
+        }
+        function manualRefresh(){
+            refreshData(false);
+            if (autoRefreshInterval) {
+                nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS*1000);
+                updateCountdown();
             }
         }
 
-        // Data fetching
-        async function refreshData(isAuto=false){
-            try {
-                document.body.classList.add('loading');
-                const data = await apiFetch('/api/admin/pending', { method: 'GET' });
 
-                if (data.success) {
-                    updateStats(data.transactions);
-                    renderTransactions(data.transactions);
-                    if (!isAuto) startAutoRefresh(); // Reset countdown only for manual refresh
-                } else {
-                    throw new Error(data.message || 'Failed to fetch data');
-                }
+
+        /** ====== RENDER & ACTIONS ====== */
+        async function oneClick(id, action, type) {
+            try {
+                const body = { action, admin_notes: `${action} via panel` };
+                if (type === 'withdrawal' && action === 'approve') body.transaction_hash = 'PENDING_TX';
+                await apiFetch(`/api/admin/${type === 'deposit' ? 'deposits' : 'withdrawals'}/${id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(body)
+                });
+                showMessage(`✅ ${type} ${action}d`, 'success');
+                await refreshData();
+            } catch (e) {
+                console.error(e);
+                showMessage(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        /** ====== FIX for 'finally' error: replace the whole refreshData with this ====== */
+        async function refreshData(isAuto = false) {
+            let transactions = [];
+            try {
+                if (!isAuto) showMessage('🔄 Loading transactions...', 'success');
+                const data = await apiFetch('/api/admin/pending', { method: 'GET' });
+                transactions = (data.transactions || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+                renderTransactions(transactions);
             } catch (e) {
                 console.error('Refresh error:', e);
-                if (String(e.message).includes('Not authenticated/configured')) {
-                    try { stopAutoRefresh?.(); } catch {}
-                    try { openSettings?.(); } catch {}
+                if (String(e.message).includes('Not authenticated') || String(e.message).includes('Unauthorized')) {
+                    stopAutoRefresh();
+                    openSettings();
                 }
-                showToast(`❌ ${e.message}`, 'error');
-            }
+                showMessage(`❌ ${e.message}`, 'error');
             } finally {
-                document.body.classList.remove('loading');
+                const lu = $('lastUpdated');
+                if (lu) lu.textContent = 'Last updated: ' + new Date().toLocaleString();
             }
         }
+
+
 
         // Update statistics
         function updateStats(transactions) {
@@ -763,11 +742,41 @@
             }, 3000);
         }
 
+        /** ====== BOOT ====== */
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Optional: silence wallet extension noise
+            try { void window.ethereum; } catch (e) { console.warn('Wallet extension error ignored:', e); }
+
+            if (!getToken()) {
+                openSettings();
+                showMessage('⚠️ Please set Admin API Token in Settings', 'error');
+                return;
+            }
+            const ok = await verifyAuthOnce();
+            if (!ok) {
+                openSettings();
+                showMessage('⚠️ Invalid token. Update it in Settings.', 'error');
+                return;
+            }
+            await refreshData();
+            startAutoRefresh();
+        });
+
+        /** ====== EXPOSE GLOBALS FOR INLINE onclick ATTRIBUTES ====== */
+        window.openSettings = openSettings;
+        window.closeSettings = closeSettings;
+        window.saveSettings = saveSettings;
+        window.manualRefresh = manualRefresh;
+        window.oneClick = oneClick;
+        window.refreshData = refreshData;
+        window.startAutoRefresh = startAutoRefresh;
+        window.stopAutoRefresh = stopAutoRefresh;
+
         // Close modals when clicking outside
         window.onclick = function(event) {
             const settingsModal = document.getElementById('settingsModal');
             const receiptModal = document.getElementById('receiptModal');
-            
+
             if (event.target === settingsModal) {
                 closeSettings();
             }
