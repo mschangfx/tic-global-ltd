@@ -445,23 +445,53 @@
             originalError.apply(console, args);
         };
 
-        // Configuration
+        // Storage keys
+        const LS_TOKEN = 'ADMIN_X_TOKEN';
+        const LS_BASE  = 'ADMIN_API_BASE';
+
+        function getToken() {
+            return (localStorage.getItem(LS_TOKEN) || '').trim();
+        }
+        function getApiBase() {
+            // default to same origin if not set
+            const raw = (localStorage.getItem(LS_BASE) || '').trim();
+            return (raw || window.location.origin).replace(/\/+$/,'');
+        }
+
+        function setToken(v){ localStorage.setItem(LS_TOKEN, (v||'').trim()); }
+        function setBase(v){ localStorage.setItem(LS_BASE, (v||'').trim().replace(/\/+$/,'')); }
+
+        // Legacy config for compatibility
         let config = {
-            adminToken: localStorage.getItem('ADMIN_X_TOKEN') || localStorage.getItem('adminToken') || '',
-            apiBaseUrl: localStorage.getItem('ADMIN_API_BASE') || localStorage.getItem('apiBaseUrl') || window.location.origin
+            adminToken: getToken(),
+            apiBaseUrl: getApiBase()
         };
 
         let countdownTimer;
         let refreshInterval;
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async () => {
             loadSettings();
-            if (config.adminToken) {
-                startAutoRefresh();
-                refreshData();
-            } else {
-                openSettings();
+            const hasToken = !!getToken();
+            if (!hasToken) {
+                // show settings/login UI and DO NOT start refresh
+                try { openSettings?.(); } catch {}
+                showToast?.('⚠️ Please set Admin API Token in Settings', 'error');
+                return;
+            }
+            const ok = await verifyAuthOnce();
+            if (!ok) {
+                try { openSettings?.(); } catch {}
+                showToast?.('⚠️ Invalid token. Update it in Settings.', 'error');
+                return;
+            }
+            // Only now load data + start auto-refresh
+            try {
+                await refreshData?.();
+                startAutoRefresh?.();
+            } catch (e) {
+                console.error(e);
             }
         });
 
@@ -475,36 +505,40 @@
                 ...options,
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-token': token,       // primary
-                    'Authorization': `Bearer ${token}`, // fallback accepted by backend
+                    'x-admin-token': token,
+                    'Authorization': `Bearer ${token}`, // backend accepts either
                     ...(options.headers || {})
                 }
             });
 
-            let data = null, text = "";
+            let data=null, text="";
             try { data = await res.json(); } catch { try { text = await res.text(); } catch {} }
 
             if (!res.ok || (data && data.success === false)) {
                 const msg = (data && data.message) || text || `Request failed (${res.status})`;
-                // ⛔️ If 401: stop auto-refresh to avoid infinite loop and ask for token again
                 if (res.status === 401) {
                     try { stopAutoRefresh?.(); } catch {}
-                    // show a quick inline banner/modal; keep simple here:
-                    alert("Unauthorized (401). Please re-enter Admin API Token in Settings.");
+                    // Optionally open settings modal automatically:
+                    try { openSettings?.(); } catch {}
+                    throw new Error('Unauthorized: please re-enter Admin API Token in Settings');
                 }
                 throw new Error(`HTTP ${res.status}: ${msg}`);
             }
             return data ?? {};
         }
 
-        // Helper functions for config
-        function getToken() {
-            return (localStorage.getItem('ADMIN_X_TOKEN') || '').trim();
+        // Auth verification
+        async function verifyAuthOnce() {
+            try {
+                await apiFetch('/api/admin/ping', { method: 'GET' });
+                return true;
+            } catch (e) {
+                console.error('Ping failed:', e);
+                return false;
+            }
         }
 
-        function getApiBase() {
-            return (localStorage.getItem('ADMIN_API_BASE') || '').replace(/\/+$/, '');
-        }
+
 
         // Settings
         function loadSettings() {
@@ -520,27 +554,30 @@
             document.getElementById('settingsModal').style.display = 'none';
         }
 
-        function saveSettings() {
-            const t = document.getElementById('adminToken').value.trim();
-            const b = document.getElementById('apiBaseUrl').value.trim().replace(/\/+$/,'') || window.location.origin;
-
-            if (t) localStorage.setItem('ADMIN_X_TOKEN', t);
-            if (b) localStorage.setItem('ADMIN_API_BASE', b);
+        function saveSettings(){
+            const t = (document.getElementById('adminToken')?.value || '').trim();
+            const bRaw = (document.getElementById('apiBaseUrl')?.value || '').trim();
+            setToken(t);
+            setBase(bRaw || window.location.origin);
 
             // Update legacy config for compatibility
             config.adminToken = t;
-            config.apiBaseUrl = b;
-            localStorage.setItem('adminToken', t);
-            localStorage.setItem('apiBaseUrl', b);
+            config.apiBaseUrl = getApiBase();
 
-            if (t) {
-                closeSettings();
-                showToast('Settings saved successfully!', 'success');
-                startAutoRefresh();
-                refreshData();
-            } else {
-                showToast('Please enter an admin token', 'error');
-            }
+            document.getElementById('settingsModal')?.classList.remove('hidden');
+            document.getElementById('settingsModal').style.display = 'none';
+            showToast('✅ Settings saved', 'success');
+
+            // Re-verify and restart cycle
+            (async () => {
+                const ok = await verifyAuthOnce();
+                if (ok) {
+                    await refreshData?.();
+                    startAutoRefresh?.();
+                } else {
+                    showToast('❌ Token invalid. Please check Vercel ADMIN_PANEL_TOKEN & try again.', 'error');
+                }
+            })();
         }
 
         // Auto-refresh
@@ -553,9 +590,9 @@
             countdownTimer = setInterval(() => {
                 countdown--;
                 document.getElementById('countdown').textContent = countdown;
-                
+
                 if (countdown <= 0) {
-                    refreshData();
+                    refreshData(true); // Pass isAuto=true for auto-refresh
                     countdown = 10;
                 }
             }, 1000);
@@ -568,33 +605,26 @@
         }
 
         // Data fetching
-        async function refreshData() {
-            if (!config.adminToken) {
-                showToast('Please configure your admin token first', 'error');
-                openSettings();
-                return;
-            }
-
+        async function refreshData(isAuto=false){
             try {
                 document.body.classList.add('loading');
-                
-                const data = await apiFetch('/api/admin/pending');
-                
+                const data = await apiFetch('/api/admin/pending', { method: 'GET' });
+
                 if (data.success) {
                     updateStats(data.transactions);
                     renderTransactions(data.transactions);
-                    startAutoRefresh(); // Reset countdown
+                    if (!isAuto) startAutoRefresh(); // Reset countdown only for manual refresh
                 } else {
                     throw new Error(data.message || 'Failed to fetch data');
                 }
-            } catch (error) {
-                console.error('Refresh error:', error);
-                showToast(`Error: ${error.message}`, 'error');
-                
-                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                    showToast('Invalid admin token. Please check your settings.', 'error');
-                    openSettings();
+            } catch (e) {
+                console.error('Refresh error:', e);
+                if (String(e.message).includes('Not authenticated/configured')) {
+                    try { stopAutoRefresh?.(); } catch {}
+                    try { openSettings?.(); } catch {}
                 }
+                showToast(`❌ ${e.message}`, 'error');
+            }
             } finally {
                 document.body.classList.remove('loading');
             }
