@@ -1,0 +1,13 @@
+{
+  "name": "tic-global-admin-panel",
+  "version": "1.0.0",
+  "description": "TIC Global Admin Panel - Standalone",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'Static HTML - no build needed'"
+  },
+  "keywords": ["admin", "panel", "tic", "global"],
+  "author": "TIC Global",
+  "license": "MIT"
+}
