@@ -81,19 +81,11 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
       (balance.staking || 0) +         // Staking Wallet (USD)
       (balance.partner_wallet || 0);   // Partner Wallet (USD)
 
-    console.log('🏦 Calculated Portfolio Value (Fallback):', {
-      mainWallet: balance.total || 0,
-      ticWallet: `${balance.tic || 0} TIC = $${ticInUsd.toFixed(2)}`,
-      gicWallet: `${balance.gic || 0} GIC = $${gicInUsd.toFixed(2)}`,
-      stakingWallet: balance.staking || 0,
-      partnerWallet: balance.partner_wallet || 0,
-      calculatedValue: calculatedValue,
-      note: 'Fallback calculation - will change with internal transfers'
-    });
+    // Portfolio value calculated successfully
 
     return calculatedValue;
   };
-  const { data: nextAuthSession } = useSession(); // Get NextAuth session
+  const { data: nextAuthSession, status: sessionStatus } = useSession(); // Get NextAuth session
 
   // Handle My Dashboard navigation
   const handleGoToDashboard = () => {
@@ -111,13 +103,17 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
   // Load balance function (extracted so it can be called from refresh button)
   const loadBalance = async () => {
       try {
+        // Don't load balance if session is still loading
+        if (sessionStatus === 'loading') {
+          return;
+        }
+
         setIsLoadingBalance(true);
         let userEmail: string | null = null;
 
         // Method 1: Check NextAuth session (Google OAuth)
         if (nextAuthSession?.user?.email) {
           userEmail = nextAuthSession.user.email;
-          console.log('🔍 Navbar: Using NextAuth user:', userEmail);
         } else {
           // Method 2: Check Supabase auth (manual login)
           try {
@@ -128,7 +124,6 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
               // Silently handle auth errors - this is normal when not logged in
             } else if (user?.email) {
               userEmail = user.email;
-              console.log('🔍 Navbar: Using Supabase user:', userEmail);
             }
           } catch (supabaseError) {
             // Silently handle connection errors - this is normal during page load
@@ -143,8 +138,6 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
           setIsLoadingBalance(false);
           return;
         }
-
-        console.log('🔍 Navbar: Loading balance for:', userEmail);
 
         // Use the wallet balance API directly for consistency (POST request)
         // Add cache busting to ensure fresh data
@@ -163,18 +156,10 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
         });
 
         const data = await response.json();
-        console.log('🔍 Navbar: API request details:', {
-          url: '/api/wallet/balance',
-          method: 'POST',
-          userEmail: userEmail,
-          responseStatus: response.status,
-          responseOk: response.ok
-        });
-        console.log('🔍 Navbar: Raw API response:', data);
+        // API request completed successfully
 
         if (data.wallet) {
           const w = data.wallet;
-          console.log('🔍 Navbar: Wallet data from API:', w);
           const balance: WalletBalance = {
             total: Number(w.total_balance) || 0,
             tic: Number(w.tic_balance) || 0,
@@ -183,151 +168,53 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
             partner_wallet: Number(w.partner_wallet_balance) || 0,
             lastUpdated: w.last_updated ? new Date(w.last_updated) : new Date()
           };
-          console.log('✅ Navbar: Balance loaded successfully:', balance);
-          console.log('💰 Navbar: Total balance will display as:', `$${balance.total.toFixed(2)}`);
-          console.log('🪙 Navbar: TIC balance will display as:', `${balance.tic.toFixed(2)} TIC`);
-          console.log('💎 Navbar: GIC balance will display as:', `${balance.gic.toFixed(2)} GIC`);
-          console.log('🤝 Navbar: Partner balance will display as:', `$${balance.partner_wallet.toFixed(2)}`);
-          console.log('🔍 Navbar: Setting wallet balance state...');
           setWalletBalance(balance);
           setIsLoadingBalance(false);
           setRefreshKey(prev => prev + 1); // Force re-render
-          console.log('✅ Navbar: State updated with refresh key:', refreshKey + 1);
         } else if (data.error) {
           console.error('❌ Navbar: API error:', data.error);
-          // Fallback to WalletService if API fails
-          try {
-            const balance = await walletService.getBalance();
-            setWalletBalance(balance);
-            setIsLoadingBalance(false);
-          } catch (fallbackError) {
-            console.error('❌ Navbar: Fallback also failed:', fallbackError);
-            setWalletBalance(null);
-            setIsLoadingBalance(false);
-          }
+          setWalletBalance(null);
+          setIsLoadingBalance(false);
         } else {
           console.error('❌ Navbar: Unexpected API response:', data);
-          // Fallback to WalletService
-          try {
-            const balance = await walletService.getBalance();
-            setWalletBalance(balance);
-            setIsLoadingBalance(false);
-          } catch (fallbackError) {
-            console.error('❌ Navbar: Fallback also failed:', fallbackError);
-            setWalletBalance(null);
-            setIsLoadingBalance(false);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Navbar: Error loading balance:', error);
-        // Fallback to WalletService
-        try {
-          const balance = await walletService.getBalance();
-          console.log('🔄 Navbar: Fallback balance from WalletService:', balance);
-          setWalletBalance(balance);
-          setIsLoadingBalance(false);
-        } catch (fallbackError) {
-          console.error('❌ Navbar: Fallback also failed:', fallbackError);
           setWalletBalance(null);
           setIsLoadingBalance(false);
         }
+      } catch (error) {
+        // Silently handle balance loading errors
+        setWalletBalance(null);
+        setIsLoadingBalance(false);
       }
     };
 
   useEffect(() => {
-    // Set up wallet service listener for real-time updates
-    const handleBalanceUpdate = (newBalance: WalletBalance) => {
-      console.log('🔔 Navbar: Received balance update from WalletService:', newBalance);
-      console.log('💰 Navbar: Will update display to:', `$${newBalance.total.toFixed(2)}`);
-      setWalletBalance(newBalance);
-      setIsLoadingBalance(false);
-    };
+    // Don't run effect if session is still loading
+    if (sessionStatus === 'loading') {
+      return;
+    }
 
-    // Subscribe to balance updates
-    const unsubscribe = walletService.subscribe(handleBalanceUpdate);
+    // Removed WalletService subscription to prevent excessive API calls
 
     // Initial load
     loadBalance();
 
-    // Set up enhanced auto-refresh every 30 seconds for real-time balance updates
+    // Set up simple auto-refresh every 60 seconds to avoid excessive API calls
     const refreshInterval = setInterval(async () => {
-      console.log('🔄 Navbar: Auto-refresh balance triggered');
       try {
-        // Use the balance sync utility for consistency
-        const { manualBalanceRefresh } = await import('@/lib/utils/balanceSync');
-        await manualBalanceRefresh();
-        console.log('✅ Navbar: Auto-refresh completed successfully');
+        const balance = await walletService.getBalance();
+        setWalletBalance(balance);
       } catch (error) {
         console.error('❌ Navbar: Auto-refresh failed:', error);
-        // Fallback to direct API call
-        try {
-          const balance = await walletService.forceRefreshBalance();
-          setWalletBalance(balance);
-          console.log('✅ Navbar: Fallback refresh completed');
-        } catch (fallbackError) {
-          console.error('❌ Navbar: Fallback refresh failed:', fallbackError);
-        }
       }
-    }, 30000); // 30 seconds for more responsive updates
+    }, 60000); // 60 seconds - less frequent to reduce API load
 
-    // Set up additional fast refresh for critical events (every 10 seconds for first 2 minutes)
-    let fastRefreshCount = 0;
-    const maxFastRefreshes = 12; // 12 * 10s = 2 minutes
-    const fastRefreshInterval = setInterval(async () => {
-      fastRefreshCount++;
-      if (fastRefreshCount > maxFastRefreshes) {
-        clearInterval(fastRefreshInterval);
-        return;
-      }
+    // Removed excessive visibility and focus refresh listeners to reduce API calls
 
-      console.log('⚡ Navbar: Fast auto-refresh triggered');
-      try {
-        const balance = await walletService.forceRefreshBalance();
-        setWalletBalance(balance);
-      } catch (error) {
-        console.error('❌ Navbar: Fast refresh failed:', error);
-      }
-    }, 10000); // 10 seconds for first 2 minutes
-
-    // Set up visibility change listener for instant refresh when user returns to tab
-    const handleVisibilityChange = async () => {
-      if (!document.hidden) {
-        console.log('👁️ Navbar: Tab became visible, refreshing balance');
-        try {
-          const balance = await walletService.forceRefreshBalance();
-          setWalletBalance(balance);
-          console.log('✅ Navbar: Visibility refresh completed');
-        } catch (error) {
-          console.error('❌ Navbar: Visibility refresh failed:', error);
-        }
-      }
-    };
-
-    // Set up focus listener for instant refresh when window gains focus
-    const handleWindowFocus = async () => {
-      console.log('🎯 Navbar: Window focused, refreshing balance');
-      try {
-        const balance = await walletService.forceRefreshBalance();
-        setWalletBalance(balance);
-        console.log('✅ Navbar: Focus refresh completed');
-      } catch (error) {
-        console.error('❌ Navbar: Focus refresh failed:', error);
-      }
-    };
-
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleWindowFocus);
-
-    // Cleanup listeners and intervals on unmount
+    // Cleanup intervals on unmount
     return () => {
-      unsubscribe();
       clearInterval(refreshInterval);
-      clearInterval(fastRefreshInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [walletService, nextAuthSession]); // Added nextAuthSession dependency for login state changes
+  }, [walletService, nextAuthSession, sessionStatus]); // Added sessionStatus dependency
 
   // Logout handler
   const handleLogout = async () => {
@@ -421,7 +308,11 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
                   />
                 </HStack>
               ) : walletBalance ? (
-                `$${getPortfolioValue(walletBalance).toFixed(2)}`
+                (() => {
+                  const portfolioValue = getPortfolioValue(walletBalance);
+                  console.log('🪙 Navbar: Rendering TIC value:', walletBalance.tic?.toFixed(2) || '0.00', 'from walletBalance.tic:', walletBalance.tic, 'refreshKey:', refreshKey);
+                  return `$${portfolioValue.toFixed(2)}`;
+                })()
               ) : (
                 '$0.00'
               )}
@@ -476,11 +367,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
                   </HStack>
                   <VStack spacing={0} align="flex-end">
                     <Text fontSize="sm" fontWeight="bold" color="white">
-                      {(() => {
-                        const ticValue = walletBalance?.tic?.toFixed(2) || '0.00';
-                        console.log('🪙 Navbar: Rendering TIC value:', ticValue, 'from walletBalance.tic:', walletBalance?.tic, 'refreshKey:', refreshKey);
-                        return ticValue;
-                      })()} TIC
+                      {(walletBalance?.tic?.toFixed(2) || '0.00')} TIC
                     </Text>
                     <Text fontSize="xs" color="gray.400">
                       ${((walletBalance?.tic || 0) * TOKEN_PRICES.TIC).toFixed(2)}
@@ -608,10 +495,8 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
                 }}
                 onClick={async () => {
                   setIsLoadingBalance(true);
-                  console.log('🔄 Navbar: Manual refresh triggered');
                   // Force reload balance
                   await loadBalance();
-                  console.log('✅ Navbar: Manual refresh completed');
                 }}
                 cursor="pointer"
                 transition="all 0.2s ease-in-out"
