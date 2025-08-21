@@ -159,10 +159,12 @@ export default function ProfilePage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch profile data');
+        console.error('API response not ok:', response.status, response.statusText);
+        throw new Error(`Failed to fetch profile data: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Profile API response:', data);
 
       if (data.success && data.user) {
         setUserProfile({
@@ -182,22 +184,46 @@ export default function ProfilePage() {
             ? data.user.identity_verification_status || 'pending'
             : null,
         });
-      } else {
+      } else if (data.success === false) {
+        // Handle API error response
+        console.error('API returned error:', data.error);
         throw new Error(data.error || 'Failed to load profile data');
+      } else {
+        // Handle unexpected response format
+        console.error('Unexpected API response format:', data);
+        throw new Error('Unexpected response format');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+
+      // Set default values to prevent UI errors
+      setUserProfile({
+        email: session?.user?.email || '',
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        country: '',
+      });
+
+      setVerificationStatus({
+        emailVerified: false,
+        phoneVerified: false,
+        profileCompleted: false,
+        identityVerified: false,
+        identityStatus: null,
+      });
+
       toast({
         title: "Error",
-        description: "Failed to load profile data",
+        description: "Failed to load profile data. Please refresh the page.",
         status: "error",
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, session?.user?.email]);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {

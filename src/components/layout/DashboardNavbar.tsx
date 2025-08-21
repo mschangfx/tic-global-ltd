@@ -169,6 +169,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
             lastUpdated: w.last_updated ? new Date(w.last_updated) : new Date()
           };
           setWalletBalance(balance);
+          console.log('🪙 Navbar: Rendering TIC value:', balance.tic?.toFixed(2) || '0.00', 'from walletBalance.tic:', balance.tic, 'refreshKey:', refreshKey + 1);
           setIsLoadingBalance(false);
           setRefreshKey(prev => prev + 1); // Force re-render
         } else if (data.error) {
@@ -308,11 +309,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
                   />
                 </HStack>
               ) : walletBalance ? (
-                (() => {
-                  const portfolioValue = getPortfolioValue(walletBalance);
-                  console.log('🪙 Navbar: Rendering TIC value:', walletBalance.tic?.toFixed(2) || '0.00', 'from walletBalance.tic:', walletBalance.tic, 'refreshKey:', refreshKey);
-                  return `$${portfolioValue.toFixed(2)}`;
-                })()
+                `$${getPortfolioValue(walletBalance).toFixed(2)}`
               ) : (
                 '$0.00'
               )}

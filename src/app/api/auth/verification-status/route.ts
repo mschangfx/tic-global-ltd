@@ -1,78 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Get email from query parameter or session
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
+    let email = searchParams.get('email');
 
+    // If no email in query, try to get from session
     if (!email) {
-      return NextResponse.json(
-        { message: 'Email is required' },
-        { status: 400 }
-      );
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.email) {
+        return NextResponse.json(
+          { success: false, error: 'Not authenticated' },
+          { status: 401 }
+        );
+      }
+      email = session.user.email;
     }
 
-    // Get Supabase client
-    const supabase = createClient();
+    // Get Supabase admin client to bypass RLS
+    const supabase = supabaseAdmin;
 
     // Get user verification status and profile data
     const { data: user, error } = await supabase
       .from('users')
-      .select('email_verified, phone_verified, profile_completed, identity_verification_status, identity_document_uploaded, phone_number, first_name, last_name, name, country_of_birth')
+      .select(`
+        email,
+        first_name,
+        last_name,
+        phone_number,
+        country_of_birth,
+        country_of_residence,
+        email_verified,
+        phone_verified,
+        profile_completed,
+        identity_verification_status,
+        identity_verification_submitted,
+        identity_document_uploaded
+      `)
       .eq('email', email)
       .maybeSingle();
+
+    console.log('Verification status API - Email:', email);
+    console.log('Verification status API - User data:', user);
+    console.log('Verification status API - Error:', error);
 
     if (error) {
       console.error('Error fetching user verification status:', error);
       return NextResponse.json(
-        { message: 'Database error' },
+        { success: false, error: 'Database error' },
         { status: 500 }
       );
     }
 
-    // If user doesn't exist in users table, return default values for Google OAuth users
+    // If user doesn't exist in users table, return default values
     if (!user) {
+      console.log('Verification status API - No user found, returning defaults');
       return NextResponse.json(
         {
-          emailVerified: true, // Google OAuth users have verified emails
-          phoneVerified: true, // Phone verification removed - always true
-          profileCompleted: false,
-          identityVerified: false,
-          identityDocumentUploaded: false,
-          phoneNumber: null,
-          firstName: null,
-          lastName: null,
-          name: null,
-          countryOfBirth: null
+          success: true,
+          user: {
+            email: email,
+            email_verified: false,
+            phone_verified: false,
+            profile_completed: false,
+            identity_verification_status: null,
+            identity_verification_submitted: false,
+            identity_document_uploaded: false,
+            first_name: null,
+            last_name: null,
+            phone_number: null,
+            country_of_residence: null
+          }
         },
         { status: 200 }
       );
     }
 
-    return NextResponse.json(
-      {
-        emailVerified: user.email_verified || false,
-        phoneVerified: true, // Phone verification removed - always true
-        profileCompleted: user.profile_completed || false,
-        identityVerified: user.identity_verification_status === 'approved',
-        identityDocumentUploaded: user.identity_document_uploaded || false,
-        phoneNumber: user.phone_number || null,
-        firstName: user.first_name || null,
-        lastName: user.last_name || null,
-        name: user.name || null,
-        countryOfBirth: user.country_of_birth || null
-      },
-      { status: 200 }
-    );
+    // Return user data in expected format
+    const response = {
+      success: true,
+      user: {
+        email: user.email,
+        email_verified: user.email_verified || false,
+        phone_verified: user.phone_verified || false,
+        profile_completed: user.profile_completed || false,
+        identity_verification_status: user.identity_verification_status,
+        identity_verification_submitted: user.identity_verification_submitted || false,
+        identity_document_uploaded: user.identity_document_uploaded || false,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone_number: user.phone_number,
+        country_of_residence: user.country_of_residence || user.country_of_birth
+      }
+    };
+
+    console.log('Verification status API - Response:', response);
+
+    return NextResponse.json(response, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
 
   } catch (error) {
     console.error('Error getting verification status:', error);
     return NextResponse.json(
-      { message: 'Failed to get verification status' },
+      { success: false, error: 'Failed to get verification status' },
       { status: 500 }
     );
   }
