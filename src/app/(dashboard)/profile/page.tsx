@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -146,7 +146,7 @@ export default function ProfilePage() {
     return null;
   }
 
-  const fetchUserProfile = useCallback(async () => {
+  const fetchUserProfile = async () => {
     try {
       setIsLoading(true);
 
@@ -223,13 +223,13 @@ export default function ProfilePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast, session?.user?.email]);
+  };
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
       fetchUserProfile();
     }
-  }, [status, session?.user?.email, fetchUserProfile]);
+  }, [status, session?.user?.email]); // Removed fetchUserProfile from dependencies
 
   // Email verification functions
   const sendEmailVerificationCode = async () => {
