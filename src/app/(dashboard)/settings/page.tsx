@@ -31,7 +31,8 @@ import {
   FaEnvelope,
   FaEdit,
   FaSave,
-  FaTimes
+  FaTimes,
+  FaGoogle
 } from 'react-icons/fa';
 import { createClient } from '@/lib/supabase/client';
 
@@ -41,6 +42,8 @@ export default function SettingsPage() {
   const [userEmail, setUserEmail] = useState('');
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [userRegistrationMethod, setUserRegistrationMethod] = useState<'google' | 'manual' | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -98,6 +101,9 @@ export default function SettingsPage() {
       if (nextAuthSession?.user?.email) {
         const email = nextAuthSession.user.email;
         setUserEmail(email);
+        setIsGoogleUser(true);
+        setUserRegistrationMethod('google');
+        console.log('🔍 User detected: Google OAuth user');
         return;
       }
 
@@ -107,6 +113,9 @@ export default function SettingsPage() {
       if (session?.user?.email) {
         const email = session.user.email;
         setUserEmail(email);
+        setIsGoogleUser(false);
+        setUserRegistrationMethod('manual');
+        console.log('🔍 User detected: Manual registration user');
         return;
       }
 
@@ -116,6 +125,9 @@ export default function SettingsPage() {
       if (!error && user?.email) {
         const email = user.email;
         setUserEmail(email);
+        setIsGoogleUser(false);
+        setUserRegistrationMethod('manual');
+        console.log('🔍 User detected: Manual registration user (fallback)');
         return;
       }
 
@@ -248,7 +260,12 @@ export default function SettingsPage() {
                     Information for logging in to TIC Global Ltd.
                   </Text>
                   <Text fontSize="sm" color={subtleTextColor}>
-                    Change your password whenever you think it might have been compromised.
+                    {userRegistrationMethod === 'manual'
+                      ? 'Change your password whenever you think it might have been compromised.'
+                      : userRegistrationMethod === 'google'
+                      ? 'Your account is secured through Google OAuth authentication.'
+                      : 'Loading account information...'
+                    }
                   </Text>
                 </Box>
 
@@ -276,36 +293,37 @@ export default function SettingsPage() {
                   </Text>
                 </FormControl>
 
-                {/* Password Section */}
-                <FormControl>
-                  <FormLabel color={textColor} fontWeight="semibold">
-                    <HStack spacing={2}>
-                      <Icon as={FaKey} />
-                      <Text>Password</Text>
-                    </HStack>
-                  </FormLabel>
-                  
-                  {!isChangingPassword ? (
-                    <HStack spacing={3}>
-                      <Input
-                        type="password"
-                        value="••••••••••••"
-                        isReadOnly
-                        bg={useColorModeValue('gray.100', 'gray.600')}
-                        color={textColor}
-                        borderColor={borderColor}
-                        flex={1}
-                      />
-                      <Button
-                        leftIcon={<Icon as={FaEdit} />}
-                        colorScheme="blue"
-                        variant="outline"
-                        onClick={() => setIsChangingPassword(true)}
-                        size="md"
-                      >
-                        Change Password
-                      </Button>
-                    </HStack>
+                {/* Password Section - Only show for manual registration users */}
+                {userRegistrationMethod === 'manual' ? (
+                  <FormControl>
+                    <FormLabel color={textColor} fontWeight="semibold">
+                      <HStack spacing={2}>
+                        <Icon as={FaKey} />
+                        <Text>Password</Text>
+                      </HStack>
+                    </FormLabel>
+
+                    {!isChangingPassword ? (
+                      <HStack spacing={3}>
+                        <Input
+                          type="password"
+                          value="••••••••••••"
+                          isReadOnly
+                          bg={useColorModeValue('gray.100', 'gray.600')}
+                          color={textColor}
+                          borderColor={borderColor}
+                          flex={1}
+                        />
+                        <Button
+                          leftIcon={<Icon as={FaEdit} />}
+                          colorScheme="blue"
+                          variant="outline"
+                          onClick={() => setIsChangingPassword(true)}
+                          size="md"
+                        >
+                          Change Password
+                        </Button>
+                      </HStack>
                   ) : (
                     <VStack spacing={4} align="stretch">
                       {/* Current Password */}
@@ -412,7 +430,40 @@ export default function SettingsPage() {
                       </HStack>
                     </VStack>
                   )}
-                </FormControl>
+                  </FormControl>
+                ) : userRegistrationMethod === 'google' ? (
+                  <FormControl>
+                    <FormLabel color={textColor} fontWeight="semibold">
+                      <HStack spacing={2}>
+                        <Icon as={FaKey} />
+                        <Text>Password</Text>
+                      </HStack>
+                    </FormLabel>
+
+                    <Box
+                      p={4}
+                      bg={useColorModeValue('blue.50', 'blue.900')}
+                      borderRadius="md"
+                      border="1px"
+                      borderColor={useColorModeValue('blue.200', 'blue.700')}
+                    >
+                      <VStack spacing={2} align="start">
+                        <HStack spacing={2}>
+                          <Icon as={FaGoogle} color={useColorModeValue('blue.600', 'blue.300')} />
+                          <Text fontSize="sm" fontWeight="semibold" color={useColorModeValue('blue.700', 'blue.200')}>
+                            Google Account Authentication
+                          </Text>
+                        </HStack>
+                        <Text fontSize="sm" color={useColorModeValue('blue.600', 'blue.300')}>
+                          You signed in using Google OAuth. Password changes are managed through your Google account settings.
+                        </Text>
+                        <Text fontSize="xs" color={useColorModeValue('blue.500', 'blue.400')}>
+                          To change your password, please visit your Google Account security settings.
+                        </Text>
+                      </VStack>
+                    </Box>
+                  </FormControl>
+                ) : null}
 
               </VStack>
             </CardBody>
