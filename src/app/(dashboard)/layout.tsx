@@ -17,15 +17,12 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 🔍 TEMPORARY INSTRUMENTATION - REMOVE AFTER FIXING
-  let __hookStep = 0;
-  const __mark = (label?: string) =>
-    console.log(`[HOOK-STEP] Layout ${label ?? ""} step=`, ++__hookStep);
-
-  __mark('pathname'); const pathname = usePathname();
-  __mark('sidebarBg'); const sidebarBg = useColorModeValue('white', 'gray.700');
-  __mark('bgColor'); const bgColor = useColorModeValue('gray.100', 'gray.800');
-  __mark('language'); const { t } = useLanguage();
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
+  const pathname = usePathname();
+  const sidebarBg = useColorModeValue('white', 'gray.700');
+  const bgColor = useColorModeValue('gray.100', 'gray.800');
+  const hoverBg = useColorModeValue('gray.300', 'gray.700'); // Move hook out of map
+  const { t } = useLanguage();
 
   const dashboardNavItems = [
     { icon: FaHome, label: t('navbar.overview'), href: '/dashboard' },
@@ -39,7 +36,7 @@ export default function DashboardLayout({
     { icon: FaLifeRing, label: t('navbar.supportHub'), href: '/support-hub' },
   ];
 
-  console.log('[BEFORE RETURN] Layout reached after', __hookStep, 'hooks');
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   return (
     <Flex direction="column" h="100vh" bg={bgColor}>
       <DashboardNavbar />
@@ -64,7 +61,7 @@ export default function DashboardLayout({
                       <Box
                         p={3}
                         _hover={{
-                          bg: useColorModeValue('gray.300', 'gray.700'),
+                          bg: hoverBg, // ✅ Use pre-computed hook value
                           transform: 'scale(1.05)',
                           transition: 'all 0.2s ease-in-out'
                         }}

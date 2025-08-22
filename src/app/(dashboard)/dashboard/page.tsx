@@ -72,16 +72,12 @@ const StepItem = ({ icon, title, description, stepNumber }: { icon: React.Elemen
 
 
 export default function DashboardOverviewPage() {
-  // 🔍 TEMPORARY INSTRUMENTATION - REMOVE AFTER FIXING
-  let __hookStep = 0;
-  const __mark = (label?: string) =>
-    console.log(`[HOOK-STEP] Dashboard ${label ?? ""} step=`, ++__hookStep);
-
-  __mark('session'); const { data: nextAuthSession, status: nextAuthStatus } = useSession(); // NextAuth session for Google OAuth
-  __mark('userName'); const [userName, setUserName] = useState("Valued Member"); // State for user name
-  __mark('userEmail'); const [userEmail, setUserEmail] = useState(""); // State for user email
-  __mark('language'); const { language, t } = useLanguage();
-  __mark('router'); const router = useRouter(); // Router for navigation
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
+  const { data: nextAuthSession, status: nextAuthStatus } = useSession(); // NextAuth session for Google OAuth
+  const [userName, setUserName] = useState("Valued Member"); // State for user name
+  const [userEmail, setUserEmail] = useState(""); // State for user email
+  const { language, t } = useLanguage();
+  const router = useRouter(); // Router for navigation
   const [showProfileBanner, setShowProfileBanner] = useState(true); // State for profile completion banner
   const [verificationCode, setVerificationCode] = useState(""); // State for verification code
   const [phoneVerificationCode, setPhoneVerificationCode] = useState(""); // State for phone verification code
@@ -927,7 +923,7 @@ export default function DashboardOverviewPage() {
     router.push(`/my-accounts/billing?plan=${planId}`);
   };
 
-  console.log('[BEFORE RETURN] Dashboard reached after', __hookStep, 'hooks');
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   return (
     <Box p={{ base: 4, md: 6 }} bg={sectionBg} minH="calc(100vh - 60px)"> {/* Adjust minH if needed */}
       <VStack spacing={8} align="stretch">

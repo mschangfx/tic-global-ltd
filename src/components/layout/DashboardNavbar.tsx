@@ -41,21 +41,17 @@ interface DashboardNavbarProps {
 }
 
 export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
-  // 🔍 TEMPORARY INSTRUMENTATION - REMOVE AFTER FIXING
-  let __hookStep = 0;
-  const __mark = (label?: string) =>
-    console.log(`[HOOK-STEP] Navbar ${label ?? ""} step=`, ++__hookStep);
-
-  __mark('router'); const router = useRouter();
-  __mark('bgColor'); const bgColor = useColorModeValue('gray.800', 'gray.900'); // Darker theme for dashboard navbar
-  __mark('textColor'); const textColor = useColorModeValue('white', 'gray.200');
-  __mark('iconButtonBg'); const iconButtonBg = useColorModeValue('whiteAlpha.200', 'whiteAlpha.100');
-  __mark('iconButtonHoverBg'); const iconButtonHoverBg = useColorModeValue('whiteAlpha.300', 'whiteAlpha.200');
-  __mark('walletBalance'); const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
-  __mark('isLoadingBalance'); const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
-  __mark('refreshKey'); const [refreshKey, setRefreshKey] = useState(0); // Force re-render key
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
+  const router = useRouter();
+  const bgColor = useColorModeValue('gray.800', 'gray.900'); // Darker theme for dashboard navbar
+  const textColor = useColorModeValue('white', 'gray.200');
+  const iconButtonBg = useColorModeValue('whiteAlpha.200', 'whiteAlpha.100');
+  const iconButtonHoverBg = useColorModeValue('whiteAlpha.300', 'whiteAlpha.200');
+  const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render key
   const walletService = WalletService.getInstance();
-  __mark('language'); const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   // Get STABLE portfolio value that doesn't change during internal transfers
   // This represents the true total value and only changes with external transactions:
@@ -90,7 +86,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
 
     return calculatedValue;
   };
-  __mark('session'); const { data: nextAuthSession, status: sessionStatus } = useSession(); // Get NextAuth session
+  const { data: nextAuthSession, status: sessionStatus } = useSession(); // Get NextAuth session
 
   // Handle My Dashboard navigation
   const handleGoToDashboard = () => {
@@ -248,7 +244,7 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
     }
   };
 
-  console.log('[BEFORE RETURN] Navbar reached after', __hookStep, 'hooks');
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   return (
     <Flex
       as="header"

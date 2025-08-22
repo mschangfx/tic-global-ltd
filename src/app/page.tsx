@@ -104,11 +104,15 @@ const INVESTMENT_TIERS = [
 ]
 
 export default function Home() {
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
   const cardBg = useColorModeValue('white', 'gray.800')
   const sectionBg = useColorModeValue('gray.50', 'gray.900')
   const textColor = useColorModeValue('black', 'white') // Dynamic text color
   const headingColor = useColorModeValue('#0c151e', 'white') // Dynamic heading color
   const subTextColor = useColorModeValue('#475569', 'gray.300') // Dynamic subtext color
+  const featureBorderColor = useColorModeValue('#e2e8f0', 'gray.600') // Move hook out of map
+  const featureHoverBg = useColorModeValue('gray.50', 'gray.700') // Move hook out of map
+  const tierBg = useColorModeValue('gray.50', 'gray.700') // Move hook out of map
 
   return (
     <Box w="full" maxW="100%" overflowX="hidden">
@@ -336,13 +340,13 @@ export default function Home() {
                   shadow="md"
                   borderRadius="2xl"
                   border="1px"
-                  borderColor={useColorModeValue('#e2e8f0', 'gray.600')}
+                  borderColor={featureBorderColor} // ✅ Use pre-computed hook value
                   transition="all 0.3s"
                   _hover={{
                     transform: 'translateY(-8px)',
                     shadow: 'xl',
                     borderColor: feature.color,
-                    bg: useColorModeValue('gray.50', 'gray.700'), // Dynamic hover background
+                    bg: featureHoverBg, // ✅ Use pre-computed hook value
                   }}
                   h="full"
                 >
@@ -448,7 +452,7 @@ export default function Home() {
                     // or a generic light version of the brandColor.
                     // A more robust way would be to generate light shades in the theme for each brand color.
                     // As a quick approach, we'll use a light shade from the colorScheme if it's teal or yellow.
-                    bg: tier.color === 'teal' ? 'teal.50' : tier.color === 'yellow' ? 'yellow.50' : useColorModeValue('gray.50', 'gray.700'),
+                    bg: tier.color === 'teal' ? 'teal.50' : tier.color === 'yellow' ? 'yellow.50' : tierBg, // ✅ Use pre-computed hook value
                   }}
                 >
                   {tier.popular && (
