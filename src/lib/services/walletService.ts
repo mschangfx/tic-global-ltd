@@ -18,6 +18,11 @@ class WalletService {
   private balanceCache: WalletBalance | null = null;
   private listeners: Set<(balance: WalletBalance) => void> = new Set();
 
+  // ✅ CACHING & IN-FLIGHT PROTECTION
+  private inFlight: Promise<WalletBalance> | null = null;
+  private lastFetch: { at: number; data: WalletBalance } | null = null;
+  private TTL = 10_000; // 10 seconds cache TTL
+
   private constructor() {}
 
   static getInstance(): WalletService {
@@ -67,6 +72,36 @@ class WalletService {
       console.error('❌ WalletService: Error getting authenticated user:', error);
       return null;
     }
+  }
+
+  // ✅ CACHED BALANCE METHOD - DE-DUPLICATES CALLS + TTL CACHE
+  async getBalanceCached(force = false): Promise<WalletBalance> {
+    const now = Date.now();
+
+    // Return cached data if within TTL and not forcing refresh
+    if (!force && this.lastFetch && now - this.lastFetch.at < this.TTL) {
+      console.log('🔄 WalletService: Returning cached balance (TTL not expired)');
+      return this.lastFetch.data;
+    }
+
+    // Return in-flight promise if one exists (de-duplicate concurrent calls)
+    if (this.inFlight) {
+      console.log('🔄 WalletService: Returning in-flight promise (de-duplicating call)');
+      return this.inFlight;
+    }
+
+    // Create new in-flight promise
+    this.inFlight = this.getBalance()
+      .then((data) => {
+        this.lastFetch = { at: Date.now(), data };
+        this.balanceCache = data; // Update existing cache too
+        return data;
+      })
+      .finally(() => {
+        this.inFlight = null;
+      });
+
+    return this.inFlight;
   }
 
   // Get current wallet balance (using same API as navbar for consistency)

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react'; // Added useEffect, useState
+import { useState } from 'react';
 import { useRouter } from 'next/navigation'; // For logout redirect
-import { createClient } from '@/lib/supabase/client'; // For fetching user data
-import { useLanguage, getLanguageDisplayName, formatCurrency } from '@/contexts/LanguageContext'; // For language switching
-import WalletService, { WalletBalance } from '@/lib/services/walletService';
+import { createClient } from '@/lib/supabase/client'; // For logout functionality
+import { useLanguage } from '@/contexts/LanguageContext'; // For language switching
+import { useWallet } from '@/providers/WalletProvider';
+import { WalletBalance } from '@/lib/services/walletService';
 import { TOKEN_PRICES } from '@/lib/constants/tokens';
 import { useSession } from 'next-auth/react'; // For NextAuth session
 import {
@@ -47,10 +48,8 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
   const textColor = useColorModeValue('white', 'gray.200');
   const iconButtonBg = useColorModeValue('whiteAlpha.200', 'whiteAlpha.100');
   const iconButtonHoverBg = useColorModeValue('whiteAlpha.300', 'whiteAlpha.200');
-  const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
-  const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
+  const { wallet: walletBalance, refresh: refreshWallet, isLoading: isLoadingBalance } = useWallet();
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render key
-  const walletService = WalletService.getInstance();
   const { language, setLanguage, t } = useLanguage();
 
   // Get STABLE portfolio value that doesn't change during internal transfers
@@ -101,122 +100,9 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
     // analytics.track('my_dashboard_navigation', { source: 'wallet_menu' });
   };
 
-  // Load balance function (extracted so it can be called from refresh button)
-  const loadBalance = async () => {
-      try {
-        // Don't load balance if session is still loading
-        if (sessionStatus === 'loading') {
-          return;
-        }
+  // ✅ WALLET PROVIDER HANDLES ALL BALANCE LOADING - NO DIRECT API CALLS
 
-        setIsLoadingBalance(true);
-        let userEmail: string | null = null;
-
-        // Method 1: Check NextAuth session (Google OAuth)
-        if (nextAuthSession?.user?.email) {
-          userEmail = nextAuthSession.user.email;
-        } else {
-          // Method 2: Check Supabase auth (manual login)
-          try {
-            const supabase = createClient();
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-            if (authError) {
-              // Silently handle auth errors - this is normal when not logged in
-            } else if (user?.email) {
-              userEmail = user.email;
-            }
-          } catch (supabaseError) {
-            // Silently handle connection errors - this is normal during page load
-          }
-        }
-
-        // Check if user is authenticated
-        if (!userEmail) {
-          console.log('⚠️ Navbar: No authenticated user found');
-          console.log('🔍 Navbar: NextAuth session:', nextAuthSession);
-          setWalletBalance(null);
-          setIsLoadingBalance(false);
-          return;
-        }
-
-        // Use the wallet balance API directly for consistency (POST request)
-        // Add cache busting to ensure fresh data
-        const response = await fetch('/api/wallet/balance', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
-          body: JSON.stringify({
-            userEmail,
-            timestamp: Date.now() // Cache busting
-          })
-        });
-
-        const data = await response.json();
-        // API request completed successfully
-
-        if (data.wallet) {
-          const w = data.wallet;
-          const balance: WalletBalance = {
-            total: Number(w.total_balance) || 0,
-            tic: Number(w.tic_balance) || 0,
-            gic: Number(w.gic_balance) || 0,
-            staking: Number(w.staking_balance) || 0,
-            partner_wallet: Number(w.partner_wallet_balance) || 0,
-            lastUpdated: w.last_updated ? new Date(w.last_updated) : new Date()
-          };
-          setWalletBalance(balance);
-          console.log('🪙 Navbar: Rendering TIC value:', balance.tic?.toFixed(2) || '0.00', 'from walletBalance.tic:', balance.tic, 'refreshKey:', refreshKey + 1);
-          setIsLoadingBalance(false);
-          setRefreshKey(prev => prev + 1); // Force re-render
-        } else if (data.error) {
-          console.error('❌ Navbar: API error:', data.error);
-          setWalletBalance(null);
-          setIsLoadingBalance(false);
-        } else {
-          console.error('❌ Navbar: Unexpected API response:', data);
-          setWalletBalance(null);
-          setIsLoadingBalance(false);
-        }
-      } catch (error) {
-        // Silently handle balance loading errors
-        setWalletBalance(null);
-        setIsLoadingBalance(false);
-      }
-    };
-
-  useEffect(() => {
-    // Don't run effect if session is still loading
-    if (sessionStatus === 'loading') {
-      return;
-    }
-
-    // Removed WalletService subscription to prevent excessive API calls
-
-    // Initial load
-    loadBalance();
-
-    // Set up simple auto-refresh every 60 seconds to avoid excessive API calls
-    const refreshInterval = setInterval(async () => {
-      try {
-        const balance = await walletService.getBalance();
-        setWalletBalance(balance);
-      } catch (error) {
-        console.error('❌ Navbar: Auto-refresh failed:', error);
-      }
-    }, 60000); // 60 seconds - less frequent to reduce API load
-
-    // Removed excessive visibility and focus refresh listeners to reduce API calls
-
-    // Cleanup intervals on unmount
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, [walletService, nextAuthSession, sessionStatus]); // Added sessionStatus dependency
+  // ✅ NO USEEFFECT NEEDED - WALLET PROVIDER HANDLES ALL LOADING AND POLLING
 
   // Logout handler
   const handleLogout = async () => {
@@ -493,9 +379,9 @@ export default function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps)
                   transform: 'translateX(4px)'
                 }}
                 onClick={async () => {
-                  setIsLoadingBalance(true);
-                  // Force reload balance
-                  await loadBalance();
+                  // Force reload balance using WalletProvider
+                  await refreshWallet();
+                  setRefreshKey(prev => prev + 1); // Force re-render
                 }}
                 cursor="pointer"
                 transition="all 0.2s ease-in-out"

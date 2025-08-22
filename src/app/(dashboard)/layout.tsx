@@ -8,6 +8,7 @@ import DashboardNavbar from '@/components/layout/DashboardNavbar';
 import ThemeToggle from '@/components/ThemeToggle';
 import { FaChartLine, FaGamepad, FaLifeRing, FaUserCheck, FaTachometerAlt, FaHome, FaArrowCircleDown, FaArrowCircleUp, FaHistory } from 'react-icons/fa';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { WalletProvider } from '@/providers/WalletProvider';
 
 // Move this inside the component to access the translation function
 // const dashboardNavItems will be defined inside DashboardLayout
@@ -38,7 +39,8 @@ export default function DashboardLayout({
 
   // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   return (
-    <Flex direction="column" h="100vh" bg={bgColor}>
+    <WalletProvider>
+      <Flex direction="column" h="100vh" bg={bgColor}>
       <DashboardNavbar />
       <Flex flex="1" overflow="hidden"> {/* Ensures inner content scrolls, not the whole page below navbar */}
         {/* Sidebar */}
@@ -116,5 +118,6 @@ export default function DashboardLayout({
         </Box>
       </Flex>
     </Flex>
+    </WalletProvider>
   );
 }
