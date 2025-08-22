@@ -1,34 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
-
-// Initialize Supabase Admin Client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔄 Identity document upload started');
+
     const formData = await request.formData();
     const file = formData.get('document') as File;
     const email = formData.get('email') as string;
-    const issuingCountry = formData.get('issuingCountry') as string;
+    const issuingCountry = formData.get('issuingCountry') as string || null;
     const documentType = formData.get('documentType') as string;
 
-    if (!file || !email || !issuingCountry || !documentType) {
+    console.log('📋 Upload request data:', {
+      fileName: file?.name,
+      fileSize: file?.size,
+      email,
+      documentType,
+      issuingCountry
+    });
+
+    if (!file || !email || !documentType) {
+      console.log('❌ Missing required fields');
       return NextResponse.json(
-        { message: 'Missing required fields' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
+      console.log('❌ Invalid file type:', file.type);
       return NextResponse.json(
-        { message: 'Invalid file type. Please upload JPEG, PNG, or WebP images only.' },
+        { error: 'Invalid file type. Please upload JPEG, PNG, WebP, or PDF files only.' },
         { status: 400 }
       );
     }
@@ -36,31 +40,51 @@ export async function POST(request: NextRequest) {
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
+      console.log('❌ File too large:', file.size);
       return NextResponse.json(
-        { message: 'File too large. Maximum size is 10MB.' },
+        { error: 'File too large. Maximum size is 10MB.' },
         { status: 400 }
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'uploads', 'identity-documents');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Generate unique filename
+    // Generate unique filename for Supabase Storage
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop();
     const sanitizedEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
     const fileName = `${sanitizedEmail}_${timestamp}.${fileExtension}`;
-    const filePath = join(uploadsDir, fileName);
+    const storagePath = `identity-documents/${fileName}`;
 
-    // Save file to local storage
+    console.log('📁 Uploading to Supabase Storage:', storagePath);
+
+    // Upload file to Supabase Storage
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+      .from('user-uploads')
+      .upload(storagePath, bytes, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('❌ Supabase Storage upload error:', uploadError);
+      return NextResponse.json(
+        { error: 'Failed to upload file to storage' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ File uploaded to storage:', uploadData.path);
+
+    // Get the public URL for the uploaded file
+    const { data: urlData } = supabaseAdmin.storage
+      .from('user-uploads')
+      .getPublicUrl(storagePath);
+
+    console.log('🔗 File public URL:', urlData.publicUrl);
 
     // Store document information in database
+    console.log('💾 Storing document info in database...');
+
     const { data: existingRecord, error: fetchError } = await supabaseAdmin
       .from('identity_documents')
       .select('*')
@@ -68,9 +92,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error fetching existing document:', fetchError);
+      console.error('❌ Error fetching existing document:', fetchError);
       return NextResponse.json(
-        { message: 'Database error occurred' },
+        { error: 'Database error occurred' },
         { status: 500 }
       );
     }
@@ -79,7 +103,8 @@ export async function POST(request: NextRequest) {
       email,
       issuing_country: issuingCountry,
       document_type: documentType,
-      file_path: filePath,
+      file_path: storagePath,
+      file_url: urlData.publicUrl,
       file_name: fileName,
       file_size: file.size,
       file_type: file.type,
@@ -88,35 +113,42 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
+    console.log('📋 Document data to save:', documentData);
+
     let result;
     if (existingRecord) {
+      console.log('🔄 Updating existing document record');
       // Update existing record
       const { data, error } = await supabaseAdmin
         .from('identity_documents')
         .update(documentData)
         .eq('email', email)
         .select();
-      
+
       result = { data, error };
     } else {
+      console.log('➕ Creating new document record');
       // Insert new record
       const { data, error } = await supabaseAdmin
         .from('identity_documents')
         .insert([documentData])
         .select();
-      
+
       result = { data, error };
     }
 
     if (result.error) {
-      console.error('Error saving document to database:', result.error);
+      console.error('❌ Error saving document to database:', result.error);
       return NextResponse.json(
-        { message: 'Failed to save document information' },
+        { error: 'Failed to save document information' },
         { status: 500 }
       );
     }
 
+    console.log('✅ Document saved to database:', result.data?.[0]?.id);
+
     // Update user verification status
+    console.log('🔄 Updating user verification status...');
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
@@ -128,11 +160,16 @@ export async function POST(request: NextRequest) {
       .eq('email', email);
 
     if (updateError) {
-      console.error('Error updating verification status:', updateError);
+      console.error('❌ Error updating verification status:', updateError);
       // Don't return error here as the document was uploaded successfully
+    } else {
+      console.log('✅ User verification status updated');
     }
 
+    console.log('🎉 Document upload completed successfully');
+
     return NextResponse.json({
+      success: true,
       message: 'Document uploaded successfully',
       documentId: result.data?.[0]?.id,
       fileName: fileName,
@@ -140,9 +177,13 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error uploading document:', error);
+    console.error('❌ Error uploading document:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      {
+        success: false,
+        error: 'Failed to upload document. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

@@ -4,5 +4,19 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/daily-tic-distribution",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/update-expired-subscriptions",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/daily-rank-maintenance",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "buildCommand": "npm run build"
 }

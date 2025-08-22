@@ -74,9 +74,9 @@ async function processSingleUserBonus(userEmail: string, month: string) {
       };
     }
 
-    // Process the bonus using database function
+    // Process the bonus using updated database function with USD-to-token conversion
     const { data, error } = await supabaseAdmin
-      .rpc('process_user_rank_bonus', {
+      .rpc('process_user_rank_bonus_with_usd_conversion', {
         user_email_param: userEmail,
         distribution_month_param: month
       });

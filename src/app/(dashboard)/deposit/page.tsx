@@ -38,7 +38,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { convertUsdToPhp, formatCurrency, CONVERSION_RATES } from '@/lib/utils/currency';
 
-// Manual crypto payment methods - TRC20 (requires admin approval)
+// Manual crypto payment methods - TRC20 and BEP20 (requires admin approval)
 const CRYPTO_METHODS = [
   {
     id: 'usdt_trc20',
@@ -46,11 +46,26 @@ const CRYPTO_METHODS = [
     symbol: 'USDT',
     icon: FaBitcoin,
     network: 'Tron (TRC20)',
-    address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
+    address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
+    qrCode: '/img/TRC20 QR.jpg',
     minAmount: 10,
     fee: 1,
     processingTime: 'Manual approval: 1-24 hours',
     iconColor: 'orange.500',
+    instructions: 'Send USDT to wallet address and upload transaction receipt'
+  },
+  {
+    id: 'usdt_bep20',
+    name: 'USDT (BEP20) - Manual Verification',
+    symbol: 'USDT',
+    icon: FaBitcoin,
+    network: 'BSC (BEP20)',
+    address: '0x233824f4b3fae83f59841369c59490a1750658b1',
+    qrCode: '/img/BEP20 QR CODE.jpg',
+    minAmount: 10,
+    fee: 1,
+    processingTime: 'Manual approval: 1-24 hours',
+    iconColor: 'yellow.500',
     instructions: 'Send USDT to wallet address and upload transaction receipt'
   }
 ];
@@ -106,17 +121,6 @@ const MANUAL_METHODS = [
 
 // Available Soon payment methods
 const AVAILABLE_SOON_METHODS = [
-  {
-    id: 'usdt_bep20',
-    name: 'USDT (BEP20)',
-    symbol: 'USDT',
-    icon: '/img/USDT-BEP20-1.png',
-    network: 'BSC (BEP20)',
-    minAmount: 10,
-    fee: 1,
-    processingTime: '3-5 minutes',
-    iconColor: 'yellow.500'
-  },
   {
     id: 'usdt_erc20',
     name: 'USDT (ERC20)',

@@ -168,6 +168,45 @@ export async function POST(request: NextRequest) {
       // Don't fail the registration for dashboard creation error
     }
 
+    // Generate referral code for the new user
+    try {
+      console.log('🎯 Generating referral code for new user:', email);
+
+      // Generate unique referral code
+      const generateReferralCode = (userEmail: string): string => {
+        const username = userEmail.split('@')[0].toUpperCase();
+        const timestamp = Date.now().toString().slice(-4);
+        const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+        return `${username.substring(0, 3)}${randomSuffix}${timestamp}`;
+      };
+
+      const newUserReferralCode = generateReferralCode(email);
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://ticgloballtd.com';
+      const referralLink = `${baseUrl}/join?ref=${newUserReferralCode}`;
+
+      // Create referral code entry for new user
+      const { error: referralCodeError } = await supabaseAdmin
+        .from('user_referral_codes')
+        .insert({
+          user_email: email,
+          referral_code: newUserReferralCode,
+          referral_link: referralLink,
+          total_referrals: 0,
+          total_earnings: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (referralCodeError) {
+        console.error('❌ Error creating referral code:', referralCodeError);
+      } else {
+        console.log('✅ Referral code created successfully:', newUserReferralCode);
+      }
+    } catch (referralCodeGenError) {
+      console.error('❌ Error generating referral code:', referralCodeGenError);
+      // Don't fail registration for referral code generation error
+    }
+
     // Process referral relationship if referralId is provided
     if (referralId) {
       try {

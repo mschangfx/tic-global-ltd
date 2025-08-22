@@ -45,7 +45,7 @@ const DEPOSIT_METHODS = {
     name: 'USDT',
     symbol: 'USDT',
     network: 'TRC20',
-    address: 'TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ',
+    address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
     processingTime: 'Instant - 15 minutes',
     fee: '0%',
     limits: { min: 10, max: 200000 },

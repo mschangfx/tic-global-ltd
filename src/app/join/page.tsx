@@ -95,11 +95,13 @@ function JoinPageContent() {
   const formBgColor = useColorModeValue('white', 'gray.800')
   const subtleTextColor = useColorModeValue('gray.600', 'gray.400');
 
-  // Auto-populate referral code from URL parameters
+  // Auto-populate referral code from URL parameters and validate it
   useEffect(() => {
     const refCode = searchParams?.get('ref');
     if (refCode) {
       setPartnerCode(refCode);
+      // Automatically validate the referral code from URL
+      validateReferralCode(refCode);
     }
   }, [searchParams]);
 
@@ -267,7 +269,6 @@ function JoinPageContent() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('🔍 Login form submitted!', { loginEmail, loginPassword })
     setIsLoginLoading(true)
     setLoginError('')
     try {
@@ -293,17 +294,13 @@ function JoinPageContent() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔍 Register form submitted!', { registerEmail, country, partnerCode, declaration })
 
     // Validation
     if (!country) {
       setRegisterError("Please select your country of residence.");
       return;
     }
-    if (!partnerCode) {
-      setRegisterError("Referral ID is required.");
-      return;
-    }
+    // Referral code is now optional - if provided via URL, it will be used automatically
     if (!declaration) {
       setRegisterError("Please agree to the Terms & Conditions.");
       return;
@@ -421,10 +418,8 @@ function JoinPageContent() {
                   variant="outline"
                   leftIcon={<Icon as={FaGoogle} />}
                   onClick={async () => {
-                    console.log('🔍 Google button clicked (Sign In)')
                     try {
-                      const result = await signIn('google', { callbackUrl: '/dashboard' })
-                      console.log('SignIn result:', result)
+                      await signIn('google', { callbackUrl: '/dashboard' })
                     } catch (error) {
                       console.error('SignIn error:', error)
                     }
@@ -645,12 +640,17 @@ function JoinPageContent() {
                       </InputGroup>
                     </FormControl> */}
 
-                    <FormControl id="referral-id" isRequired isInvalid={!!registerError || (!!referralValidation.message && !referralValidation.isValid)}>
-                      <FormLabel>Referral ID</FormLabel>
+                    <FormControl id="referral-id" isInvalid={!!registerError || (!!referralValidation.message && !referralValidation.isValid)}>
+                      <FormLabel>
+                        Referral ID
+                        <Text as="span" fontSize="sm" color="gray.500" ml={2}>
+                          (Optional)
+                        </Text>
+                      </FormLabel>
                       <InputGroup>
                         <Input
                           type="text"
-                          placeholder="Enter referral code"
+                          placeholder={searchParams?.get('ref') ? "Auto-filled from referral link" : "Enter referral code (optional)"}
                           value={partnerCode}
                           onChange={handleReferralChange}
                           borderColor={
@@ -660,6 +660,8 @@ function JoinPageContent() {
                                 ? 'red.500'
                                 : undefined
                           }
+                          readOnly={!!searchParams?.get('ref')}
+                          bg={searchParams?.get('ref') ? 'gray.50' : 'white'}
                         />
                         {partnerCode && (
                           <InputRightElement h="full">
@@ -680,6 +682,16 @@ function JoinPageContent() {
                           mt={1}
                         >
                           {referralValidation.message}
+                        </Text>
+                      )}
+                      {searchParams?.get('ref') && referralValidation.isValid && (
+                        <Text fontSize="xs" color="blue.500" mt={1}>
+                          🎉 You're registering through a referral link! You'll automatically be connected to your referrer.
+                        </Text>
+                      )}
+                      {!partnerCode && !searchParams?.get('ref') && (
+                        <Text fontSize="xs" color="gray.500" mt={1}>
+                          💡 Have a referral code? Enter it above to connect with your referrer and unlock partnership benefits.
                         </Text>
                       )}
                     </FormControl>
@@ -729,10 +741,8 @@ function JoinPageContent() {
                   variant="outline"
                   leftIcon={<Icon as={FaGoogle} />}
                   onClick={async () => {
-                    console.log('Google button clicked (Create Account)')
                     try {
-                      const result = await signIn('google', { callbackUrl: '/dashboard' })
-                      console.log('SignIn result:', result)
+                      await signIn('google', { callbackUrl: '/dashboard' })
                     } catch (error) {
                       console.error('SignIn error:', error)
                     }

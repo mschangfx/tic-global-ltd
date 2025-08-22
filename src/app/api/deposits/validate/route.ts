@@ -10,7 +10,7 @@ const NETWORK_VALIDATION = {
   BEP20: {
     addressPattern: /^0x[a-fA-F0-9]{40}$/,
     name: 'Binance Smart Chain (BEP20)',
-    examples: ['0x61b263d67663acfbf20b4157386405b12a49c920']
+    examples: ['0x233824f4b3fae83f59841369c59490a1750658b1']
   }
 };
 

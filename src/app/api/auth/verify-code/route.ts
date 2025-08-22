@@ -47,19 +47,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mark email as verified in the users table or user metadata
-    // You can update this based on your user management system
+    // Update the user's email verification status
+    // Use direct update since user should already exist
     const { error: updateError } = await supabase
       .from('users')
       .update({
         email_verified: true,
-        email_verified_at: new Date().toISOString()
+        email_verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .eq('email', email);
 
     if (updateError) {
       console.error('Error updating user verification status:', updateError);
-      // Continue anyway as the verification was successful
+
+      // If update fails, try upsert as fallback
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert({
+          email: email,
+          email_verified: true,
+          email_verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'email',
+          ignoreDuplicates: false
+        });
+
+      if (upsertError) {
+        console.error('Error with fallback upsert:', upsertError);
+        return NextResponse.json(
+          { error: 'Failed to update user verification status' },
+          { status: 500 }
+        );
+      }
     }
 
     // Delete the used verification code

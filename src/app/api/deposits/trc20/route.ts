@@ -7,7 +7,7 @@ const TRC20_CONFIG = {
   network: 'TRC20',
   name: 'TRON Network',
   symbol: 'USDT',
-  address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
+  address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
   explorer: 'https://tronscan.org/#/address/',
   qrPrefix: 'tron:', // For wallet app compatibility
   validation: {

@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
     if (status === 'completed') {
       // Get current wallet balance
       const { data: wallet, error: walletError } = await supabase
-        .from('wallets')
-        .select('balance')
+        .from('user_wallets')
+        .select('total_balance')
         .eq('user_email', deposit.user_email)
         .single();
 
@@ -68,16 +68,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const currentBalance = wallet?.balance || 0;
+      const currentBalance = wallet?.total_balance || 0;
       const newBalance = currentBalance + deposit.amount;
 
       // Update or create wallet record
       const { error: balanceError } = await supabase
-        .from('wallets')
+        .from('user_wallets')
         .upsert({
           user_email: deposit.user_email,
-          balance: newBalance,
-          updated_at: new Date().toISOString()
+          total_balance: newBalance,
+          last_updated: new Date().toISOString()
         });
 
       if (balanceError) {

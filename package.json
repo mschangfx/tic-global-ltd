@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/package-schema.json",
   "name": "tic-global-website",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A web project for TIC GLOBAL Ltd. featuring gaming, entertainment, e-sport, and e-casino.",
   "main": "src/app.ts",
   "scripts": {

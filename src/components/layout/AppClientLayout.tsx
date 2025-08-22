@@ -29,7 +29,8 @@ export default function AppClientLayout({
                           pathname === '/settings' ||
                           pathname?.startsWith('/settings/') ||
                           pathname?.startsWith('/trader-dashboard') ||
-                          pathname?.startsWith('/trader-payment');
+                          pathname?.startsWith('/trader-payment') ||
+                          pathname?.startsWith('/verify-account');
   
   const shouldShowMainNavbarAndFooter = !isAuthPage && !isDashboardPage;
 

@@ -22,14 +22,30 @@ export async function GET(request: NextRequest) {
     }
 
     const userEmail = session.user.email;
+    const now = new Date().toISOString();
 
-    // Get user's active subscriptions directly from table
+    // First, automatically mark any expired subscriptions as expired
+    const { error: updateExpiredError } = await supabaseAdmin
+      .from('user_subscriptions')
+      .update({
+        status: 'expired',
+        updated_at: now
+      })
+      .eq('user_email', userEmail)
+      .eq('status', 'active')
+      .lt('end_date', now);
+
+    if (updateExpiredError) {
+      console.error('Error updating expired subscriptions:', updateExpiredError);
+    }
+
+    // Get user's active subscriptions directly from table (only truly active ones)
     const { data: activeSubscriptions, error: subsError } = await supabaseAdmin
       .from('user_subscriptions')
       .select('*')
       .eq('user_email', userEmail)
       .eq('status', 'active')
-      .gte('end_date', new Date().toISOString())
+      .gte('end_date', now)
       .order('created_at', { ascending: false });
 
     if (subsError) {
@@ -66,7 +82,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all user subscriptions (including expired)
+    // Get all user subscriptions (including expired ones for statistics)
     const { data: allSubscriptions, error: allSubsError } = await supabaseAdmin
       .from('user_subscriptions')
       .select('*')

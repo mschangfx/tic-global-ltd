@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,13 +16,13 @@ export async function POST(request: NextRequest) {
 
     if (!email || !firstName || !lastName || !dateOfBirth || !countryOfBirth || !gender || !address) {
       return NextResponse.json(
-        { message: 'All fields are required' },
+        { error: 'All fields are required' },
         { status: 400 }
       );
     }
 
-    // Get Supabase client
-    const supabase = createClient();
+    // Get Supabase admin client to bypass RLS
+    const supabase = supabaseAdmin;
 
     // Update user profile information
     const updateData: any = {
@@ -32,18 +33,26 @@ export async function POST(request: NextRequest) {
       date_of_birth: dateOfBirth,
       country_of_birth: countryOfBirth,
       gender: gender,
-      address: address
+      address: address,
+      updated_at: new Date().toISOString()
     };
 
-    const { error: updateError } = await supabase
+    console.log('Profile completion API - Email:', email);
+    console.log('Profile completion API - Update data:', updateData);
+
+    const { data: updateResult, error: updateError } = await supabase
       .from('users')
       .update(updateData)
-      .eq('email', email);
+      .eq('email', email)
+      .select();
+
+    console.log('Profile completion API - Update result:', updateResult);
+    console.log('Profile completion API - Update error:', updateError);
 
     if (updateError) {
       console.error('Error updating user profile:', updateError);
       return NextResponse.json(
-        { message: 'Failed to complete profile' },
+        { error: 'Failed to complete profile' },
         { status: 500 }
       );
     }
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error completing profile:', error);
     return NextResponse.json(
-      { message: 'Failed to complete profile' },
+      { error: 'Failed to complete profile' },
       { status: 500 }
     );
   }

@@ -9,9 +9,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (unauthorized) return unauthorized;
 
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return NextResponse.json(
-        { success: false, message: "Missing SUPABASE_URL or SUPABASE_SERVICE_KEY" },
+        { success: false, message: "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" },
         { status: 500 }
       );
     }
@@ -46,9 +46,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         .from("withdrawal_requests")
         .update({
           status: "completed",
-          transaction_hash: tx,
-          approved_by: adminEmail,
-          approved_at: now,
+          tx_hash: tx,
+          blockchain_hash: tx,
+          processed_by: adminEmail,
+          processed_at: now,
           updated_at: now,
           admin_notes: admin_notes || "Approved via admin API",
         })
@@ -71,15 +72,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ success: true });
     }
 
-    // reject: mark rejected then refund via RPC
+    // reject: mark cancelled then refund via RPC
     const { error: rejErr } = await supabase
       .from("withdrawal_requests")
       .update({
-        status: "rejected",
-        rejected_by: adminEmail,
-        rejected_at: now,
+        status: "cancelled",
+        processed_by: adminEmail,
+        processed_at: now,
         updated_at: now,
-        admin_notes: admin_notes || "Rejected via admin API - funds refunded to wallet",
+        admin_notes: admin_notes || "Cancelled via admin API - funds refunded to wallet",
+        reject_reason: admin_notes || "Cancelled via admin API - funds refunded to wallet",
       })
       .eq("id", id);
 

@@ -59,16 +59,14 @@ async function getWalletBalance(userEmail: string) {
     console.error('❌ Error getting wallet data for', userEmail, ':', walletError);
   }
 
-  // Get total balance - prioritize user_wallets.total_balance if it exists, otherwise use calculated balance
-  const walletTotalBalance = walletData?.total_balance?.toString();
+  // Get total balance - ALWAYS use calculated balance from transactions (transaction-based system)
   const calculatedTotalBalance = calculatedBalance && calculatedBalance.length > 0
     ? calculatedBalance[0].total_balance?.toString()
     : null;
 
-  const totalBalance = walletTotalBalance || calculatedTotalBalance || '0';
+  const totalBalance = calculatedTotalBalance || '0';
 
-  console.log('🔍 Balance source comparison for:', userEmail, {
-    walletTotalBalance,
+  console.log('🔍 Balance source (transaction-based) for:', userEmail, {
     calculatedTotalBalance,
     finalTotalBalance: totalBalance
   });

@@ -235,7 +235,7 @@ export default function DepositPage() {
           name: 'USDT (TRC20)',
           symbol: 'USDT',
           network: 'TRC20',
-          address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
+          address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
           processingTime: '1-3 minutes',
           fee: '0%',
           limits: getDepositLimits('usdt-trc20'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
@@ -246,23 +246,13 @@ export default function DepositPage() {
           name: 'USDT (BEP20)',
           symbol: 'USDT',
           network: 'BEP20',
-          address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+          address: '0x233824f4b3fae83f59841369c59490a1750658b1',
           processingTime: '2-4 minutes',
           fee: '0%',
           limits: getDepositLimits('usdt-bep20'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
           icon: '/img/USDT-BEP20-1.png'
         },
-        {
-          id: 'usdt-polygon',
-          name: 'USDT (Polygon)',
-          symbol: 'USDT',
-          network: 'Polygon',
-          address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-          processingTime: '5-30 minutes',
-          fee: 'Free',
-          limits: getDepositLimits('usdt-polygon'), // $10 - $10,000 USD (₱630 - ₱630,000 PHP)
-          icon: '/img/USDT-Polygon.png'
-        },
+
         {
           id: 'gcash',
           name: 'GCash',
@@ -322,7 +312,7 @@ export default function DepositPage() {
             name: 'USDT (TRC20)',
             symbol: 'USDT',
             network: 'TRC20',
-            address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
+            address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
             processingTime: '5-30 minutes',
             fee: 'Free',
             limits: '10 - 200,000 USD',
@@ -333,23 +323,13 @@ export default function DepositPage() {
             name: 'USDT (BEP20)',
             symbol: 'USDT',
             network: 'BEP20',
-            address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+            address: '0x233824f4b3fae83f59841369c59490a1750658b1',
             processingTime: '5-30 minutes',
             fee: 'Free',
             limits: '10 - 200,000 USD',
             icon: '/img/USDT-BEP20-1.png'
           },
-          {
-            id: 'usdt-polygon',
-            name: 'USDT (Polygon)',
-            symbol: 'USDT',
-            network: 'Polygon',
-            address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-            processingTime: '5-30 minutes',
-            fee: 'Free',
-            limits: '10 - 200,000 USD',
-            icon: '/img/USDT-Polygon.png'
-          },
+
           {
             id: 'gcash',
             name: 'GCash',
@@ -1499,7 +1479,7 @@ export default function DepositPage() {
                             Scan QR Code
                           </Heading>
 
-                          {(manualQrCodeDataUrl || qrCodeDataUrl || ['gcash', 'paymaya', 'gotyme'].includes(selectedMethod.id)) ? (
+                          {(manualQrCodeDataUrl || qrCodeDataUrl || ['gcash', 'paymaya', 'gotyme', 'usdt-trc20', 'usdt-bep20'].includes(selectedMethod.id)) ? (
                             <Box
                               bg="white"
                               p={4}
@@ -1516,8 +1496,10 @@ export default function DepositPage() {
                                     ? '/img/PAYMAYA QR CODE.jpg'
                                     : selectedMethod.id === 'gotyme'
                                     ? '/img/GOTYME QR CODE.jpg'
-                                    : (selectedMethod.id === 'usdt-trc20' || selectedMethod.id === 'usdt-bep20' || selectedMethod.id === 'usdt-polygon')
-                                    ? qrCodeDataUrl
+                                    : selectedMethod.id === 'usdt-trc20'
+                                    ? '/img/TRC20 QR.jpg'
+                                    : selectedMethod.id === 'usdt-bep20'
+                                    ? '/img/BEP20 QR CODE.jpg'
                                     : manualQrCodeDataUrl
                                 }
                                 alt={`${selectedMethod.name} QR Code`}
@@ -1540,7 +1522,7 @@ export default function DepositPage() {
                               <VStack spacing={2}>
                                 <Spinner size="lg" color="blue.500" />
                                 <Text fontSize="sm" color="gray.500" textAlign="center">
-                                  {['gcash', 'paymaya', 'gotyme'].includes(selectedMethod?.id || '') ? 'Loading QR Code...' : 'Generating QR Code...'}
+                                  {['gcash', 'paymaya', 'gotyme', 'usdt-trc20', 'usdt-bep20'].includes(selectedMethod?.id || '') ? 'Loading QR Code...' : 'Generating QR Code...'}
                                 </Text>
                               </VStack>
                             </Box>

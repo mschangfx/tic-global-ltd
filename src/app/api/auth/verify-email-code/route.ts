@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -6,40 +7,74 @@ export async function POST(request: NextRequest) {
 
     if (!email || !code) {
       return NextResponse.json(
-        { message: 'Email and verification code are required' },
+        { error: 'Email and verification code are required' },
         { status: 400 }
       );
     }
 
-    // In a real application, you would:
-    // 1. Retrieve the stored verification code from your database
-    // 2. Check if the code matches and hasn't expired
-    // 3. Mark the email as verified in your user profile
-
-    // For development/testing, we'll accept any 6-digit code
+    // Validate code format
     if (code.length !== 6 || !/^\d{6}$/.test(code)) {
       return NextResponse.json(
-        { message: 'Invalid verification code format' },
+        { error: 'Invalid verification code format' },
         { status: 400 }
       );
     }
 
-    // Simulate verification logic
-    // In production, you would check against the stored code
-    const isValidCode = true; // For demo purposes, always accept valid format
+    const supabase = createClient();
 
-    if (!isValidCode) {
+    // Check if verification code exists and is valid
+    const { data: verificationData, error: verificationError } = await supabase
+      .from('email_verifications')
+      .select('*')
+      .eq('email', email)
+      .eq('code', code)
+      .single();
+
+    if (verificationError || !verificationData) {
       return NextResponse.json(
-        { message: 'Invalid or expired verification code' },
+        { error: 'Invalid verification code' },
         { status: 400 }
       );
     }
 
-    // In production, update user's email verification status in database
+    // Check if code has expired
+    const now = new Date();
+    const expiresAt = new Date(verificationData.expires_at);
+
+    if (now > expiresAt) {
+      return NextResponse.json(
+        { error: 'Verification code has expired' },
+        { status: 400 }
+      );
+    }
+
+    // Update user's email verification status
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        email_verified: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('email', email);
+
+    if (updateError) {
+      console.error('Error updating user verification status:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update verification status' },
+        { status: 500 }
+      );
+    }
+
+    // Delete the used verification code
+    await supabase
+      .from('email_verifications')
+      .delete()
+      .eq('email', email);
+
     console.log(`✅ Email ${email} verified successfully with code ${code}`);
 
     return NextResponse.json(
-      { 
+      {
         message: 'Email verified successfully',
         verified: true
       },
@@ -49,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error verifying email code:', error);
     return NextResponse.json(
-      { message: 'Failed to verify email code' },
+      { error: 'Failed to verify email code' },
       { status: 500 }
     );
   }

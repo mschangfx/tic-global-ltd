@@ -113,6 +113,11 @@ function WithdrawalPageWithParams() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
 
+  // Verification status state
+  const [verificationStatus, setVerificationStatus] = useState<any>(null);
+  const [isLoadingVerification, setIsLoadingVerification] = useState(true);
+  const [isFullyVerified, setIsFullyVerified] = useState(false);
+
   // Debug: Log wallet balance changes
   useEffect(() => {
     console.log('🎯 Withdrawal page: walletBalance state changed:', walletBalance);
@@ -144,6 +149,41 @@ function WithdrawalPageWithParams() {
   const walletService = WalletService.getInstance();
   const transactionService = TransactionService.getInstance();
   const supabase = createClient();
+
+  // Check verification status
+  const checkVerificationStatus = async () => {
+    try {
+      setIsLoadingVerification(true);
+      const session = await getSession();
+      if (!session?.user?.email) {
+        console.error('No user session found');
+        return;
+      }
+
+      const response = await fetch(`/api/auth/verification-status?email=${encodeURIComponent(session.user.email)}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setVerificationStatus(data);
+
+        // Check if fully verified
+        const isVerified = data.emailVerified &&
+          data.profileCompleted &&
+          data.identityVerified &&
+          data.identityDocumentUploaded;
+
+        setIsFullyVerified(isVerified);
+        console.log('🔍 Verification status:', data);
+        console.log('✅ Is fully verified:', isVerified);
+      } else {
+        console.error('Failed to fetch verification status:', data.message);
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+    } finally {
+      setIsLoadingVerification(false);
+    }
+  };
 
   // Initialize withdrawal methods on component mount
   useEffect(() => {
@@ -635,7 +675,8 @@ function WithdrawalPageWithParams() {
         console.log('🚀 Initializing withdrawal page data...');
         await Promise.all([
           loadBalance(),
-          loadRealTimeFees()
+          loadRealTimeFees(),
+          checkVerificationStatus()
         ]);
         console.log('✅ Withdrawal page data initialized successfully');
       } catch (error) {
@@ -929,16 +970,32 @@ function WithdrawalPageWithParams() {
 
     } catch (e: any) {
       console.error("Error during withdrawal:", e);
-      setError(e.message || "An error occurred during the withdrawal request.");
-      setIsSuccess(false);
 
-      toast({
-        title: 'Withdrawal Request Failed',
-        description: e.message || 'Failed to submit withdrawal request. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      // Check if it's a verification error
+      if (e.message && e.message.includes('verification required')) {
+        setError("Account verification required. Please complete your account verification to make withdrawals.");
+        toast({
+          title: 'Verification Required',
+          description: 'Your account must be fully verified to make withdrawals. Please complete the verification process.',
+          status: 'warning',
+          duration: 7000,
+          isClosable: true,
+        });
+
+        // Refresh verification status
+        checkVerificationStatus();
+      } else {
+        setError(e.message || "An error occurred during the withdrawal request.");
+        toast({
+          title: 'Withdrawal Request Failed',
+          description: e.message || 'Failed to submit withdrawal request. Please try again.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+
+      setIsSuccess(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -956,8 +1013,61 @@ function WithdrawalPageWithParams() {
           </Text>
         </VStack>
 
-        {/* Quick Stats */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} maxW="800px" mx="auto">
+        {/* Verification Status Check */}
+        {isLoadingVerification ? (
+          <Box textAlign="center" py={8}>
+            <Spinner size="lg" color="blue.500" />
+            <Text mt={4} color={subtleTextColor}>Checking account verification status...</Text>
+          </Box>
+        ) : !isFullyVerified ? (
+          <Alert status="warning" borderRadius="xl" p={6}>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Account Verification Required!</AlertTitle>
+              <AlertDescription>
+                <VStack spacing={3} align="start" mt={2}>
+                  <Text>
+                    Your account must be fully verified to make withdrawals. Please complete the following steps:
+                  </Text>
+                  <VStack spacing={1} align="start" pl={4}>
+                    {verificationStatus && (
+                      <>
+                        {!verificationStatus.emailVerified && (
+                          <Text fontSize="sm">• ❌ Email verification</Text>
+                        )}
+                        {!verificationStatus.profileCompleted && (
+                          <Text fontSize="sm">• ❌ Profile completion</Text>
+                        )}
+                        {!verificationStatus.identityDocumentUploaded && (
+                          <Text fontSize="sm">• ❌ Identity document upload</Text>
+                        )}
+                        {!verificationStatus.identityVerified && (
+                          <Text fontSize="sm">
+                            • ❌ Identity verification (required)
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </VStack>
+                  <Button
+                    colorScheme="blue"
+                    size="sm"
+                    onClick={() => router.push('/verify-account')}
+                    mt={2}
+                  >
+                    Complete Verification
+                  </Button>
+                </VStack>
+              </AlertDescription>
+            </Box>
+          </Alert>
+        ) : null}
+
+        {/* Main Withdrawal Content - Only show if fully verified */}
+        {isFullyVerified && (
+          <>
+            {/* Quick Stats */}
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} maxW="800px" mx="auto">
           <Card bg={cardBgColor} borderRadius="xl" border="1px" borderColor="green.200">
             <CardBody p={4} textAlign="center">
               <VStack spacing={2}>
@@ -1632,6 +1742,8 @@ function WithdrawalPageWithParams() {
               </Button>
             </VStack>
           </Box>
+        )}
+          </>
         )}
       </VStack>
     </Box>

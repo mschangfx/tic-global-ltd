@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
     // Verify cron secret for security
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET || 'cron-secret-key';
-    
+
     if (authHeader !== `Bearer ${cronSecret}`) {
+      console.log('❌ Unauthorized cron request - invalid secret');
       return NextResponse.json(
         { error: 'Unauthorized - Invalid cron secret' },
         { status: 401 }
@@ -30,44 +31,59 @@ export async function POST(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     console.log(`🚀 Starting daily TIC distribution for ${today}`);
 
-    // Get all active subscriptions
+    // Get all active subscriptions with better error handling
     const { data: activeSubscriptions, error: subsError } = await supabaseAdmin
       .from('user_subscriptions')
-      .select('*')
+      .select(`
+        id,
+        user_email,
+        plan_id,
+        plan_name,
+        status,
+        start_date,
+        end_date,
+        created_at
+      `)
       .eq('status', 'active')
-      .gte('end_date', new Date().toISOString());
+      .gte('end_date', new Date().toISOString())
+      .order('created_at', { ascending: true });
 
     if (subsError) {
-      console.error('Error fetching active subscriptions:', subsError);
+      console.error('❌ Error fetching active subscriptions:', subsError);
       return NextResponse.json(
-        { error: 'Failed to fetch active subscriptions' },
+        { error: 'Failed to fetch active subscriptions', details: subsError.message },
         { status: 500 }
       );
     }
 
     if (!activeSubscriptions || activeSubscriptions.length === 0) {
-      console.log('No active subscriptions found');
+      console.log('ℹ️ No active subscriptions found for distribution');
       return NextResponse.json({
         success: true,
         message: 'No active subscriptions found',
+        date: today,
         distributed: 0,
         skipped: 0,
-        errors: 0
+        errors: 0,
+        total_subscriptions: 0
       });
     }
 
-    console.log(`Found ${activeSubscriptions.length} active subscriptions`);
+    console.log(`📊 Found ${activeSubscriptions.length} active subscriptions for distribution`);
 
     let distributed = 0;
     let skipped = 0;
     let errors = 0;
     const results: any[] = [];
 
+    // Process each subscription
     for (const subscription of activeSubscriptions) {
       const dailyTokens = getDailyTokenAmount(subscription.plan_id);
-      
+
+      console.log(`🔍 Processing subscription: ${subscription.user_email} - ${subscription.plan_id} (${dailyTokens} TIC/day)`);
+
       if (dailyTokens <= 0) {
-        console.log(`No token allocation for plan: ${subscription.plan_id}`);
+        console.log(`⚠️ No token allocation for plan: ${subscription.plan_id}`);
         skipped++;
         results.push({
           user_email: subscription.user_email,
@@ -80,27 +96,41 @@ export async function POST(request: NextRequest) {
 
       try {
         // Check if tokens were already distributed today for this subscription
-        const { data: existingDistribution } = await supabaseAdmin
+        const { data: existingDistribution, error: checkError } = await supabaseAdmin
           .from('token_distributions')
-          .select('id')
+          .select('id, token_amount, created_at')
           .eq('user_email', subscription.user_email)
           .eq('subscription_id', subscription.id)
           .eq('distribution_date', today)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no record exists
+
+        if (checkError) {
+          console.error(`❌ Error checking existing distribution for ${subscription.user_email}:`, checkError);
+          errors++;
+          results.push({
+            user_email: subscription.user_email,
+            plan_id: subscription.plan_id,
+            status: 'error',
+            reason: 'Failed to check existing distribution',
+            error: checkError.message
+          });
+          continue;
+        }
 
         if (existingDistribution) {
-          console.log(`Tokens already distributed today for ${subscription.user_email} - ${subscription.plan_id}`);
+          console.log(`⏭️ Tokens already distributed today for ${subscription.user_email} - ${subscription.plan_id} (${existingDistribution.token_amount} TIC at ${existingDistribution.created_at})`);
           skipped++;
           results.push({
             user_email: subscription.user_email,
             plan_id: subscription.plan_id,
             status: 'skipped',
-            reason: 'Already distributed today'
+            reason: 'Already distributed today',
+            existing_amount: existingDistribution.token_amount
           });
           continue;
         }
 
-        // Create token distribution record
+        // Create token distribution record first
         const { data: distribution, error: distError } = await supabaseAdmin
           .from('token_distributions')
           .insert({
@@ -110,14 +140,14 @@ export async function POST(request: NextRequest) {
             plan_name: subscription.plan_name,
             token_amount: dailyTokens,
             distribution_date: today,
-            status: 'completed',
+            status: 'pending', // Start as pending, update to completed after wallet update
             created_at: new Date().toISOString()
           })
           .select()
           .single();
 
         if (distError) {
-          console.error(`Error creating distribution record for ${subscription.user_email}:`, distError);
+          console.error(`❌ Error creating distribution record for ${subscription.user_email}:`, distError);
           errors++;
           results.push({
             user_email: subscription.user_email,
@@ -129,9 +159,11 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
+        console.log(`📝 Created distribution record ${distribution.id} for ${subscription.user_email}`);
+
         // Update user's TIC token balance using RPC function with transaction history
         const transactionId = `daily_tic_${subscription.plan_id}_${today}_${subscription.id}`;
-        const description = `Daily TIC Distribution - ${subscription.plan_name} (${dailyTokens} TIC)`;
+        const description = `Daily TIC Distribution - ${subscription.plan_name} (${dailyTokens.toFixed(4)} TIC)`;
 
         const { error: walletError } = await supabaseAdmin
           .rpc('increment_tic_balance_daily_distribution', {
@@ -143,7 +175,14 @@ export async function POST(request: NextRequest) {
           });
 
         if (walletError) {
-          console.error(`Error updating TIC balance for ${subscription.user_email}:`, walletError);
+          console.error(`❌ Error updating TIC balance for ${subscription.user_email}:`, walletError);
+
+          // Mark distribution as failed
+          await supabaseAdmin
+            .from('token_distributions')
+            .update({ status: 'failed' })
+            .eq('id', distribution.id);
+
           errors++;
           results.push({
             user_email: subscription.user_email,
@@ -155,18 +194,25 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        console.log(`✅ Distributed ${dailyTokens} TIC to ${subscription.user_email} (${subscription.plan_name})`);
+        // Mark distribution as completed
+        await supabaseAdmin
+          .from('token_distributions')
+          .update({ status: 'completed' })
+          .eq('id', distribution.id);
+
+        console.log(`✅ Successfully distributed ${dailyTokens.toFixed(4)} TIC to ${subscription.user_email} (${subscription.plan_name})`);
         distributed++;
         results.push({
           user_email: subscription.user_email,
           plan_id: subscription.plan_id,
           plan_name: subscription.plan_name,
-          tokens_distributed: dailyTokens,
-          status: 'success'
+          tokens_distributed: parseFloat(dailyTokens.toFixed(4)),
+          status: 'success',
+          distribution_id: distribution.id
         });
 
       } catch (error) {
-        console.error(`Unexpected error processing ${subscription.user_email}:`, error);
+        console.error(`💥 Unexpected error processing ${subscription.user_email}:`, error);
         errors++;
         results.push({
           user_email: subscription.user_email,
@@ -178,7 +224,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`🎉 Daily TIC distribution completed: ${distributed} distributed, ${skipped} skipped, ${errors} errors`);
+    const summary = `🎉 Daily TIC distribution completed for ${today}: ${distributed} distributed, ${skipped} skipped, ${errors} errors`;
+    console.log(summary);
+
+    // Log detailed results for debugging
+    if (results.length > 0) {
+      console.log('📋 Distribution Results Summary:');
+      results.forEach((result, index) => {
+        console.log(`  ${index + 1}. ${result.user_email} (${result.plan_id}): ${result.status} ${result.tokens_distributed ? `- ${result.tokens_distributed} TIC` : ''}`);
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -188,7 +243,8 @@ export async function POST(request: NextRequest) {
       distributed,
       skipped,
       errors,
-      results
+      results,
+      summary
     });
 
   } catch (error) {

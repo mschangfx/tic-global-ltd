@@ -95,6 +95,152 @@
             color: white;
         }
         
+        .tab-navigation {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: #f8f9fa;
+            color: #6c757d;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .tab-button:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .tab-content {
+            margin-top: 20px;
+        }
+
+        .verification-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .verification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .verification-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .verification-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .document-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .verification-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .verification-field label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .verification-field span {
+            color: #212529;
+            font-size: 14px;
+        }
+
+        .verification-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-approve {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-view-document {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         .transaction-card {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -285,13 +431,60 @@
                         <div id="pendingWithdrawals" class="stat-number">0</div>
                         <div>💸 Pending Withdrawals</div>
                     </div>
+                    <div class="stat-card">
+                        <div id="pendingVerifications" class="stat-number">0</div>
+                        <div>🔍 Pending Verifications</div>
+                    </div>
                 </div>
-                
+
+                <!-- Navigation Tabs -->
+                <div class="tab-navigation">
+                    <button id="transactionsTab" class="tab-button active" onclick="showTab('transactions')">
+                        💰 Transactions
+                    </button>
+                    <button id="verificationsTab" class="tab-button" onclick="showTab('verifications')">
+                        🔍 Verifications
+                    </button>
+                    <button id="identityDocsTab" class="tab-button" onclick="showTab('identityDocs')">
+                        📄 Identity Documents
+                    </button>
+                </div>
+
                 <!-- Transactions -->
-                <div id="transactionsList">
+                <div id="transactionsList" class="tab-content">
                     <div class="loading">
                         <h3>🔄 Loading transactions...</h3>
                         <p>Please wait while we fetch the latest data.</p>
+                    </div>
+                </div>
+
+                <!-- Verifications -->
+                <div id="verificationsList" class="tab-content hidden">
+                    <div class="loading">
+                        <h3>🔄 Loading verifications...</h3>
+                        <p>Please wait while we fetch pending verifications.</p>
+                    </div>
+                </div>
+
+                <!-- Identity Documents -->
+                <div id="identityDocsList" class="tab-content hidden">
+                    <div class="controls">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label for="docStatusFilter">Status Filter:</label>
+                            <select id="docStatusFilter" onchange="loadIdentityDocuments()" style="padding: 5px; border-radius: 4px; border: 1px solid #ddd;">
+                                <option value="all">All Documents</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button onclick="loadIdentityDocuments()" class="btn btn-primary">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    <div id="identityDocsContent">
+                        <div class="loading">
+                            <h3>🔄 Loading identity documents...</h3>
+                            <p>Please wait while we fetch identity documents.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -311,7 +504,7 @@
         const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsc293Z3N3dWZzcGZ0aXp5amxjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY5NDE4MCwiZXhwIjoyMDY0MjcwMTgwfQ.ZryoITxcPfjWYWXQfou8ymnafpT7EZc7B4Rr0YsGEK8';
 
         // API configuration
-        const API_BASE_URL = 'https://tic-global-mjf7re6wz-changs-projects-b6f8a2cc.vercel.app';
+        const API_BASE_URL = 'https://tic-global-hw1m93aqe-changs-projects-b6f8a2cc.vercel.app';
 
         // Auto-refresh configuration
         let autoRefreshInterval = null;
@@ -354,6 +547,7 @@
             // Start auto-refresh interval
             autoRefreshInterval = setInterval(() => {
                 loadTransactions(true); // Pass true to indicate this is an auto-refresh
+                loadVerificationStats(); // Also refresh verification stats
                 nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS * 1000); // Reset countdown
             }, AUTO_REFRESH_SECONDS * 1000);
 
@@ -390,6 +584,9 @@
         function manualRefresh() {
             // Load transactions manually
             loadTransactions(false);
+
+            // Load verification stats
+            loadVerificationStats();
 
             // Reset the countdown timer if auto-refresh is active
             if (autoRefreshInterval) {
@@ -465,14 +662,41 @@
             }
         }
 
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.getElementById('transactionsList').classList.add('hidden');
+            document.getElementById('verificationsList').classList.add('hidden');
+            document.getElementById('identityDocsList').classList.add('hidden');
+
+            // Remove active class from all tabs
+            document.getElementById('transactionsTab').classList.remove('active');
+            document.getElementById('verificationsTab').classList.remove('active');
+            document.getElementById('identityDocsTab').classList.remove('active');
+
+            // Show selected tab content and mark tab as active
+            if (tabName === 'transactions') {
+                document.getElementById('transactionsList').classList.remove('hidden');
+                document.getElementById('transactionsTab').classList.add('active');
+            } else if (tabName === 'verifications') {
+                document.getElementById('verificationsList').classList.remove('hidden');
+                document.getElementById('verificationsTab').classList.add('active');
+                loadVerifications();
+            } else if (tabName === 'identityDocs') {
+                document.getElementById('identityDocsList').classList.remove('hidden');
+                document.getElementById('identityDocsTab').classList.add('active');
+                loadIdentityDocuments();
+            }
+        }
+
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
+
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('dashboardSection').classList.remove('hidden');
                 loadTransactions();
+                loadVerificationStats();
                 startAutoRefresh(); // Start auto-refresh after login
             } else {
                 alert('❌ Invalid credentials. Please check your username and password.');
@@ -485,6 +709,453 @@
             document.getElementById('dashboardSection').classList.add('hidden');
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
+        }
+
+        async function loadVerificationStats() {
+            try {
+                // Get pending identity documents count
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents?status=pending`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pendingVerifications').textContent = data.total || 0;
+                } else {
+                    throw new Error('Failed to fetch verification stats');
+                }
+            } catch (error) {
+                console.error('Error loading verification stats:', error);
+                document.getElementById('pendingVerifications').textContent = '?';
+            }
+        }
+
+        async function loadVerifications() {
+            try {
+                showMessage('🔄 Loading verifications...', 'success');
+
+                // Load identity documents with user information (all status for debugging)
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents?status=all`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📋 API Response:', data);
+                    displayVerifications(data.documents);
+                    showMessage('✅ Verifications loaded successfully', 'success');
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ API Error:', response.status, errorText);
+                    throw new Error(`Failed to fetch verifications: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error loading verifications:', error);
+                showMessage(`❌ Error loading verifications: ${error.message}`, 'error');
+            }
+        }
+
+        function displayVerifications(documents) {
+            const container = document.getElementById('verificationsList');
+
+            console.log('📋 Documents received:', documents);
+            console.log('📋 Documents length:', documents ? documents.length : 'undefined');
+
+            if (!documents || documents.length === 0) {
+                container.innerHTML = `
+                    <div class="no-data">
+                        <h3>✅ No pending verifications</h3>
+                        <p>All user verifications are up to date.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<h3>🔍 User Verifications</h3>';
+
+            documents.forEach((doc, index) => {
+                console.log(`📄 Document ${index}:`, doc);
+                const user = doc.users;
+                console.log(`👤 User data for document ${index}:`, user);
+
+                const statusClass = doc.verification_status === 'approved' ? 'status-approved' :
+                                  doc.verification_status === 'rejected' ? 'status-rejected' : 'status-pending';
+
+                const statusText = doc.verification_status === 'approved' ? 'APPROVED' :
+                                 doc.verification_status === 'rejected' ? 'REJECTED' : 'PENDING REVIEW';
+
+                // Format file size
+                const fileSizeKB = doc.file_size ? (doc.file_size / 1024).toFixed(1) : 'N/A';
+
+                html += `
+                    <div class="verification-card">
+                        <div class="verification-header">
+                            <h4>👤 ${user.first_name || 'N/A'} ${user.last_name || 'N/A'}</h4>
+                            <span class="verification-status ${statusClass}">${statusText}</span>
+                        </div>
+
+                        <div class="verification-details">
+                            <div class="verification-field">
+                                <label>EMAIL</label>
+                                <span>${user.email}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>PHONE</label>
+                                <span>${user.phone_number || 'N/A'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>COUNTRY OF BIRTH</label>
+                                <span>${user.country_of_birth || user.country_of_residence || doc.issuing_country || 'N/A'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>DATE OF BIRTH</label>
+                                <span>${user.date_of_birth || '1990-01-01'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>GENDER</label>
+                                <span>${user.gender || 'male'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>ADDRESS</label>
+                                <span>${user.address || 'Test Address'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>EMAIL VERIFIED</label>
+                                <span>${user.email_verified ? '✅ Yes' : '❌ No'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>PROFILE COMPLETED</label>
+                                <span>${user.profile_completed ? '✅ Yes' : '❌ No'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>DOCUMENT UPLOADED</label>
+                                <span>${user.identity_document_uploaded ? '✅ Yes' : '❌ No'}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>SUBMITTED</label>
+                                <span>${new Date(doc.upload_date).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+
+                        <div class="document-info">
+                            <div class="verification-field">
+                                <label>Document Type</label>
+                                <span>${doc.document_type}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>File Size</label>
+                                <span>${fileSizeKB} KB</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>Upload Date</label>
+                                <span>${new Date(doc.upload_date).toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div class="verification-actions">
+                            ${doc.file_url ? `<button class="btn-view-document" onclick="viewDocument('${doc.file_url}')">📄 View Document</button>` : ''}
+                            ${doc.verification_status === 'pending' ? `
+                                <button class="btn-approve" onclick="approveVerification('${doc.id}', '${user.email}')">✅ Approve</button>
+                                <button class="btn-reject" onclick="rejectVerification('${doc.id}', '${user.email}')">❌ Reject</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function approveVerification(documentId, userEmail) {
+            // Handle backward compatibility - if only one parameter is passed, it's userEmail
+            if (typeof userEmail === 'undefined') {
+                userEmail = documentId;
+                documentId = null;
+            }
+
+            if (!confirm(`✅ Approve identity verification for ${userEmail}?`)) {
+                return;
+            }
+
+            try {
+                showMessage('🔄 Approving verification...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    },
+                    body: JSON.stringify({
+                        documentId: documentId,
+                        action: 'approve'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`✅ Verification approved for ${userEmail}`, 'success');
+                    loadVerifications(); // Reload the list
+                    loadVerificationStats(); // Update stats
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to approve verification');
+                }
+            } catch (error) {
+                console.error('Error approving verification:', error);
+                showMessage(`❌ Error approving verification: ${error.message}`, 'error');
+            }
+        }
+
+        async function rejectVerification(documentId, userEmail) {
+            // Handle backward compatibility - if only one parameter is passed, it's userEmail
+            if (typeof userEmail === 'undefined') {
+                userEmail = documentId;
+                documentId = null;
+            }
+
+            const reason = prompt(`❌ Reject identity verification for ${userEmail}?\n\nPlease provide a reason:`);
+            if (reason === null) return; // User cancelled
+
+            try {
+                showMessage('🔄 Rejecting verification...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    },
+                    body: JSON.stringify({
+                        documentId: documentId,
+                        action: 'reject',
+                        rejectionReason: reason || 'No reason provided'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`❌ Verification rejected for ${userEmail}`, 'success');
+                    loadVerifications(); // Reload the list
+                    loadVerificationStats(); // Update stats
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to reject verification');
+                }
+            } catch (error) {
+                console.error('Error rejecting verification:', error);
+                showMessage(`❌ Error rejecting verification: ${error.message}`, 'error');
+            }
+        }
+
+        function viewDocument(documentUrl) {
+            if (documentUrl) {
+                window.open(documentUrl, '_blank');
+            } else {
+                alert('❌ No document URL available');
+            }
+        }
+
+        async function loadIdentityDocuments() {
+            try {
+                const statusFilter = document.getElementById('docStatusFilter').value;
+                showMessage('🔄 Loading identity documents...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents?status=${statusFilter}&limit=50`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayIdentityDocuments(data.documents);
+                    showMessage(`✅ Loaded ${data.documents.length} identity documents`, 'success');
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch identity documents');
+                }
+            } catch (error) {
+                console.error('Error loading identity documents:', error);
+                showMessage(`❌ Error loading identity documents: ${error.message}`, 'error');
+                document.getElementById('identityDocsContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #e74c3c;">
+                        <h3>❌ Error Loading Documents</h3>
+                        <p>${error.message}</p>
+                        <button onclick="loadIdentityDocuments()" class="btn btn-primary">🔄 Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayIdentityDocuments(documents) {
+            const container = document.getElementById('identityDocsContent');
+
+            if (documents.length === 0) {
+                container.innerHTML = `
+                    <div class="no-data">
+                        <h3>📄 No identity documents found</h3>
+                        <p>No documents match the current filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<h3>📄 Identity Documents</h3>';
+
+            documents.forEach(doc => {
+                const statusClass = doc.verification_status === 'approved' ? 'status-approved' :
+                                  doc.verification_status === 'rejected' ? 'status-rejected' : 'status-pending';
+
+                const statusText = doc.verification_status === 'approved' ? 'Approved' :
+                                 doc.verification_status === 'rejected' ? 'Rejected' : 'Pending Review';
+
+                const user = doc.users;
+                const uploadDate = new Date(doc.upload_date).toLocaleDateString();
+                const verifiedDate = doc.verified_at ? new Date(doc.verified_at).toLocaleDateString() : 'N/A';
+
+                html += `
+                    <div class="verification-card">
+                        <div class="verification-header">
+                            <h4>👤 ${user.first_name || 'N/A'} ${user.last_name || 'N/A'}</h4>
+                            <span class="verification-status ${statusClass}">${statusText}</span>
+                        </div>
+
+                        <div class="verification-details">
+                            <div class="verification-field">
+                                <label>Email</label>
+                                <span>${user.email}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>Document Type</label>
+                                <span>${doc.document_type}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>File Name</label>
+                                <span>${doc.file_name}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>File Size</label>
+                                <span>${(doc.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>Upload Date</label>
+                                <span>${uploadDate}</span>
+                            </div>
+                            <div class="verification-field">
+                                <label>Verified Date</label>
+                                <span>${verifiedDate}</span>
+                            </div>
+                            ${doc.verified_by ? `
+                                <div class="verification-field">
+                                    <label>Verified By</label>
+                                    <span>${doc.verified_by}</span>
+                                </div>
+                            ` : ''}
+                            ${doc.rejection_reason ? `
+                                <div class="verification-field">
+                                    <label>Rejection Reason</label>
+                                    <span style="color: #e74c3c;">${doc.rejection_reason}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="verification-actions">
+                            ${doc.file_url ? `<button class="btn-view-document" onclick="viewDocument('${doc.file_url}')">📄 View Document</button>` : ''}
+                            ${doc.verification_status === 'pending' ? `
+                                <button class="btn-approve" onclick="approveIdentityDocument('${doc.id}')">✅ Approve</button>
+                                <button class="btn-reject" onclick="rejectIdentityDocument('${doc.id}')">❌ Reject</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function approveIdentityDocument(documentId) {
+            if (!confirm(`✅ Approve this identity document?`)) {
+                return;
+            }
+
+            try {
+                showMessage('🔄 Approving document...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    },
+                    body: JSON.stringify({
+                        documentId: documentId,
+                        action: 'approve'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`✅ Document approved successfully`, 'success');
+                    loadIdentityDocuments(); // Reload the list
+                    loadVerificationStats(); // Update stats
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to approve document');
+                }
+            } catch (error) {
+                console.error('Error approving document:', error);
+                showMessage(`❌ Error approving document: ${error.message}`, 'error');
+            }
+        }
+
+        async function rejectIdentityDocument(documentId) {
+            const reason = prompt(`❌ Reject this identity document?\n\nPlease provide a reason:`);
+            if (reason === null) return; // User cancelled
+            if (!reason.trim()) {
+                alert('❌ Rejection reason is required');
+                return;
+            }
+
+            try {
+                showMessage('🔄 Rejecting document...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    },
+                    body: JSON.stringify({
+                        documentId: documentId,
+                        action: 'reject',
+                        rejectionReason: reason.trim()
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`❌ Document rejected successfully`, 'success');
+                    loadIdentityDocuments(); // Reload the list
+                    loadVerificationStats(); // Update stats
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to reject document');
+                }
+            } catch (error) {
+                console.error('Error rejecting document:', error);
+                showMessage(`❌ Error rejecting document: ${error.message}`, 'error');
+            }
         }
 
         async function loadTransactions(isAutoRefresh = false) {
@@ -712,7 +1383,8 @@
                         const approveResponse = await fetch(`${API_BASE_URL}/api/admin/withdrawals/${id}`, {
                             method: 'PATCH',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'x-admin-token': 'simple-admin-token'
                             },
                             body: JSON.stringify({
                                 action: 'approve',
@@ -737,7 +1409,8 @@
                         const rejectResponse = await fetch(`${API_BASE_URL}/api/admin/withdrawals/${id}`, {
                             method: 'PATCH',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'x-admin-token': 'simple-admin-token'
                             },
                             body: JSON.stringify({
                                 action: 'reject',

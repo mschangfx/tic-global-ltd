@@ -194,6 +194,56 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Check if user is fully verified before allowing withdrawal
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('email_verified, phone_verified, profile_completed, identity_verification_status, identity_document_uploaded')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    if (userError) {
+      console.error('Error checking user verification status:', userError);
+      return NextResponse.json(
+        { error: 'Unable to verify account status' },
+        { status: 500 }
+      );
+    }
+
+    // Check if user exists and is fully verified
+    const isFullyVerified = user &&
+      user.email_verified &&
+      user.profile_completed &&
+      user.identity_verification_status === 'approved' &&
+      user.identity_document_uploaded;
+
+    if (!isFullyVerified) {
+      const missingVerifications = [];
+      if (!user) {
+        missingVerifications.push('Account setup');
+      } else {
+        if (!user.email_verified) missingVerifications.push('Email verification');
+        if (!user.profile_completed) missingVerifications.push('Profile completion');
+        if (!user.identity_document_uploaded) missingVerifications.push('Identity document upload');
+        if (user.identity_verification_status !== 'approved') {
+          if (user.identity_verification_status === 'pending') {
+            missingVerifications.push('Identity verification (pending review)');
+          } else {
+            missingVerifications.push('Identity verification approval');
+          }
+        }
+      }
+
+      return NextResponse.json(
+        {
+          error: 'Account verification required',
+          message: 'Your account must be fully verified to make withdrawals.',
+          missingVerifications,
+          verificationRequired: true
+        },
+        { status: 403 }
+      );
+    }
+
     // Validate amount
     const withdrawalAmount = parseFloat(amount);
     if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {

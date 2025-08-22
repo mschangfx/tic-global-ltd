@@ -125,8 +125,8 @@ export default function TestWalletConfigPage() {
           <AlertIcon />
           <VStack align="start" spacing={2}>
             <Text fontWeight="bold">Expected Wallet Addresses:</Text>
-            <Text>• Ethereum: 0x61b263d67663acfbf20b4157386405b12a49c920</Text>
-            <Text>• BSC: 0x61b263d67663acfbf20b4157386405b12a49c920</Text>
+            <Text>• Ethereum: 0x233824f4b3fae83f59841369c59490a1750658b1</Text>
+            <Text>• BSC: 0x233824f4b3fae83f59841369c59490a1750658b1</Text>
             <Text>• Tron: TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ</Text>
           </VStack>
         </Alert>

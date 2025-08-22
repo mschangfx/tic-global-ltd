@@ -67,25 +67,52 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
   useEffect(() => {
     const fetchDistributions = async () => {
       try {
-        const response = await fetch(`/api/tokens/distribute?planId=${encodeURIComponent(subscription.plan_id)}&limit=30`);
+        console.log(`🔍 Fetching distributions for user: ${userEmail}, plan: ${subscription.plan_id}, subscription: ${subscription.id}`);
+
+        // Use the tokens/distribute API which fetches real distribution data
+        // Add timestamp to prevent caching issues
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/tokens/distribute?planId=${encodeURIComponent(subscription.plan_id)}&limit=30&_t=${timestamp}`);
         const data = await response.json();
 
-        if (data.success) {
-          // Filter distributions to only show this specific plan
-          const planDistributions = (data.distributions || []).filter(
-            (dist: TokenDistribution) => dist.plan_id === subscription.plan_id
-          );
-          setDistributions(planDistributions);
+        console.log('📊 Distribution API response:', data);
 
-          // Calculate total tokens received for this specific plan only
-          const planTotalTokens = planDistributions.reduce(
+        if (data.success) {
+          // Filter distributions by SPECIFIC SUBSCRIPTION ID, not just plan type
+          // This ensures we only show distributions for THIS subscription, not old ones
+          const subscriptionDistributions = (data.distributions || []).filter(
+            (dist: TokenDistribution) => {
+              // First check if it matches the plan
+              const planMatches = dist.plan_id === subscription.plan_id;
+
+              // Then check if the distribution date is after the subscription start date
+              const distDate = new Date(dist.distribution_date);
+              const subStartDate = new Date(subscription.start_date);
+              const dateAfterStart = distDate >= subStartDate;
+
+              console.log(`🔍 Distribution ${dist.id}: plan=${dist.plan_id}, date=${dist.distribution_date}, planMatches=${planMatches}, dateAfterStart=${dateAfterStart}`);
+
+              return planMatches && dateAfterStart;
+            }
+          );
+
+          console.log(`📈 Found ${subscriptionDistributions.length} distributions for subscription ${subscription.id} (plan: ${subscription.plan_id})`);
+          console.log(`📅 Subscription started: ${subscription.start_date}`);
+          setDistributions(subscriptionDistributions);
+
+          // Calculate total tokens received for this specific subscription only
+          const subscriptionTotalTokens = subscriptionDistributions.reduce(
             (sum: number, dist: TokenDistribution) => sum + parseFloat(dist.token_amount.toString()),
             0
           );
-          setTotalTokensReceived(planTotalTokens);
+          setTotalTokensReceived(subscriptionTotalTokens);
+
+          console.log(`💰 Total tokens received for subscription ${subscription.id}: ${subscriptionTotalTokens}`);
+        } else {
+          console.error('❌ Distribution API error:', data.error);
         }
       } catch (error) {
-        console.error('Error fetching token distributions:', error);
+        console.error('❌ Error fetching token distributions:', error);
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +121,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
     if (userEmail && subscription.plan_id) {
       fetchDistributions();
     }
-  }, [userEmail, subscription.plan_id]);
+  }, [userEmail, subscription.plan_id, subscription.id]);
 
   const planAllocation = TOKEN_ALLOCATIONS[subscription.plan_id as keyof typeof TOKEN_ALLOCATIONS] || 0;
   const dailyAllocation = planAllocation / 365; // Exact daily allocation without rounding
@@ -204,37 +231,48 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         </VStack>
 
         {/* Recent Distributions */}
-        {distributions.length > 0 && (
-          <>
-            <Divider />
-            <VStack spacing={2} align="stretch">
-              <Text fontSize="sm" fontWeight="medium" color={textColor}>
-                Recent Distributions (Last 5)
-              </Text>
-              {distributions.slice(0, 5).map((dist) => (
-                <HStack key={dist.id} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
-                  <HStack spacing={2}>
-                    <Icon as={FaCalendarAlt} color={subtleTextColor} boxSize={3} />
-                    <Text fontSize="xs" color={subtleTextColor}>
-                      {new Date(dist.distribution_date).toLocaleDateString()}
-                    </Text>
-                  </HStack>
-                  <HStack spacing={2}>
-                    <Text fontSize="xs" fontWeight="medium" color={textColor}>
-                      +{parseFloat(dist.token_amount.toString()).toFixed(2)} TIC
-                    </Text>
-                    <Badge
-                      size="sm"
-                      colorScheme={dist.status === 'completed' ? 'green' : 'red'}
-                    >
-                      {dist.status}
-                    </Badge>
-                  </HStack>
+        <Divider />
+        <VStack spacing={2} align="stretch">
+          <Text fontSize="sm" fontWeight="medium" color={textColor}>
+            Recent Distributions (Last 5)
+          </Text>
+          {distributions.length > 0 ? (
+            distributions.slice(0, 5).map((dist) => (
+              <HStack key={dist.id} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
+                <HStack spacing={2}>
+                  <Icon as={FaCalendarAlt} color={subtleTextColor} boxSize={3} />
+                  <Text fontSize="xs" color={subtleTextColor}>
+                    {new Date(dist.distribution_date).toLocaleDateString()}
+                  </Text>
                 </HStack>
-              ))}
+                <HStack spacing={2}>
+                  <Text fontSize="xs" fontWeight="medium" color={textColor}>
+                    +{parseFloat(dist.token_amount.toString()).toFixed(2)} TIC
+                  </Text>
+                  <Badge
+                    size="sm"
+                    colorScheme={dist.status === 'completed' ? 'green' : 'red'}
+                  >
+                    {dist.status}
+                  </Badge>
+                </HStack>
+              </HStack>
+            ))
+          ) : (
+            <VStack spacing={2} py={4}>
+              <Icon as={FaClock} color={subtleTextColor} boxSize={6} />
+              <Text fontSize="sm" color={subtleTextColor} textAlign="center">
+                No distributions yet for this subscription
+              </Text>
+              <Text fontSize="xs" color={subtleTextColor} textAlign="center">
+                TIC tokens are distributed daily. Your first distribution will appear here within 24 hours of subscription activation.
+              </Text>
+              <Text fontSize="xs" color="blue.500" textAlign="center" fontWeight="medium">
+                Started: {new Date(subscription.start_date).toLocaleDateString()}
+              </Text>
             </VStack>
-          </>
-        )}
+          )}
+        </VStack>
       </VStack>
     </VStack>
   );

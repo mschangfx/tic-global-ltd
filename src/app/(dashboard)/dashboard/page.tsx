@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'; // Added useEffect, useState
 import { useSession } from 'next-auth/react'; // Added NextAuth session hook
 import { useLanguage, formatCurrency } from '@/contexts/LanguageContext';
+import { useRouter } from 'next/navigation'; // Added for navigation
 import {
   Box,
   Container,
@@ -49,6 +50,7 @@ import {
 import { FaUserCheck, FaClipboardList, FaAward, FaGamepad, FaChartLine, FaCheckCircle, FaFire, FaHeadset, FaBrain, FaRocket, FaUsersCog, FaMedal, FaTimesCircle, FaInfoCircle, FaTimes, FaEnvelope, FaPhone, FaUser, FaLock, FaIdCard, FaCamera, FaCloudUploadAlt, FaClock } from 'react-icons/fa'; // Added FaClock
 // Supabase client removed - using NextAuth for authentication
 import { initializeRecaptcha, sendFirebasePhoneVerification, verifyFirebasePhoneCode, cleanupRecaptcha, isFirebaseConfigured } from '@/lib/firebase';
+import VerificationBanner from '@/components/VerificationBanner';
 
 const StepItem = ({ icon, title, description, stepNumber }: { icon: React.ElementType, title: string, description: string, stepNumber: string }) => {
   const stepBg = useColorModeValue('white', 'gray.700');
@@ -74,6 +76,7 @@ export default function DashboardOverviewPage() {
   const [userName, setUserName] = useState("Valued Member"); // State for user name
   const [userEmail, setUserEmail] = useState(""); // State for user email
   const { language, t } = useLanguage();
+  const router = useRouter(); // Router for navigation
   const [showProfileBanner, setShowProfileBanner] = useState(true); // State for profile completion banner
   const [verificationCode, setVerificationCode] = useState(""); // State for verification code
   const [phoneVerificationCode, setPhoneVerificationCode] = useState(""); // State for phone verification code
@@ -914,9 +917,20 @@ export default function DashboardOverviewPage() {
     }
   };
 
+  // Handle plan selection and redirect to billing
+  const handleGetStartedWithPlan = (planId: string) => {
+    router.push(`/my-accounts/billing?plan=${planId}`);
+  };
+
   return (
     <Box p={{ base: 4, md: 6 }} bg={sectionBg} minH="calc(100vh - 60px)"> {/* Adjust minH if needed */}
       <VStack spacing={8} align="stretch">
+
+        {/* Verification Banner */}
+        <VerificationBanner onVerificationUpdate={() => {
+          // Refresh any dashboard data if needed
+          console.log('Verification status updated');
+        }} />
 
         {/* Profile Completion Banner */}
         {showProfileBanner && (
@@ -1143,8 +1157,7 @@ export default function DashboardOverviewPage() {
                   </HStack>
                 </VStack>
                 <Button
-                  as="a"
-                  href="/plan"
+                  onClick={() => handleGetStartedWithPlan('starter')}
                   bg="#14c3cb"
                   color="white"
                   border="2px solid #14c3cb"
@@ -1233,8 +1246,7 @@ export default function DashboardOverviewPage() {
                   </HStack>
                 </VStack>
                 <Button
-                  as="a"
-                  href="/plan"
+                  onClick={() => handleGetStartedWithPlan('vip')}
                   bg={useColorModeValue('yellow.400', 'yellow.500')}
                   color={useColorModeValue('black', 'gray.800')}
                   _hover={{ bg: useColorModeValue('yellow.500', 'yellow.600')}}

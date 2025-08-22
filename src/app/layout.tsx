@@ -1,4 +1,5 @@
 // app/layout.tsx (Server Component)
+// Updated with comprehensive GIC peso pricing and group volume rank systems - Deployment 2025-01-22
 
 import type { Metadata, Viewport } from 'next';
 import { Montserrat, DM_Sans, Playfair_Display } from 'next/font/google'; // Updated font imports

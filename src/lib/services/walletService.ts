@@ -168,27 +168,36 @@ class WalletService {
       // Note: Automatic sync disabled to prevent user confusion
       // Manual sync can be triggered via /api/wallet/sync if needed
 
-      // Then get the updated balance directly from database
-      const { data, error } = await this.supabase
+      // Get calculated balance from transactions (same as balance API)
+      const { data: calculatedData, error: calculatedError } = await this.supabase
+        .rpc('get_calculated_wallet_balance', {
+          user_email_param: userEmail
+        });
+
+      // Also get token balances from user_wallets table
+      const { data: walletData, error: walletError } = await this.supabase
         .from('user_wallets')
-        .select('*')
+        .select('tic_balance, gic_balance, staking_balance, partner_wallet_balance, last_updated')
         .eq('user_email', userEmail)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error in direct wallet query:', error);
+      if (calculatedError) {
+        console.error('Error getting calculated balance:', calculatedError);
         return this.getBalanceFromLocalStorage(userEmail);
       }
 
-      if (data) {
+      const calculated = calculatedData?.[0];
+      const totalBalance = parseFloat(calculated?.total_balance?.toString() || '0');
+
+      if (calculated || walletData) {
         const balance: WalletBalance = {
-          total: parseFloat(data.total_balance) || 0,
-          tic: parseFloat(data.tic_balance) || 0,
-          gic: parseFloat(data.gic_balance) || 0,
-          staking: parseFloat(data.staking_balance) || 0,
-          partner_wallet: parseFloat(data.partner_wallet_balance) || 0,
-          portfolio_value: parseFloat(data.portfolio_value) || undefined,
-          lastUpdated: new Date(data.last_updated)
+          total: totalBalance,
+          tic: parseFloat(walletData?.tic_balance || '0'),
+          gic: parseFloat(walletData?.gic_balance || '0'),
+          staking: parseFloat(walletData?.staking_balance || '0'),
+          partner_wallet: parseFloat(walletData?.partner_wallet_balance || '0'),
+          portfolio_value: undefined,
+          lastUpdated: walletData?.last_updated ? new Date(walletData.last_updated) : new Date()
         };
 
         this.balanceCache = balance;

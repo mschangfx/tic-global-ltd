@@ -28,16 +28,20 @@ export async function POST(request: NextRequest) {
     // Get Supabase client
     const supabase = createClient();
 
-    // Store verification code in database
+    // Delete any existing verification codes for this email first
+    await supabase
+      .from('email_verifications')
+      .delete()
+      .eq('email', email);
+
+    // Store new verification code in database
     const { error: dbError } = await supabase
       .from('email_verifications')
-      .upsert({
+      .insert({
         email: email,
         code: verificationCode,
         expires_at: expiresAt.toISOString(),
         created_at: new Date().toISOString(),
-      }, {
-        onConflict: 'email'
       });
 
     if (dbError) {

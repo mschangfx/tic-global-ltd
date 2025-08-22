@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
     console.log('✅ Admin authentication passed');
 
     // Test 2: Check environment variables
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const adminToken = process.env.ADMIN_PANEL_TOKEN;
 
     console.log('🔍 Environment variables check:', {

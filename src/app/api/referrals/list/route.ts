@@ -27,16 +27,7 @@ export async function GET(request: NextRequest) {
         referred_email,
         level_depth,
         referral_code,
-        created_at,
-        user_profiles!referral_relationships_referred_email_fkey (
-          email,
-          full_name,
-          last_active
-        ),
-        user_plans!referral_relationships_referred_email_fkey (
-          plan_type,
-          status
-        )
+        created_at
       `)
       .eq('referrer_email', userEmail)
       .eq('is_active', true)
@@ -54,30 +45,21 @@ export async function GET(request: NextRequest) {
 
     // Transform and filter the data
     let referrals = (referralsData || []).map((referral: any) => {
-      const profile = referral.user_profiles;
-      const plan = referral.user_plans;
-      
-      // Determine status based on plan status and last activity
-      let userStatus = 'pending';
-      if (plan?.status === 'active') {
-        const lastActive = new Date(profile?.last_active || referral.created_at);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        userStatus = lastActive >= sevenDaysAgo ? 'active' : 'inactive';
-      }
+      // Simplified status - just mark as active for now
+      let userStatus = 'active';
 
       return {
         id: referral.id,
         email: referral.referred_email,
-        name: profile?.full_name || referral.referred_email.split('@')[0],
+        name: referral.referred_email.split('@')[0],
         level: referral.level_depth,
         joinDate: referral.created_at,
-        planType: plan?.plan_type || 'starter',
+        planType: 'starter', // Default plan type
         status: userStatus,
         totalEarnings: 0, // Will be calculated separately
         monthlyEarnings: 0, // Will be calculated separately
         referralsCount: 0, // Will be calculated separately
-        lastActive: profile?.last_active || referral.created_at,
+        lastActive: referral.created_at,
         referrerEmail: userEmail,
         referralCode: referral.referral_code || ''
       };
@@ -172,13 +154,8 @@ export async function POST(request: NextRequest) {
       .from('referral_relationships')
       .select(`
         level_depth,
-        user_profiles!referral_relationships_referred_email_fkey (
-          last_active
-        ),
-        user_plans!referral_relationships_referred_email_fkey (
-          plan_type,
-          status
-        )
+        referred_email,
+        created_at
       `)
       .eq('referrer_email', userEmail)
       .eq('is_active', true);
@@ -196,26 +173,14 @@ export async function POST(request: NextRequest) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     referrals.forEach((referral: any) => {
-      const plan = referral.user_plans;
-      const profile = referral.user_profiles;
-      
-      // Count by status
-      if (plan?.status === 'active') {
-        const lastActive = new Date(profile?.last_active || new Date());
-        if (lastActive >= sevenDaysAgo) {
-          activeReferrals++;
-        } else {
-          inactiveReferrals++;
-        }
-      } else {
-        pendingReferrals++;
-      }
+      // Simplified - just count as active for now
+      activeReferrals++;
 
       // Count by level
       levelBreakdown[referral.level_depth] = (levelBreakdown[referral.level_depth] || 0) + 1;
 
-      // Count by plan
-      const planType = plan?.plan_type || 'starter';
+      // Count by plan (default to starter)
+      const planType = 'starter';
       planBreakdown[planType] = (planBreakdown[planType] || 0) + 1;
     });
 

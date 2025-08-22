@@ -4,6 +4,91 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import NotificationService from '@/lib/services/notificationService';
 
+// Token allocation per plan (yearly amounts)
+const TOKEN_ALLOCATIONS = {
+  'vip': 6900,      // VIP Plan: 6900 TIC tokens per year
+  'starter': 500    // Starter Plan: 500 TIC tokens per year
+} as const;
+
+// Calculate daily token amount (yearly amount / 365 days)
+const getDailyTokenAmount = (planId: string): number => {
+  const yearlyAmount = TOKEN_ALLOCATIONS[planId as keyof typeof TOKEN_ALLOCATIONS] || 0;
+  return yearlyAmount / 365; // Exact value without rounding
+};
+
+// Function to distribute initial TIC tokens immediately after plan purchase
+async function distributeInitialTicTokens(
+  userEmail: string,
+  planId: string,
+  planName: string,
+  subscriptionId: string
+): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+  const dailyTokens = getDailyTokenAmount(planId);
+
+  if (dailyTokens <= 0) {
+    console.log(`No TIC tokens to distribute for plan: ${planId}`);
+    return;
+  }
+
+  console.log(`🎯 Distributing initial TIC tokens: ${dailyTokens} TIC to ${userEmail} for ${planName}`);
+
+  // Check if tokens already distributed today for this subscription
+  const { data: existingDistribution } = await supabaseAdmin
+    .from('token_distributions')
+    .select('id')
+    .eq('user_email', userEmail)
+    .eq('subscription_id', subscriptionId)
+    .eq('distribution_date', today)
+    .single();
+
+  if (existingDistribution) {
+    console.log(`TIC tokens already distributed today for ${userEmail} (${planName})`);
+    return;
+  }
+
+  // Create token distribution record
+  const { data: distribution, error: distError } = await supabaseAdmin
+    .from('token_distributions')
+    .insert({
+      user_email: userEmail,
+      subscription_id: subscriptionId,
+      plan_id: planId,
+      plan_name: planName,
+      token_amount: dailyTokens,
+      distribution_date: today,
+      status: 'completed',
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (distError) {
+    console.error(`Error creating initial distribution record for ${userEmail}:`, distError);
+    throw new Error(`Failed to create distribution record: ${distError.message}`);
+  }
+
+  // Update user's TIC token balance using RPC function with transaction history
+  const transactionId = `initial_tic_${planId}_${today}_${subscriptionId}`;
+  const description = `Initial TIC Distribution - ${planName} (${dailyTokens} TIC)`;
+
+  const { error: walletError } = await supabaseAdmin
+    .rpc('increment_tic_balance_daily_distribution', {
+      user_email_param: userEmail,
+      amount_param: dailyTokens,
+      transaction_id_param: transactionId,
+      description_param: description,
+      plan_type_param: planId
+    });
+
+  if (walletError) {
+    console.error(`Error updating TIC balance for ${userEmail}:`, walletError);
+    throw new Error(`Failed to update TIC balance: ${walletError.message}`);
+  }
+
+  console.log(`✅ Initial TIC distribution successful: ${dailyTokens} TIC distributed to ${userEmail}`);
+}
+
 // GET - Get available payment plans
 export async function GET(request: NextRequest) {
   try {
@@ -118,7 +203,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const currentBalance = balanceData?.[0]?.total_balance || 0;
+    const currentBalance = parseFloat(balanceData?.[0]?.total_balance?.toString() || '0');
 
     console.log('🔍 Payment processing for user:', userEmail);
     console.log('💰 Current balance:', currentBalance);
@@ -137,53 +222,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newBalance = currentBalance - plan.price;
+    // Use the debit_user_wallet function to properly deduct from wallet
+    const transactionId = `plan-purchase-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    console.log(`💰 Debiting $${plan.price} from wallet using debit_user_wallet function`);
 
-    // CRITICAL: Update the actual wallet balance in user_wallets table
-    console.log(`💰 Deducting $${plan.price} from wallet balance: ${currentBalance} -> ${newBalance}`);
+    const { error: debitError } = await supabase
+      .rpc('debit_user_wallet', {
+        user_email_param: userEmail,
+        amount_param: plan.price,
+        transaction_id_param: transactionId,
+        transaction_type_param: 'payment',
+        description_param: `Plan purchase: ${plan.name}`
+      });
 
-    const { error: walletUpdateError } = await supabase
-      .from('user_wallets')
-      .update({
-        total_balance: newBalance,
-        last_updated: new Date().toISOString()
-      })
-      .eq('user_email', userEmail);
-
-    if (walletUpdateError) {
-      console.error('❌ Error updating wallet balance:', walletUpdateError);
+    if (debitError) {
+      console.error('❌ Error debiting wallet:', debitError);
       return NextResponse.json(
-        { error: 'Failed to deduct from wallet balance', details: walletUpdateError.message },
+        { error: 'Failed to deduct from wallet balance', details: debitError.message },
         { status: 500 }
       );
     }
 
-    console.log('✅ Wallet balance updated successfully');
+    console.log('✅ Wallet debited successfully using transaction-based system');
 
-    // Create a withdrawal transaction for the plan purchase
-    const transactionId = `plan-purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log('💳 Creating wallet transaction:', transactionId, 'Amount:', -plan.price);
+    // Get the updated balance for payment transaction record
+    const { data: updatedBalanceData } = await supabase
+      .rpc('get_calculated_wallet_balance', { user_email_param: userEmail });
 
-    const { error: walletTransactionError } = await supabase
-      .from('wallet_transactions')
-      .insert({
-        user_email: userEmail,
-        transaction_id: transactionId,
-        transaction_type: 'payment',
-        amount: -plan.price, // Negative amount for withdrawal/deduction
-        balance_before: currentBalance,
-        balance_after: newBalance,
-        description: `Plan purchase: ${plan.name}`,
-        created_at: new Date().toISOString()
-      });
-
-    if (walletTransactionError) {
-      console.error('❌ Error creating wallet transaction:', walletTransactionError);
-      // Don't fail the payment if transaction recording fails, but log it
-      console.log('⚠️ Payment succeeded but transaction recording failed');
-    } else {
-      console.log('✅ Wallet transaction created successfully');
-    }
+    const newBalance = parseFloat(updatedBalanceData?.[0]?.total_balance?.toString() || '0');
 
     // Create payment transaction record
     const { data: paymentTransaction, error: transactionError } = await supabase
@@ -239,6 +305,16 @@ export async function POST(request: NextRequest) {
     if (subscriptionError) {
       console.error('Error creating subscription:', subscriptionError);
       // Don't fail the payment if subscription creation fails, but log it
+    }
+
+    // Immediately distribute first day's TIC tokens after plan purchase
+    if (subscription && !subscriptionError) {
+      try {
+        await distributeInitialTicTokens(userEmail, planId, plan.name, subscription.id);
+      } catch (distributionError) {
+        console.error('Error distributing initial TIC tokens:', distributionError);
+        // Don't fail the payment if token distribution fails, but log it
+      }
     }
 
     // Create notification for successful payment

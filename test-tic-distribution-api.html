@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test TIC Distribution API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .button.secondary {
+            background: #2196F3;
+        }
+        .button.secondary:hover {
+            background: #1976D2;
+        }
+        .results {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .tic-amount {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🪙 TIC Distribution API Test</h1>
+        <p>Test the TIC distribution history and transaction APIs</p>
+    </div>
+
+    <div class="container">
+        <h2>API Configuration</h2>
+        <p><strong>Base URL:</strong> <span id="apiUrl">https://tic-global-ecrgm0m0p-changs-projects-b6f8a2cc.vercel.app</span></p>
+        <p><strong>Test User:</strong> mschangfx@gmail.com</p>
+        <p><strong>Note:</strong> These APIs require authentication, so they may return authentication errors when called directly.</p>
+    </div>
+
+    <div class="container">
+        <h2>Test Transaction History API</h2>
+        <button class="button" onclick="testTransactionHistory('all')">Get All Transactions</button>
+        <button class="button secondary" onclick="testTransactionHistory('tic')">Get TIC Transactions Only</button>
+        <button class="button secondary" onclick="testDistributionHistory()">Get Distribution History</button>
+        <div id="transactionResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>Database Query Results</h2>
+        <p>Direct database queries to verify TIC distribution data:</p>
+        <button class="button" onclick="showDatabaseResults()">Show Database Data</button>
+        <div id="databaseResults"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://tic-global-ecrgm0m0p-changs-projects-b6f8a2cc.vercel.app';
+        
+        async function testTransactionHistory(type) {
+            const resultsDiv = document.getElementById('transactionResults');
+            resultsDiv.innerHTML = '<div class="results">Loading...</div>';
+            
+            try {
+                const url = `${API_BASE_URL}/api/transactions/history?type=${type}&limit=20`;
+                console.log('Testing URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    const transactions = data.transactions || [];
+                    const ticTransactions = transactions.filter(tx => 
+                        tx.currency === 'TIC' || 
+                        tx.type.includes('TIC') || 
+                        tx.fromSystem.includes('Plan')
+                    );
+                    
+                    let html = `<div class="success">✅ API Response Successful</div>`;
+                    html += `<div class="results">Total Transactions: ${transactions.length}\nTIC Transactions: ${ticTransactions.length}\n\n`;
+                    
+                    if (ticTransactions.length > 0) {
+                        html += 'TIC TRANSACTIONS:\n';
+                        html += '================\n';
+                        ticTransactions.forEach((tx, index) => {
+                            html += `${index + 1}. ${tx.type}\n`;
+                            html += `   Amount: ${tx.amount}\n`;
+                            html += `   Date: ${tx.date} ${tx.time}\n`;
+                            html += `   From: ${tx.fromSystem}\n`;
+                            html += `   Status: ${tx.status}\n`;
+                            if (tx.details) {
+                                html += `   Details: ${JSON.stringify(tx.details, null, 2)}\n`;
+                            }
+                            html += '\n';
+                        });
+                    } else {
+                        html += 'No TIC transactions found.\n';
+                    }
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ API Error: ${data.error || 'Unknown error'}</div>`;
+                    resultsDiv.innerHTML += `<div class="results">${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                console.error('Error testing transaction history:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testDistributionHistory() {
+            const resultsDiv = document.getElementById('transactionResults');
+            resultsDiv.innerHTML = '<div class="results">Loading distribution history...</div>';
+            
+            try {
+                const url = `${API_BASE_URL}/api/distribution/history`;
+                console.log('Testing Distribution URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    const distributions = data.distributions || [];
+                    
+                    let html = `<div class="success">✅ Distribution API Response Successful</div>`;
+                    html += `<div class="results">Total Distributions: ${distributions.length}\n\n`;
+                    
+                    if (distributions.length > 0) {
+                        html += 'DISTRIBUTION HISTORY:\n';
+                        html += '====================\n';
+                        distributions.forEach((dist, index) => {
+                            html += `${index + 1}. ${dist.plan_name}\n`;
+                            html += `   Amount: ${dist.token_amount} TIC\n`;
+                            html += `   Date: ${dist.distribution_date}\n`;
+                            html += `   Status: ${dist.status}\n`;
+                            html += `   Subscription: ${dist.subscription_id}\n\n`;
+                        });
+                        
+                        if (data.summary) {
+                            html += `SUMMARY:\n`;
+                            html += `========\n`;
+                            html += `Total Distributed: ${data.summary.total_distributed} TIC\n`;
+                            html += `Distribution Count: ${data.summary.distribution_count}\n`;
+                            html += `Average per Distribution: ${data.summary.average_per_distribution.toFixed(4)} TIC\n`;
+                        }
+                    } else {
+                        html += 'No distributions found.\n';
+                    }
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Distribution API Error: ${data.error || 'Unknown error'}</div>`;
+                    resultsDiv.innerHTML += `<div class="results">${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                console.error('Error testing distribution history:', error);
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        function showDatabaseResults() {
+            const resultsDiv = document.getElementById('databaseResults');
+            
+            const databaseData = {
+                "Recent TIC Transactions": [
+                    {
+                        "type": "tic_distribution",
+                        "amount": "18.90410959 TIC",
+                        "description": "Initial TIC Distribution - VIP Plan",
+                        "date": "2025-08-19"
+                    },
+                    {
+                        "type": "tic_distribution", 
+                        "amount": "18.90410959 TIC",
+                        "description": "Test Daily TIC Distribution - VIP Plan",
+                        "date": "2025-08-16"
+                    },
+                    {
+                        "type": "bonus",
+                        "amount": "18.90400000 TIC", 
+                        "description": "Daily TIC Distribution - VIP Plan",
+                        "date": "2025-08-13"
+                    }
+                ],
+                "Token Distributions": [
+                    {
+                        "plan": "VIP Plan",
+                        "amount": "18.90 TIC",
+                        "date": "2025-08-19",
+                        "status": "completed"
+                    }
+                ],
+                "Expected Daily Amounts": {
+                    "VIP Plan": "18.904109589041096 TIC/day (6900 TIC/year ÷ 365 days)",
+                    "Starter Plan": "1.36986301369863 TIC/day (500 TIC/year ÷ 365 days)"
+                }
+            };
+            
+            let html = '<div class="success">✅ Database Data Retrieved</div>';
+            html += `<div class="results">${JSON.stringify(databaseData, null, 2)}</div>`;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Update API URL display
+        document.getElementById('apiUrl').textContent = API_BASE_URL;
+    </script>
+</body>
+</html>

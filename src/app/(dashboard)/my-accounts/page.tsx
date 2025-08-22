@@ -33,7 +33,6 @@ import { FaPlus, FaListUl, FaThLarge, FaBoxOpen, FaCheckCircle, FaTimesCircle, F
 import Link from 'next/link'; // Added
 import { useRouter } from 'next/navigation'; // Added
 import TokenDistributionCard from '@/components/TokenDistributionCard'; // Added
-import TestTicDistribution from '@/components/TestTicDistribution'; // Added for testing
 import { useSession } from 'next-auth/react'; // Added
 
 // Data for plans (copied from app/(routes)/plan/page.tsx)
@@ -232,9 +231,6 @@ export default function MyAccountsPage() {
                           </VStack>
                         </CardBody>
                       </Card>
-
-                      {/* Test TIC Distribution Component */}
-                      <TestTicDistribution />
                     </VStack>
                   ) : (
                     // Empty state when no subscriptions

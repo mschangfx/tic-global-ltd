@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Updated with comprehensive GIC peso pricing and group volume rank systems - Deployment 2025-01-22
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',

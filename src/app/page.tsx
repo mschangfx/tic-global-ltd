@@ -1,4 +1,5 @@
 'use client'
+// Updated with GIC Peso Pricing System and Group Volume Rank Bonuses
 
 import {
   Box,

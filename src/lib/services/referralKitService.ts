@@ -46,11 +46,11 @@ class ReferralKitService {
   // Get or create referral kit data for a user
   async getReferralKitData(userEmail: string): Promise<ReferralKitData> {
     try {
-      // First, check if user already has a referral code
+      // First, check if user already has a referral code in user_referral_codes table
       const { data: userData, error: userError } = await this.supabase
-        .from('user_profiles')
+        .from('user_referral_codes')
         .select('referral_code')
-        .eq('email', userEmail)
+        .eq('user_email', userEmail)
         .single();
 
       let referralCode = userData?.referral_code;
@@ -94,7 +94,7 @@ class ReferralKitService {
       try {
         // Check if code already exists
         const { data: existingCode } = await this.supabase
-          .from('user_profiles')
+          .from('user_referral_codes')
           .select('referral_code')
           .eq('referral_code', code)
           .single();
@@ -102,13 +102,15 @@ class ReferralKitService {
         if (!existingCode) {
           // Code is unique, save it
           const { error: updateError } = await this.supabase
-            .from('user_profiles')
+            .from('user_referral_codes')
             .upsert({
-              email: userEmail,
+              user_email: userEmail,
               referral_code: code,
+              total_referrals: 0,
+              created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }, {
-              onConflict: 'email'
+              onConflict: 'user_email'
             });
 
           if (!updateError) {
@@ -142,37 +144,14 @@ class ReferralKitService {
         .eq('referrer_email', userEmail)
         .eq('is_active', true);
 
-      // Get active referrals (users with active plans and recent activity)
-      const { data: referralData } = await this.supabase
+      // Get active referrals (simplified - just count all active relationships for now)
+      const { count: activeReferralsCount } = await this.supabase
         .from('referral_relationships')
-        .select(`
-          referred_email,
-          user_profiles!referral_relationships_referred_email_fkey (
-            last_active
-          ),
-          user_plans!referral_relationships_referred_email_fkey (
-            status
-          )
-        `)
+        .select('*', { count: 'exact', head: true })
         .eq('referrer_email', userEmail)
         .eq('is_active', true);
 
-      let activeReferrals = 0;
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      if (referralData) {
-        activeReferrals = referralData.filter((ref: any) => {
-          const plan = ref.user_plans;
-          const profile = ref.user_profiles;
-          
-          if (plan?.status === 'active') {
-            const lastActive = new Date(profile?.last_active || new Date());
-            return lastActive >= sevenDaysAgo;
-          }
-          return false;
-        }).length;
-      }
+      const activeReferrals = activeReferralsCount || 0;
 
       // Get earnings data
       const { data: earningsData } = await this.supabase
@@ -232,11 +211,11 @@ class ReferralKitService {
       if (referralCodeData) {
         referrerData = { email: referralCodeData.user_email };
       } else {
-        // Fallback to user_profiles table
+        // Fallback to users table
         const { data: profileData, error: profileError } = await this.supabase
-          .from('user_profiles')
+          .from('users')
           .select('email')
-          .eq('referral_code', referrerCode)
+          .eq('referral_id', referrerCode)
           .single();
 
         if (profileData) {
@@ -256,32 +235,20 @@ class ReferralKitService {
 
       // Check if the new user is already referred by someone
       const { data: existingReferral } = await this.supabase
-        .from('user_profiles')
-        .select('referred_by_email')
-        .eq('email', newUserEmail)
+        .from('referral_relationships')
+        .select('referrer_email')
+        .eq('referred_email', newUserEmail)
         .single();
 
-      if (existingReferral?.referred_by_email) {
+      if (existingReferral?.referrer_email) {
         return {
           success: false,
           message: 'User already has a referrer'
         };
       }
 
-      // Update new user's profile with referrer information
-      const { error: updateError } = await this.supabase
-        .from('user_profiles')
-        .upsert({
-          email: newUserEmail,
-          referred_by_email: referrerData.email,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'email'
-        });
-
-      if (updateError) {
-        throw updateError;
-      }
+      // Note: We don't need to update user profile since we're tracking relationships
+      // in the referral_relationships table directly
 
       // Create referral relationship
       const { error: relationshipError } = await this.supabase
@@ -349,17 +316,17 @@ class ReferralKitService {
     try {
       // Find who referred the current referrer
       const { data: upperReferrer } = await this.supabase
-        .from('user_profiles')
-        .select('referred_by_email')
-        .eq('email', currentReferrerEmail)
+        .from('referral_relationships')
+        .select('referrer_email')
+        .eq('referred_email', currentReferrerEmail)
         .single();
 
-      if (upperReferrer?.referred_by_email) {
+      if (upperReferrer?.referrer_email) {
         // Create relationship at this level
         await this.supabase
           .from('referral_relationships')
           .insert({
-            referrer_email: upperReferrer.referred_by_email,
+            referrer_email: upperReferrer.referrer_email,
             referred_email: newUserEmail,
             level_depth: level,
             created_at: new Date().toISOString(),
@@ -368,7 +335,7 @@ class ReferralKitService {
 
         // Continue building chain
         await this.buildReferralChain(
-          upperReferrer.referred_by_email,
+          upperReferrer.referrer_email,
           newUserEmail,
           level + 1
         );
@@ -387,22 +354,22 @@ class ReferralKitService {
       while (attempts < maxAttempts) {
         const newCode = this.generateReferralCode(userEmail);
 
-        // Check if code already exists
+        // Check if code already exists in user_referral_codes table
         const { data: existingCode } = await this.supabase
-          .from('user_profiles')
+          .from('user_referral_codes')
           .select('referral_code')
           .eq('referral_code', newCode)
           .single();
 
         if (!existingCode) {
-          // Code is unique, update user's profile
+          // Code is unique, update user's referral code
           const { error: updateError } = await this.supabase
-            .from('user_profiles')
+            .from('user_referral_codes')
             .update({
               referral_code: newCode,
               updated_at: new Date().toISOString()
             })
-            .eq('email', userEmail);
+            .eq('user_email', userEmail);
 
           if (!updateError) {
             const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ticgloballtd.com';
@@ -451,11 +418,11 @@ class ReferralKitService {
         };
       }
 
-      // Fallback to user_profiles table
+      // Fallback to users table
       const { data: profileData, error: profileError } = await this.supabase
-        .from('user_profiles')
+        .from('users')
         .select('email')
-        .eq('referral_code', code)
+        .eq('referral_id', code)
         .single();
 
       if (profileData) {

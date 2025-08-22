@@ -221,6 +221,13 @@ export async function GET(request: NextRequest) {
         limit,
         offset,
         hasMore: distributions?.length === limit
+      },
+      timestamp: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
 

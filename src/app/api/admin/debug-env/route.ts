@@ -9,11 +9,11 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    hasSupabaseKey: !!process.env.SUPABASE_SERVICE_KEY,
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     hasAdminToken: !!process.env.ADMIN_PANEL_TOKEN,
-    supabaseUrlLength: process.env.SUPABASE_URL?.length || 0,
-    supabaseKeyLength: process.env.SUPABASE_SERVICE_KEY?.length || 0,
+    supabaseUrlLength: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
+    supabaseKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
     adminTokenLength: process.env.ADMIN_PANEL_TOKEN?.length || 0,
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.VERCEL_ENV,

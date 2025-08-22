@@ -27,7 +27,7 @@ import {
 import TRC20QRCode from '@/components/TRC20QRCode';
 
 export default function TestTRC20QRPage() {
-  const [testAddress, setTestAddress] = useState('TEHq42c1Kyhe7ShAWYDS61c7aYKNPsT8PF');
+  const [testAddress, setTestAddress] = useState('TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ');
   const [testAmount, setTestAmount] = useState('100');
   const [includeAmount, setIncludeAmount] = useState(false);
   const [qrSize, setQrSize] = useState('300');
@@ -140,7 +140,7 @@ export default function TestTRC20QRPage() {
         
         <Alert status="info">
           <AlertIcon />
-          Test the TRC20 QR code generation functionality for wallet address: TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ
+          Test the TRC20 QR code generation functionality for wallet address: TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ
         </Alert>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>

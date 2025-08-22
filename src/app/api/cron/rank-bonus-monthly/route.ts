@@ -91,14 +91,12 @@ export async function POST(request: NextRequest) {
         const userRank = getUserRank(totalReferrals);
         const bonusAmount = getRankBonusAmount(userRank);
 
-        // Only process users with bonus-earning ranks
-        if (bonusAmount > 0) {
-          // Process the bonus using database function
-          const { data, error } = await supabaseAdmin
-            .rpc('process_user_rank_bonus', {
-              user_email_param: userEmail,
-              distribution_month_param: currentMonth
-            });
+        // Process using group volume rank bonus system with GIC peso pricing
+        const { data, error } = await supabaseAdmin
+          .rpc('process_rank_bonus_with_gic_pricing', {
+            user_email_param: userEmail,
+            distribution_month_param: currentMonth
+          });
 
           if (error) {
             throw new Error(`Database error for ${userEmail}: ${error.message}`);

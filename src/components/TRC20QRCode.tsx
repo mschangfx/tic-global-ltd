@@ -37,7 +37,7 @@ interface TRC20QRCodeProps {
 }
 
 const TRC20_CONFIG = {
-  address: 'TBpga5zct6vKAenvPecepzUfuK8raGA3Jh',
+  address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
   network: 'TRC20',
   symbol: 'USDT',
   explorer: 'https://tronscan.org/#/address/'

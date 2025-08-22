@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         method_id: 'usdt-trc20',
         method_name: 'USDT',
         network: 'TRC20',
-        deposit_address: 'TTrhsfwjmFQwvG784GxKUj2Q3GFv3tX9qQ',
+        deposit_address: 'TKDpaQGG9AWMpEaH6g73hPt5MekQ3abpHZ',
         transaction_hash: txHash,
         confirmation_count: 0,
         required_confirmations: 1,
