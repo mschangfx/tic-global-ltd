@@ -1219,7 +1219,7 @@
             try {
                 showMessage(`🔄 Loading ${status} verifications...`, 'success');
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents?status=${status}&limit=50`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents?status=${status}&limit=50&_t=${Date.now()}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1233,17 +1233,6 @@
 
                 const data = await response.json();
                 console.log('✅ Verification data loaded:', data);
-                console.log('📋 Documents received:', data.documents);
-
-                // Debug: Log first document's user data
-                if (data.documents && data.documents.length > 0) {
-                    console.log('🔍 First document user data:', data.documents[0].users);
-                    console.log('👤 User name fields:', {
-                        first_name: data.documents[0].users?.first_name,
-                        last_name: data.documents[0].users?.last_name,
-                        address: data.documents[0].users?.address
-                    });
-                }
 
                 displayVerifications(data.documents || []);
                 updateVerificationStats();
@@ -1280,15 +1269,6 @@
             documents.forEach(doc => {
                 const user = doc.users;
                 const statusClass = `status-${doc.verification_status}`;
-
-                // Debug: Log user data for each document
-                console.log('🔍 Processing document for user:', {
-                    email: user?.email,
-                    first_name: user?.first_name,
-                    last_name: user?.last_name,
-                    address: user?.address,
-                    full_user_object: user
-                });
 
                 html += `
                     <div class="verification-card">
