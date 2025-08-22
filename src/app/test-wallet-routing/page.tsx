@@ -163,7 +163,7 @@ export default function TestWalletRouting() {
           duration: 5000,
           isClosable: true,
         });
-        setTestResults(prev => ({ ...prev, rank_bonus_test: data.data }));
+        setTestResults((prev: any) => ({ ...prev, rank_bonus_test: data.data }));
         fetchRoutingStatus(); // Refresh status
       } else {
         toast({
@@ -207,7 +207,7 @@ export default function TestWalletRouting() {
           duration: 5000,
           isClosable: true,
         });
-        setTestResults(prev => ({ ...prev, separation_test: data.data }));
+        setTestResults((prev: any) => ({ ...prev, separation_test: data.data }));
       } else {
         toast({
           title: 'Verification Failed',
