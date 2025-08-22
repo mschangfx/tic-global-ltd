@@ -534,6 +534,15 @@
                 
                 <!-- Transactions Tab -->
                 <div id="transactionsTab" class="tab-content active">
+                    <div class="transaction-controls" style="margin-bottom: 20px;">
+                        <h3>💰 Deposits & Withdrawals</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <button onclick="loadTransactions('pending')" class="btn btn-primary">📋 Pending</button>
+                            <button onclick="loadTransactions('completed')" class="btn" style="background: #27ae60; color: white;">✅ Completed</button>
+                            <button onclick="loadTransactions('cancelled')" class="btn" style="background: #e74c3c; color: white;">❌ Cancelled/Rejected</button>
+                            <button onclick="loadTransactions('all')" class="btn" style="background: #6c757d; color: white;">📊 All</button>
+                        </div>
+                    </div>
                     <div id="transactionsList">
                         <div class="loading">
                             <h3>🔄 Loading transactions...</h3>
@@ -611,6 +620,43 @@
             rejected: 0,
             total: 0
         };
+
+        // Global variable to track current transaction status filter
+        let currentTransactionStatus = 'all';
+
+        // Helper functions for transaction status display
+        function getStatusColor(status) {
+            switch(status) {
+                case 'pending': return '#fff3cd';
+                case 'completed': return '#d4edda';
+                case 'rejected': return '#f8d7da';
+                case 'cancelled': return '#f8d7da';
+                case 'failed': return '#f8d7da';
+                default: return '#e2e3e5';
+            }
+        }
+
+        function getStatusTextColor(status) {
+            switch(status) {
+                case 'pending': return '#856404';
+                case 'completed': return '#155724';
+                case 'rejected': return '#721c24';
+                case 'cancelled': return '#721c24';
+                case 'failed': return '#721c24';
+                default: return '#383d41';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'pending': return '⏳';
+                case 'completed': return '✅';
+                case 'rejected': return '❌';
+                case 'cancelled': return '❌';
+                case 'failed': return '💥';
+                default: return '❓';
+            }
+        }
         let countdownInterval = null;
         const AUTO_REFRESH_SECONDS = 10;
         let nextRefreshTime = 0;
@@ -669,7 +715,7 @@
 
             // Start auto-refresh interval
             autoRefreshInterval = setInterval(() => {
-                loadTransactions(true); // Pass true to indicate this is an auto-refresh
+                loadTransactions(currentTransactionStatus, true); // Pass current status and auto-refresh flag
                 nextRefreshTime = Date.now() + (AUTO_REFRESH_SECONDS * 1000); // Reset countdown
             }, AUTO_REFRESH_SECONDS * 1000);
 
@@ -788,7 +834,7 @@
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('dashboardSection').classList.remove('hidden');
-                loadTransactions();
+                loadTransactions('all'); // Load all transactions by default
                 updateVerificationStats(); // Load verification stats
                 startAutoRefresh(); // Start auto-refresh after login
             } else {
@@ -804,12 +850,15 @@
             document.getElementById('password').value = '';
         }
 
-        async function loadTransactions(isAutoRefresh = false) {
+        async function loadTransactions(status = 'all', isAutoRefresh = false) {
             try {
+                // Update current status tracker
+                currentTransactionStatus = status;
+
                 if (!isAutoRefresh) {
-                    showMessage('🔄 Loading transactions...', 'success');
+                    showMessage(`🔄 Loading ${status} transactions...`, 'success');
                 }
-                
+
                 // Use service role key for admin operations
                 const headers = {
                     'apikey': SUPABASE_SERVICE_KEY,
@@ -817,9 +866,24 @@
                     'Content-Type': 'application/json'
                 };
 
+                // Build query based on status filter
+                let depositsQuery = `${SUPABASE_URL}/rest/v1/deposits?select=*&order=created_at.desc&limit=50`;
+                let withdrawalsQuery = `${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&order=created_at.desc&limit=50`;
+
+                if (status !== 'all') {
+                    if (status === 'cancelled') {
+                        // For deposits, 'cancelled' means 'rejected'
+                        depositsQuery += `&status=eq.rejected`;
+                        withdrawalsQuery += `&status=eq.cancelled`;
+                    } else {
+                        depositsQuery += `&status=eq.${status}`;
+                        withdrawalsQuery += `&status=eq.${status}`;
+                    }
+                }
+
                 const [depositsResponse, withdrawalsResponse] = await Promise.all([
-                    fetch(`${SUPABASE_URL}/rest/v1/deposits?status=eq.pending&select=*`, { headers }),
-                    fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?status=eq.pending&select=*`, { headers })
+                    fetch(depositsQuery, { headers }),
+                    fetch(withdrawalsQuery, { headers })
                 ]);
 
                 console.log('🔍 Deposits Response Status:', depositsResponse.status);
@@ -878,7 +942,8 @@
                 }
 
                 displayTransactions(transactions);
-                showMessage(`✅ Loaded ${transactions.length} pending transactions (${deposits.length} deposits, ${withdrawals.length} withdrawals)`, 'success');
+                const statusText = status === 'all' ? 'total' : status;
+                showMessage(`✅ Loaded ${transactions.length} ${statusText} transactions (${deposits.length} deposits, ${withdrawals.length} withdrawals)`, 'success');
             } catch (error) {
                 console.error('Error loading transactions:', error);
                 showMessage(`❌ Error loading transactions: ${error.message}`, 'error');
@@ -921,8 +986,8 @@
                             <h3 style="margin: 0 0 5px 0; color: #2c3e50;">
                                 ${transaction.type === 'deposit' ? '💰' : '💸'} ${transaction.type.toUpperCase()}
                             </h3>
-                            <span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                                ⏳ PENDING
+                            <span style="background: ${getStatusColor(transaction.status)}; color: ${getStatusTextColor(transaction.status)}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                ${getStatusIcon(transaction.status)} ${transaction.status.toUpperCase()}
                             </span>
                         </div>
                         <div style="text-align: right;">
