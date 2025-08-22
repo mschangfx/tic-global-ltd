@@ -11,13 +11,11 @@ import {
   Card,
   CardBody,
   Badge,
-  Icon,
-  useColorModeValue,
-  Divider,
-  Flex,
-  Spacer,
   Button,
+  Spinner,
+  useColorModeValue,
   useToast,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -25,42 +23,25 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
   FormControl,
   FormLabel,
   Input,
   Select,
-  Textarea,
-  PinInput,
-  PinInputField,
-  Progress,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Spinner,
-  useColorMode,
+  Flex,
+  Icon,
+  Divider,
+  PinInput,
+  PinInputField,
 } from '@chakra-ui/react';
-import {
-  FaCheckCircle,
-  FaTimesCircle,
-  FaClock,
-  FaEnvelope,
-  FaPhone,
-  FaUser,
-  FaIdCard,
-  FaEdit,
-  FaUpload,
-  FaEye,
-  FaEyeSlash,
-  FaSpinner,
-  FaExclamationTriangle,
-  FaInfoCircle,
-} from 'react-icons/fa';
-import { createClient } from '@/lib/supabase/client';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { FaUser, FaEnvelope, FaIdCard, FaEdit } from 'react-icons/fa';
 
+// Types
 interface VerificationStatus {
   emailVerified: boolean;
   phoneVerified: boolean;
@@ -71,13 +52,14 @@ interface VerificationStatus {
 
 interface UserProfile {
   email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  country: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  country?: string;
 }
 
 export default function ProfilePage() {
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
   const { data: session, status } = useSession();
   const router = useRouter();
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
@@ -124,30 +106,13 @@ export default function ProfilePage() {
   const [issuingCountry, setIssuingCountry] = useState('');
   const [isIdentityUploading, setIsIdentityUploading] = useState(false);
 
-  // Removed unused GIC pricing state
-
+  // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
   const textColor = useColorModeValue('gray.800', 'white');
   const subtleTextColor = useColorModeValue('gray.600', 'gray.400');
 
-  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
-  // Show loading spinner while session is loading or fetching profile
-  if (status === 'loading' || (status === 'authenticated' && isLoading)) {
-    return (
-      <Box bg={bgColor} minH="100vh" py={8}>
-        <Container maxW="4xl">
-          <VStack spacing={8} align="center" justify="center" minH="60vh">
-            <Spinner size="xl" color="blue.500" thickness="4px" />
-            <Text fontSize="lg" color={subtleTextColor}>
-              Loading profile...
-            </Text>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
-
+  // ✅ ALL EFFECTS AFTER STATE HOOKS
   // Handle unauthenticated redirect via useEffect
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -155,16 +120,72 @@ export default function ProfilePage() {
     }
   }, [status, router]);
 
-  // Show loading placeholder while redirecting
-  if (status === 'unauthenticated') {
-    return (
-      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
-        <Spinner />
-      </Box>
-    );
-  }
+  // Unified effect to fetch profile data (prevents duplication and race conditions)
+  useEffect(() => {
+    let isMounted = true;
 
-  // Manual refresh function
+    const fetchUserProfile = async () => {
+      if (status !== 'authenticated' || !session?.user?.email) return;
+
+      try {
+        setIsLoading(true);
+
+        // Use API route to fetch profile data
+        const response = await fetch('/api/auth/verification-status', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile data');
+        }
+
+        const data = await response.json();
+        console.log('📋 Profile data fetched:', data);
+
+        if (data.success && data.user) {
+          setUserProfile({
+            email: data.user.email,
+            firstName: data.user.first_name,
+            lastName: data.user.last_name,
+            phoneNumber: data.user.phone_number,
+            country: data.user.country,
+          });
+
+          setVerificationStatus({
+            emailVerified: data.user.email_verified || false,
+            phoneVerified: data.user.phone_verified || false,
+            profileCompleted: data.user.profile_completed || false,
+            identityVerified: data.user.identity_verification_status === 'approved',
+            identityStatus: data.user.identity_verification_submitted
+              ? data.user.identity_verification_status || 'pending'
+              : null,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load profile data',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [status, session?.user?.email, toast]);
+
+  // ✅ FUNCTION DEFINITIONS AFTER HOOKS BUT BEFORE RENDER LOGIC
   const refreshVerificationStatus = async () => {
     try {
       setIsRefreshing(true);
@@ -195,34 +216,6 @@ export default function ProfilePage() {
             : null,
         };
 
-        // Check if verification status has changed
-        const hasStatusChanged =
-          newVerificationStatus.identityVerified !== verificationStatus.identityVerified ||
-          newVerificationStatus.identityStatus !== verificationStatus.identityStatus;
-
-        if (hasStatusChanged) {
-          console.log('✅ Verification status changed, updating UI');
-
-          // Show toast notification for status changes
-          if (newVerificationStatus.identityStatus === 'approved' && !verificationStatus.identityVerified) {
-            toast({
-              title: '🎉 Identity Verified!',
-              description: 'Your identity verification has been approved.',
-              status: 'success',
-              duration: 5000,
-              isClosable: true,
-            });
-          } else if (newVerificationStatus.identityStatus === 'rejected' && verificationStatus.identityStatus !== 'rejected') {
-            toast({
-              title: '❌ Identity Verification Rejected',
-              description: 'Your identity verification was rejected. Please resubmit your documents.',
-              status: 'error',
-              duration: 8000,
-              isClosable: true,
-            });
-          }
-        }
-
         setVerificationStatus(newVerificationStatus);
         setLastStatusCheck(new Date());
 
@@ -248,108 +241,6 @@ export default function ProfilePage() {
     }
   };
 
-
-
-  const fetchUserProfile = async () => {
-    try {
-      // Use API route to fetch profile data
-      const response = await fetch('/api/auth/verification-status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        console.error('API response not ok:', response.status, response.statusText);
-        throw new Error(`Failed to fetch profile data: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Profile API response:', data);
-
-      if (data.success && data.user) {
-        setUserProfile({
-          email: data.user.email || '',
-          firstName: data.user.first_name || '',
-          lastName: data.user.last_name || '',
-          phoneNumber: data.user.phone_number || '',
-          country: data.user.country_of_residence || '',
-        });
-
-        setVerificationStatus({
-          emailVerified: data.user.email_verified || false,
-          phoneVerified: data.user.phone_verified || false,
-          profileCompleted: data.user.profile_completed || false,
-          identityVerified: data.user.identity_verification_status === 'approved',
-          identityStatus: data.user.identity_verification_submitted
-            ? data.user.identity_verification_status || 'pending'
-            : null,
-        });
-      } else if (data.success === false) {
-        // Handle API error response
-        console.error('API returned error:', data.error);
-        throw new Error(data.error || 'Failed to load profile data');
-      } else {
-        // Handle unexpected response format
-        console.error('Unexpected API response format:', data);
-        throw new Error('Unexpected response format');
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-
-      // Set default values to prevent UI errors
-      setUserProfile({
-        email: session?.user?.email || '',
-        firstName: '',
-        lastName: '',
-        phoneNumber: '',
-        country: '',
-      });
-
-      setVerificationStatus({
-        emailVerified: false,
-        phoneVerified: false,
-        profileCompleted: false,
-        identityVerified: false,
-        identityStatus: null,
-      });
-
-      toast({
-        title: "Error",
-        description: "Failed to load profile data. Please refresh the page.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
-
-  // Unified effect to fetch profile data (prevents duplication and race conditions)
-  useEffect(() => {
-    let isMounted = true;
-    const ac = new AbortController();
-
-    const run = async () => {
-      if (status !== 'authenticated' || !session?.user?.email) return;
-      try {
-        setIsLoading(true);
-        await fetchUserProfile(); // re-use existing function (it does its own try/catch)
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    run();
-
-    return () => {
-      isMounted = false;
-      ac.abort();
-    };
-  }, [status, session?.user?.email]);
-
-
-
   // Email verification functions
   const sendEmailVerificationCode = async () => {
     const userEmail = session?.user?.email || userProfile?.email;
@@ -371,9 +262,7 @@ export default function ProfilePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: userEmail,
-        }),
+        body: JSON.stringify({ email: userEmail }),
       });
 
       const data = await response.json();
@@ -382,7 +271,7 @@ export default function ProfilePage() {
         setIsEmailCodeSent(true);
         toast({
           title: 'Verification Code Sent',
-          description: 'Please check your email for the 6-digit verification code',
+          description: `A 6-digit code has been sent to ${userEmail}`,
           status: 'success',
           duration: 5000,
           isClosable: true,
@@ -406,10 +295,10 @@ export default function ProfilePage() {
 
   const verifyEmailCode = async () => {
     const userEmail = session?.user?.email || userProfile?.email;
-    if (!userEmail || emailCode.length !== 6) {
+    if (!userEmail || !emailCode) {
       toast({
         title: 'Error',
-        description: 'Please enter a valid 6-digit code',
+        description: 'Email address and verification code are required',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -424,10 +313,7 @@ export default function ProfilePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: userEmail,
-          code: emailCode,
-        }),
+        body: JSON.stringify({ email: userEmail, code: emailCode }),
       });
 
       const data = await response.json();
@@ -438,21 +324,20 @@ export default function ProfilePage() {
         setEmailCode('');
         setIsEmailCodeSent(false);
         toast({
-          title: 'Email Verified',
-          description: 'Your email has been successfully verified',
+          title: '✅ Email Verified!',
+          description: 'Your email has been successfully verified.',
           status: 'success',
           duration: 5000,
           isClosable: true,
         });
-        fetchUserProfile(); // Refresh data
       } else {
-        throw new Error(data.error || 'Invalid verification code');
+        throw new Error(data.error || 'Failed to verify email code');
       }
     } catch (error: any) {
-      console.error('Error verifying email:', error);
+      console.error('Error verifying email code:', error);
       toast({
-        title: 'Verification Failed',
-        description: error.message || 'Invalid verification code',
+        title: 'Error',
+        description: error.message || 'Failed to verify email code',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -462,271 +347,36 @@ export default function ProfilePage() {
     }
   };
 
-  // Profile completion functions
-  const submitProfile = async () => {
-    const userEmail = session?.user?.email || userProfile?.email;
-    if (!userEmail) {
-      toast({
-        title: 'Error',
-        description: 'No email address found',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'dateOfBirth', 'countryOfBirth', 'gender', 'address'];
-    const missingFields = requiredFields.filter(field => !profileForm[field as keyof typeof profileForm]);
-
-    if (missingFields.length > 0) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    try {
-      setIsProfileSubmitting(true);
-      const response = await fetch('/api/auth/complete-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          firstName: profileForm.firstName,
-          lastName: profileForm.lastName,
-          dateOfBirth: profileForm.dateOfBirth,
-          countryOfBirth: profileForm.countryOfBirth,
-          gender: profileForm.gender,
-          address: profileForm.address,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setVerificationStatus(prev => ({ ...prev, profileCompleted: true }));
-        onProfileModalClose();
-        toast({
-          title: 'Profile Completed',
-          description: 'Your profile has been successfully completed',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        fetchUserProfile(); // Refresh data
-      } else {
-        throw new Error(data.error || 'Failed to complete profile');
-      }
-    } catch (error: any) {
-      console.error('Error completing profile:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to complete profile',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsProfileSubmitting(false);
-    }
-  };
-
-  // Identity verification functions
-  const uploadIdentityDocument = async () => {
-    const userEmail = session?.user?.email || userProfile?.email;
-    if (!userEmail || !selectedFile || !documentType || !issuingCountry) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please select a document, document type, and issuing country',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    try {
-      setIsIdentityUploading(true);
-      const formData = new FormData();
-      formData.append('document', selectedFile);
-      formData.append('email', userEmail);
-      formData.append('documentType', documentType);
-      formData.append('issuingCountry', issuingCountry);
-
-      const response = await fetch('/api/auth/upload-identity-document', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setVerificationStatus(prev => ({
-          ...prev,
-          identityStatus: 'pending'
-        }));
-        onIdentityModalClose();
-        setSelectedFile(null);
-        setDocumentType('');
-        setIssuingCountry('');
-        toast({
-          title: 'Document Uploaded',
-          description: 'Your identity document has been uploaded and is under review',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        fetchUserProfile(); // Refresh data
-      } else {
-        throw new Error(data.error || 'Failed to upload document');
-      }
-    } catch (error: any) {
-      console.error('Error uploading document:', error);
-      toast({
-        title: 'Upload Failed',
-        description: error.message || 'Failed to upload document',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsIdentityUploading(false);
-    }
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: 'Invalid File Type',
-          description: 'Please select a JPEG, PNG, or PDF file',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-        return;
-      }
-
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File Too Large',
-          description: 'Please select a file smaller than 10MB',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-        return;
-      }
-
-      setSelectedFile(file);
-    }
-  };
-
-  const getOverallStatus = () => {
-    const { emailVerified, profileCompleted, identityVerified } = verificationStatus;
-
-    if (emailVerified && profileCompleted && identityVerified) {
-      return { status: 'Fully Verified', color: 'green', icon: FaCheckCircle };
-    } else if (emailVerified && profileCompleted) {
-      return { status: 'Pending Identity Review', color: 'yellow', icon: FaClock };
-    } else {
-      return { status: 'Verification Incomplete', color: 'red', icon: FaTimesCircle };
-    }
-  };
-
-  const getStepStatus = (isCompleted: boolean, isPending: boolean = false) => {
-    if (isCompleted) {
-      return { text: 'Confirmed', color: 'green', icon: FaCheckCircle };
-    } else if (isPending) {
-      return { text: 'Pending Review', color: 'yellow', icon: FaClock };
-    } else {
-      return { text: 'Not Completed', color: 'red', icon: FaTimesCircle };
-    }
-  };
-
-  const verificationSteps = [
-    {
-      step: 1,
-      title: 'Email Verification',
-      description: 'Verify your email address to secure your account',
-      icon: FaEnvelope,
-      isCompleted: verificationStatus.emailVerified,
-      details: userProfile?.email || 'No email provided',
-      actionText: 'Verify Email',
-      onAction: onEmailModalOpen,
-    },
-    {
-      step: 2,
-      title: 'Profile Completion',
-      description: 'Complete your personal information and profile details',
-      icon: FaUser,
-      isCompleted: verificationStatus.profileCompleted,
-      details: userProfile?.firstName && userProfile?.lastName
-        ? `${userProfile.firstName} ${userProfile.lastName}`
-        : 'Profile not completed',
-      actionText: 'Complete Profile',
-      onAction: () => {
-        // Pre-fill form with existing data
-        setProfileForm({
-          firstName: userProfile?.firstName || '',
-          lastName: userProfile?.lastName || '',
-          dateOfBirth: '',
-          countryOfBirth: userProfile?.country || '',
-          gender: '',
-          address: '',
-        });
-        onProfileModalOpen();
-      },
-    },
-    {
-      step: 3,
-      title: 'Identity Verification',
-      description: 'Upload identity documents for account verification',
-      icon: FaIdCard,
-      isCompleted: verificationStatus.identityVerified,
-      isPending: verificationStatus.identityStatus === 'pending',
-      details: verificationStatus.identityStatus === 'approved'
-        ? 'Identity verified successfully'
-        : verificationStatus.identityStatus === 'pending'
-        ? 'Under review by our team'
-        : verificationStatus.identityStatus === 'rejected'
-        ? 'Verification rejected - please resubmit'
-        : 'Identity verification not submitted',
-      actionText: verificationStatus.identityStatus === 'rejected' ? 'Resubmit Documents' : 'Upload Documents',
-      onAction: onIdentityModalOpen,
-      showAction: verificationStatus.identityStatus !== 'pending' && !verificationStatus.identityVerified,
-    },
-  ];
-
-  const overallStatus = getOverallStatus();
-
-  if (isLoading) {
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
+  // Show loading spinner while session is loading or fetching profile
+  if (status === 'loading' || (status === 'authenticated' && isLoading)) {
     return (
-      <Box p={{ base: 4, md: 6 }} bg={bgColor} minH="calc(100vh - 60px)">
+      <Box bg={bgColor} minH="100vh" py={8}>
         <Container maxW="4xl">
-          <Text>Loading profile...</Text>
+          <VStack spacing={8} align="center" justify="center" minH="60vh">
+            <Spinner size="xl" color="blue.500" thickness="4px" />
+            <Text fontSize="lg" color={subtleTextColor}>
+              Loading profile...
+            </Text>
+          </VStack>
         </Container>
       </Box>
     );
   }
 
+  // Show loading placeholder while redirecting
+  if (status === 'unauthenticated') {
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
+        <Spinner />
+      </Box>
+    );
+  }
+
   return (
-    <Box p={{ base: 4, md: 6 }} bg={bgColor} minH="calc(100vh - 60px)">
+    <Box bg={bgColor} minH="100vh" py={8}>
       <Container maxW="4xl">
         <VStack spacing={8} align="stretch">
-          
           {/* Header */}
           <Box textAlign="center" py={4}>
             <Flex justify="center" align="center" mb={4}>
@@ -766,18 +416,7 @@ export default function ProfilePage() {
                   colorScheme="blue"
                   size="sm"
                   leftIcon={<Icon as={FaEdit} />}
-                  onClick={() => {
-                    // Pre-fill form with existing data for editing
-                    setProfileForm({
-                      firstName: userProfile?.firstName || '',
-                      lastName: userProfile?.lastName || '',
-                      dateOfBirth: '',
-                      countryOfBirth: userProfile?.country || '',
-                      gender: '',
-                      address: '',
-                    });
-                    onEditProfileModalOpen();
-                  }}
+                  onClick={onEditProfileModalOpen}
                 >
                   Edit Profile
                 </Button>
@@ -893,17 +532,7 @@ export default function ProfilePage() {
                       colorScheme="orange"
                       variant="outline"
                       leftIcon={<Icon as={FaUser} />}
-                      onClick={() => {
-                        setProfileForm({
-                          firstName: userProfile?.firstName || '',
-                          lastName: userProfile?.lastName || '',
-                          dateOfBirth: '',
-                          countryOfBirth: userProfile?.country || '',
-                          gender: '',
-                          address: '',
-                        });
-                        onProfileModalOpen();
-                      }}
+                      onClick={onProfileModalOpen}
                     >
                       Complete Profile
                     </Button>
@@ -923,771 +552,8 @@ export default function ProfilePage() {
               </VStack>
             </CardBody>
           </Card>
-
-          {/* Account Status Card */}
-          <Card bg={cardBg} shadow="lg">
-            <CardBody p={8}>
-              <Flex align="center" justify="space-between" mb={6}>
-                <Heading as="h2" size="lg" color={textColor}>
-                  Account Status
-                </Heading>
-
-                {/* Quick Action Button */}
-                {overallStatus.status !== 'Fully Verified' && (
-                  <Button
-                    colorScheme="blue"
-                    size="md"
-                    onClick={() => router.push('/verify-account')}
-                    leftIcon={<Icon as={FaUser} />}
-                  >
-                    Complete Verification
-                  </Button>
-                )}
-              </Flex>
-
-              <Flex align="center" justify="space-between">
-                <HStack spacing={3}>
-                  <Icon
-                    as={overallStatus.icon}
-                    color={`${overallStatus.color}.500`}
-                    boxSize={6}
-                  />
-                  <VStack spacing={0} align="start">
-                    <Text fontSize="xl" fontWeight="bold" color={textColor}>
-                      {overallStatus.status}
-                    </Text>
-                    <Text fontSize="sm" color={subtleTextColor}>
-                      {overallStatus.status === 'Fully Verified'
-                        ? 'All verification steps completed successfully'
-                        : overallStatus.status === 'Pending Identity Review'
-                        ? 'Identity verification is under review'
-                        : 'Please complete all verification steps'
-                      }
-                    </Text>
-                  </VStack>
-                </HStack>
-                <Badge
-                  colorScheme={overallStatus.color}
-                  size="lg"
-                  px={4}
-                  py={2}
-                  borderRadius="full"
-                >
-                  {overallStatus.status}
-                </Badge>
-              </Flex>
-
-              {/* Progress Bar for incomplete verification */}
-              {overallStatus.status !== 'Fully Verified' && (
-                <Box mt={6}>
-                  <Text fontSize="sm" color={subtleTextColor} mb={2}>
-                    Verification Progress
-                  </Text>
-                  <Progress
-                    value={
-                      (Number(verificationStatus.emailVerified) +
-                       Number(verificationStatus.profileCompleted) +
-                       Number(verificationStatus.identityVerified)) / 3 * 100
-                    }
-                    colorScheme={overallStatus.color}
-                    size="md"
-                    borderRadius="full"
-                  />
-                </Box>
-              )}
-
-              {/* Manual Refresh Status */}
-              {verificationStatus.identityStatus === 'pending' && (
-                <Box mt={4} p={3} bg="blue.50" borderRadius="md" border="1px solid" borderColor="blue.200">
-                  <HStack spacing={3} justify="space-between">
-                    <VStack align="start" spacing={1}>
-                      <Text fontSize="sm" color="blue.700" fontWeight="medium">
-                        ⏳ Identity verification pending
-                      </Text>
-                      <Text fontSize="xs" color="blue.600">
-                        Check back regularly for status updates
-                      </Text>
-                      {lastStatusCheck && (
-                        <Text fontSize="xs" color="blue.500">
-                          Last checked: {lastStatusCheck.toLocaleTimeString()}
-                        </Text>
-                      )}
-                    </VStack>
-                    <Button
-                      size="sm"
-                      colorScheme="blue"
-                      variant="outline"
-                      onClick={refreshVerificationStatus}
-                      isLoading={isRefreshing}
-                      loadingText="Refreshing..."
-                    >
-                      🔄 Refresh Status
-                    </Button>
-                  </HStack>
-                </Box>
-              )}
-            </CardBody>
-          </Card>
-
-          {/* Verification Steps */}
-          <Card bg={cardBg} shadow="lg">
-            <CardBody p={8}>
-              <Heading as="h2" size="lg" color={textColor} mb={6}>
-                Verification Steps
-              </Heading>
-
-              {/* Helpful Alert */}
-              {overallStatus.status !== 'Fully Verified' && (
-                <Alert status="info" mb={6} borderRadius="md">
-                  <AlertIcon />
-                  <Box>
-                    <AlertTitle>Need Help with Verification?</AlertTitle>
-                    <AlertDescription>
-                      Use our step-by-step verification page for a guided experience.
-                      <Button
-                        variant="link"
-                        colorScheme="blue"
-                        size="sm"
-                        ml={2}
-                        onClick={() => router.push('/verify-account')}
-                      >
-                        Go to Verification Page →
-                      </Button>
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-              )}
-
-              <VStack spacing={6} align="stretch">
-                {verificationSteps.map((step, index) => {
-                  const stepStatus = getStepStatus(step.isCompleted, step.isPending);
-                  
-                  return (
-                    <Box key={step.step}>
-                      <Flex align="center" justify="space-between">
-                        <HStack spacing={4} flex={1}>
-                          <Box
-                            bg={step.isCompleted ? 'green.100' : 'gray.100'}
-                            p={3}
-                            borderRadius="full"
-                          >
-                            <Icon 
-                              as={step.icon} 
-                              color={step.isCompleted ? 'green.600' : 'gray.600'} 
-                              boxSize={5} 
-                            />
-                          </Box>
-                          <VStack spacing={1} align="start" flex={1}>
-                            <HStack>
-                              <Text fontWeight="bold" color={textColor}>
-                                Step {step.step}: {step.title}
-                              </Text>
-                            </HStack>
-                            <Text fontSize="sm" color={subtleTextColor}>
-                              {step.description}
-                            </Text>
-                            <Text fontSize="sm" color={textColor} fontWeight="medium">
-                              {step.details}
-                            </Text>
-                          </VStack>
-                        </HStack>
-                        
-                        <VStack spacing={2} align="end">
-                          <Badge
-                            colorScheme={stepStatus.color}
-                            variant="subtle"
-                            px={3}
-                            py={1}
-                            borderRadius="full"
-                          >
-                            <HStack spacing={1}>
-                              <Icon as={stepStatus.icon} boxSize={3} />
-                              <Text fontSize="sm">{stepStatus.text}</Text>
-                            </HStack>
-                          </Badge>
-
-                          {/* Action Button - Always show if not completed */}
-                          {!step.isCompleted && (
-                            <Button
-                              size="sm"
-                              colorScheme="blue"
-                              variant={step.isPending ? "outline" : "solid"}
-                              onClick={step.onAction}
-                              leftIcon={<Icon as={step.icon} />}
-                              isDisabled={step.isPending}
-                            >
-                              {step.isPending ? 'Under Review' : step.actionText}
-                            </Button>
-                          )}
-
-                          {/* Alternative: Go to Verification Page */}
-                          {!step.isCompleted && !step.isPending && (
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              colorScheme="blue"
-                              onClick={() => router.push('/verify-account')}
-                            >
-                              Go to Verification Page
-                            </Button>
-                          )}
-                        </VStack>
-                      </Flex>
-                      
-                      {index < verificationSteps.length - 1 && (
-                        <Divider mt={6} />
-                      )}
-                    </Box>
-                  );
-                })}
-              </VStack>
-            </CardBody>
-          </Card>
-
         </VStack>
       </Container>
-
-      {/* Email Verification Modal */}
-      <Modal isOpen={isEmailModalOpen} onClose={onEmailModalClose} size="md">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Email Verification</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Alert status="info">
-                <AlertIcon />
-                <Box>
-                  <AlertTitle>Verify Your Email</AlertTitle>
-                  <AlertDescription>
-                    We'll send a 6-digit verification code to your email address.
-                  </AlertDescription>
-                </Box>
-              </Alert>
-
-              <Text fontSize="sm" color={subtleTextColor}>
-                Email: <strong>{session?.user?.email || userProfile?.email}</strong>
-              </Text>
-
-              {!isEmailCodeSent ? (
-                <Button
-                  colorScheme="blue"
-                  onClick={sendEmailVerificationCode}
-                  isLoading={emailCodeSending}
-                  loadingText="Sending Code..."
-                >
-                  Send Verification Code
-                </Button>
-              ) : (
-                <VStack spacing={4}>
-                  <Text fontSize="sm" textAlign="center">
-                    Enter the 6-digit code sent to your email:
-                  </Text>
-
-                  <HStack justify="center">
-                    <PinInput value={emailCode} onChange={setEmailCode} size="lg">
-                      <PinInputField />
-                      <PinInputField />
-                      <PinInputField />
-                      <PinInputField />
-                      <PinInputField />
-                      <PinInputField />
-                    </PinInput>
-                  </HStack>
-
-                  <HStack spacing={2} width="100%">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsEmailCodeSent(false);
-                        setEmailCode('');
-                      }}
-                      size="sm"
-                    >
-                      Resend Code
-                    </Button>
-                    <Button
-                      colorScheme="blue"
-                      onClick={verifyEmailCode}
-                      isLoading={isEmailVerifying}
-                      loadingText="Verifying..."
-                      isDisabled={emailCode.length !== 6}
-                      flex={1}
-                    >
-                      Verify Email
-                    </Button>
-                  </HStack>
-                </VStack>
-              )}
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
-      {/* Profile Completion Modal */}
-      <Modal isOpen={isProfileModalOpen} onClose={onProfileModalClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Complete Your Profile</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Alert status="info">
-                <AlertIcon />
-                <Box>
-                  <AlertTitle>Personal Information Required</AlertTitle>
-                  <AlertDescription>
-                    Please provide your personal details to complete your profile.
-                  </AlertDescription>
-                </Box>
-              </Alert>
-
-              <HStack spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>First Name</FormLabel>
-                  <Input
-                    value={profileForm.firstName}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
-                    placeholder="Enter your first name"
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Last Name</FormLabel>
-                  <Input
-                    value={profileForm.lastName}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
-                    placeholder="Enter your last name"
-                  />
-                </FormControl>
-              </HStack>
-
-              <HStack spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>Date of Birth</FormLabel>
-                  <Input
-                    type="date"
-                    value={profileForm.dateOfBirth}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Gender</FormLabel>
-                  <Select
-                    value={profileForm.gender}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, gender: e.target.value }))}
-                    placeholder="Select gender"
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer-not-to-say">Prefer not to say</option>
-                  </Select>
-                </FormControl>
-              </HStack>
-
-              <FormControl isRequired>
-                <FormLabel>Country of Birth</FormLabel>
-                <Select
-                  value={profileForm.countryOfBirth}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, countryOfBirth: e.target.value }))}
-                  placeholder="Select your country of birth"
-                >
-                  <option value="Afghanistan">🇦🇫 Afghanistan</option>
-                  <option value="Armenia">🇦🇲 Armenia</option>
-                  <option value="Azerbaijan">🇦🇿 Azerbaijan</option>
-                  <option value="Bahrain">🇧🇭 Bahrain</option>
-                  <option value="Bangladesh">🇧🇩 Bangladesh</option>
-                  <option value="Bhutan">🇧🇹 Bhutan</option>
-                  <option value="Brunei">🇧🇳 Brunei</option>
-                  <option value="Cambodia">🇰🇭 Cambodia</option>
-                  <option value="China">🇨🇳 China</option>
-                  <option value="Cyprus">🇨🇾 Cyprus</option>
-                  <option value="Georgia">🇬🇪 Georgia</option>
-                  <option value="India">🇮🇳 India</option>
-                  <option value="Indonesia">🇮🇩 Indonesia</option>
-                  <option value="Iran">🇮🇷 Iran</option>
-                  <option value="Iraq">🇮🇶 Iraq</option>
-                  <option value="Israel">🇮🇱 Israel</option>
-                  <option value="Japan">🇯🇵 Japan</option>
-                  <option value="Jordan">🇯🇴 Jordan</option>
-                  <option value="Kazakhstan">🇰🇿 Kazakhstan</option>
-                  <option value="Kuwait">🇰🇼 Kuwait</option>
-                  <option value="Kyrgyzstan">🇰🇬 Kyrgyzstan</option>
-                  <option value="Laos">🇱🇦 Laos</option>
-                  <option value="Lebanon">🇱🇧 Lebanon</option>
-                  <option value="Malaysia">🇲🇾 Malaysia</option>
-                  <option value="Maldives">🇲🇻 Maldives</option>
-                  <option value="Mongolia">🇲🇳 Mongolia</option>
-                  <option value="Myanmar">🇲🇲 Myanmar</option>
-                  <option value="Nepal">🇳🇵 Nepal</option>
-                  <option value="North Korea">🇰🇵 North Korea</option>
-                  <option value="Oman">🇴🇲 Oman</option>
-                  <option value="Pakistan">🇵🇰 Pakistan</option>
-                  <option value="Palestine">🇵🇸 Palestine</option>
-                  <option value="Philippines">🇵🇭 Philippines</option>
-                  <option value="Qatar">🇶🇦 Qatar</option>
-                  <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
-                  <option value="Singapore">🇸🇬 Singapore</option>
-                  <option value="South Korea">🇰🇷 South Korea</option>
-                  <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-                  <option value="Syria">🇸🇾 Syria</option>
-                  <option value="Taiwan">🇹🇼 Taiwan</option>
-                  <option value="Tajikistan">🇹🇯 Tajikistan</option>
-                  <option value="Thailand">🇹🇭 Thailand</option>
-                  <option value="Timor-Leste">🇹🇱 Timor-Leste</option>
-                  <option value="Turkey">🇹🇷 Turkey</option>
-                  <option value="Turkmenistan">🇹🇲 Turkmenistan</option>
-                  <option value="United Arab Emirates">🇦🇪 United Arab Emirates</option>
-                  <option value="Uzbekistan">🇺🇿 Uzbekistan</option>
-                  <option value="Vietnam">🇻🇳 Vietnam</option>
-                  <option value="Yemen">🇾🇪 Yemen</option>
-                  <option value="Other">🌏 Other</option>
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Address</FormLabel>
-                <Textarea
-                  value={profileForm.address}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Enter your full address"
-                  rows={3}
-                />
-              </FormControl>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onProfileModalClose}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={submitProfile}
-              isLoading={isProfileSubmitting}
-              loadingText="Saving..."
-            >
-              Complete Profile
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Identity Verification Modal */}
-      <Modal isOpen={isIdentityModalOpen} onClose={onIdentityModalClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Identity Verification</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Alert status="info">
-                <AlertIcon />
-                <Box>
-                  <AlertTitle>Upload Identity Document</AlertTitle>
-                  <AlertDescription>
-                    Please upload a clear photo of your government-issued ID (passport, driver's license, or national ID).
-                  </AlertDescription>
-                </Box>
-              </Alert>
-
-              <FormControl isRequired>
-                <FormLabel>Document Type</FormLabel>
-                <Select
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                  placeholder="Select document type"
-                >
-                  <option value="passport">Passport</option>
-                  <option value="drivers_license">Driver's License</option>
-                  <option value="national_id">National ID Card</option>
-                  <option value="other">Other Government ID</option>
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Issuing Country</FormLabel>
-                <Select
-                  value={issuingCountry}
-                  onChange={(e) => setIssuingCountry(e.target.value)}
-                  placeholder="Select issuing country"
-                >
-                  <option value="Afghanistan">🇦🇫 Afghanistan</option>
-                  <option value="Armenia">🇦🇲 Armenia</option>
-                  <option value="Azerbaijan">🇦🇿 Azerbaijan</option>
-                  <option value="Bahrain">🇧🇭 Bahrain</option>
-                  <option value="Bangladesh">🇧🇩 Bangladesh</option>
-                  <option value="Bhutan">🇧🇹 Bhutan</option>
-                  <option value="Brunei">🇧🇳 Brunei</option>
-                  <option value="Cambodia">🇰🇭 Cambodia</option>
-                  <option value="China">🇨🇳 China</option>
-                  <option value="Cyprus">🇨🇾 Cyprus</option>
-                  <option value="Georgia">🇬🇪 Georgia</option>
-                  <option value="India">🇮🇳 India</option>
-                  <option value="Indonesia">🇮🇩 Indonesia</option>
-                  <option value="Iran">🇮🇷 Iran</option>
-                  <option value="Iraq">🇮🇶 Iraq</option>
-                  <option value="Israel">🇮🇱 Israel</option>
-                  <option value="Japan">🇯🇵 Japan</option>
-                  <option value="Jordan">🇯🇴 Jordan</option>
-                  <option value="Kazakhstan">🇰🇿 Kazakhstan</option>
-                  <option value="Kuwait">🇰🇼 Kuwait</option>
-                  <option value="Kyrgyzstan">🇰🇬 Kyrgyzstan</option>
-                  <option value="Laos">🇱🇦 Laos</option>
-                  <option value="Lebanon">🇱🇧 Lebanon</option>
-                  <option value="Malaysia">🇲🇾 Malaysia</option>
-                  <option value="Maldives">🇲🇻 Maldives</option>
-                  <option value="Mongolia">🇲🇳 Mongolia</option>
-                  <option value="Myanmar">🇲🇲 Myanmar</option>
-                  <option value="Nepal">🇳🇵 Nepal</option>
-                  <option value="North Korea">🇰🇵 North Korea</option>
-                  <option value="Oman">🇴🇲 Oman</option>
-                  <option value="Pakistan">🇵🇰 Pakistan</option>
-                  <option value="Palestine">🇵🇸 Palestine</option>
-                  <option value="Philippines">🇵🇭 Philippines</option>
-                  <option value="Qatar">🇶🇦 Qatar</option>
-                  <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
-                  <option value="Singapore">🇸🇬 Singapore</option>
-                  <option value="South Korea">🇰🇷 South Korea</option>
-                  <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-                  <option value="Syria">🇸🇾 Syria</option>
-                  <option value="Taiwan">🇹🇼 Taiwan</option>
-                  <option value="Tajikistan">🇹🇯 Tajikistan</option>
-                  <option value="Thailand">🇹🇭 Thailand</option>
-                  <option value="Timor-Leste">🇹🇱 Timor-Leste</option>
-                  <option value="Turkey">🇹🇷 Turkey</option>
-                  <option value="Turkmenistan">🇹🇲 Turkmenistan</option>
-                  <option value="United Arab Emirates">🇦🇪 United Arab Emirates</option>
-                  <option value="Uzbekistan">🇺🇿 Uzbekistan</option>
-                  <option value="Vietnam">🇻🇳 Vietnam</option>
-                  <option value="Yemen">🇾🇪 Yemen</option>
-                  <option value="Other">🌏 Other</option>
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Upload Document</FormLabel>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleFileSelect}
-                  p={1}
-                />
-                {selectedFile && (
-                  <Text fontSize="sm" color="green.500" mt={2}>
-                    ✓ Selected: {selectedFile.name}
-                  </Text>
-                )}
-                <Text fontSize="xs" color={subtleTextColor} mt={1}>
-                  Accepted formats: JPEG, PNG, PDF (max 10MB)
-                </Text>
-              </FormControl>
-
-              <Alert status="warning" size="sm">
-                <AlertIcon />
-                <AlertDescription fontSize="sm">
-                  Make sure your document is clearly visible and all information is readable.
-                  Processing may take 1-3 business days.
-                </AlertDescription>
-              </Alert>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onIdentityModalClose}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={uploadIdentityDocument}
-              isLoading={isIdentityUploading}
-              loadingText="Uploading..."
-              isDisabled={!selectedFile || !documentType || !issuingCountry}
-            >
-              Upload Document
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Edit Profile Modal (for existing users) */}
-      <Modal isOpen={isEditProfileModalOpen} onClose={onEditProfileModalClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit Profile Information</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Alert status="info">
-                <AlertIcon />
-                <Box>
-                  <AlertTitle>Update Your Information</AlertTitle>
-                  <AlertDescription>
-                    Update your personal details. Changes will be reflected immediately.
-                  </AlertDescription>
-                </Box>
-              </Alert>
-
-              <HStack spacing={4}>
-                <FormControl>
-                  <FormLabel>First Name</FormLabel>
-                  <Input
-                    value={profileForm.firstName}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
-                    placeholder="Enter your first name"
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Last Name</FormLabel>
-                  <Input
-                    value={profileForm.lastName}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
-                    placeholder="Enter your last name"
-                  />
-                </FormControl>
-              </HStack>
-
-              <FormControl>
-                <FormLabel>Country of Residence</FormLabel>
-                <Select
-                  value={profileForm.countryOfBirth}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, countryOfBirth: e.target.value }))}
-                  placeholder="Select your country"
-                >
-                  <option value="Afghanistan">🇦🇫 Afghanistan</option>
-                  <option value="Armenia">🇦🇲 Armenia</option>
-                  <option value="Azerbaijan">🇦🇿 Azerbaijan</option>
-                  <option value="Bahrain">🇧🇭 Bahrain</option>
-                  <option value="Bangladesh">🇧🇩 Bangladesh</option>
-                  <option value="Bhutan">🇧🇹 Bhutan</option>
-                  <option value="Brunei">🇧🇳 Brunei</option>
-                  <option value="Cambodia">🇰🇭 Cambodia</option>
-                  <option value="China">🇨🇳 China</option>
-                  <option value="Cyprus">🇨🇾 Cyprus</option>
-                  <option value="Georgia">🇬🇪 Georgia</option>
-                  <option value="India">🇮🇳 India</option>
-                  <option value="Indonesia">🇮🇩 Indonesia</option>
-                  <option value="Iran">🇮🇷 Iran</option>
-                  <option value="Iraq">🇮🇶 Iraq</option>
-                  <option value="Israel">🇮🇱 Israel</option>
-                  <option value="Japan">🇯🇵 Japan</option>
-                  <option value="Jordan">🇯🇴 Jordan</option>
-                  <option value="Kazakhstan">🇰🇿 Kazakhstan</option>
-                  <option value="Kuwait">🇰🇼 Kuwait</option>
-                  <option value="Kyrgyzstan">🇰🇬 Kyrgyzstan</option>
-                  <option value="Laos">🇱🇦 Laos</option>
-                  <option value="Lebanon">🇱🇧 Lebanon</option>
-                  <option value="Malaysia">🇲🇾 Malaysia</option>
-                  <option value="Maldives">🇲🇻 Maldives</option>
-                  <option value="Mongolia">🇲🇳 Mongolia</option>
-                  <option value="Myanmar">🇲🇲 Myanmar</option>
-                  <option value="Nepal">🇳🇵 Nepal</option>
-                  <option value="North Korea">🇰🇵 North Korea</option>
-                  <option value="Oman">🇴🇲 Oman</option>
-                  <option value="Pakistan">🇵🇰 Pakistan</option>
-                  <option value="Palestine">🇵🇸 Palestine</option>
-                  <option value="Philippines">🇵🇭 Philippines</option>
-                  <option value="Qatar">🇶🇦 Qatar</option>
-                  <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
-                  <option value="Singapore">🇸🇬 Singapore</option>
-                  <option value="South Korea">🇰🇷 South Korea</option>
-                  <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-                  <option value="Syria">🇸🇾 Syria</option>
-                  <option value="Taiwan">🇹🇼 Taiwan</option>
-                  <option value="Tajikistan">🇹🇯 Tajikistan</option>
-                  <option value="Thailand">🇹🇭 Thailand</option>
-                  <option value="Timor-Leste">🇹🇱 Timor-Leste</option>
-                  <option value="Turkey">🇹🇷 Turkey</option>
-                  <option value="Turkmenistan">🇹🇲 Turkmenistan</option>
-                  <option value="United Arab Emirates">🇦🇪 United Arab Emirates</option>
-                  <option value="Uzbekistan">🇺🇿 Uzbekistan</option>
-                  <option value="Vietnam">🇻🇳 Vietnam</option>
-                  <option value="Yemen">🇾🇪 Yemen</option>
-                  <option value="Other">🌏 Other</option>
-                </Select>
-              </FormControl>
-
-              <Alert status="warning" size="sm">
-                <AlertIcon />
-                <AlertDescription fontSize="sm">
-                  Note: Some profile changes may require re-verification of your account.
-                </AlertDescription>
-              </Alert>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onEditProfileModalClose}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={async () => {
-                // Update profile with basic information
-                const userEmail = session?.user?.email || userProfile?.email;
-                if (!userEmail) {
-                  toast({
-                    title: 'Error',
-                    description: 'No email address found',
-                    status: 'error',
-                    duration: 5000,
-                    isClosable: true,
-                  });
-                  return;
-                }
-
-                try {
-                  setIsProfileSubmitting(true);
-                  const response = await fetch('/api/auth/complete-profile', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      email: userEmail,
-                      firstName: profileForm.firstName,
-                      lastName: profileForm.lastName,
-                      countryOfBirth: profileForm.countryOfBirth,
-                      // Keep existing values for required fields if not provided
-                      dateOfBirth: profileForm.dateOfBirth || '1990-01-01',
-                      gender: profileForm.gender || 'prefer-not-to-say',
-                      address: profileForm.address || 'Not provided',
-                    }),
-                  });
-
-                  const data = await response.json();
-
-                  if (response.ok) {
-                    onEditProfileModalClose();
-                    toast({
-                      title: 'Profile Updated',
-                      description: 'Your profile has been successfully updated',
-                      status: 'success',
-                      duration: 5000,
-                      isClosable: true,
-                    });
-                    fetchUserProfile(); // Refresh data
-                  } else {
-                    throw new Error(data.error || 'Failed to update profile');
-                  }
-                } catch (error: any) {
-                  console.error('Error updating profile:', error);
-                  toast({
-                    title: 'Error',
-                    description: error.message || 'Failed to update profile',
-                    status: 'error',
-                    duration: 5000,
-                    isClosable: true,
-                  });
-                } finally {
-                  setIsProfileSubmitting(false);
-                }
-              }}
-              isLoading={isProfileSubmitting}
-              loadingText="Updating..."
-            >
-              Update Profile
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 }
