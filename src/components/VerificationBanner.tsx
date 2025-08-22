@@ -68,6 +68,25 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
     loadVerificationStatus();
   }, [session?.user?.email]);
 
+  // Add refresh function for external triggers
+  const refreshVerificationStatus = async () => {
+    if (session?.user?.email) {
+      await loadVerificationStatus();
+    }
+  };
+
+  // Expose refresh function globally for other components to trigger
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).refreshVerificationBanner = refreshVerificationStatus;
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).refreshVerificationBanner;
+      }
+    };
+  }, [session?.user?.email]);
+
   const loadVerificationStatus = async () => {
     try {
       setIsLoading(true);
@@ -82,8 +101,21 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
       const response = await fetch(`/api/auth/verification-status?email=${encodeURIComponent(session.user.email)}`);
       const data = await response.json();
 
-      if (response.ok) {
-        setVerificationStatus(data);
+      if (response.ok && data.success && data.user) {
+        // Map API response to VerificationBanner format
+        const mappedStatus = {
+          emailVerified: data.user.email_verified || false,
+          phoneVerified: data.user.phone_verified || true,
+          profileCompleted: data.user.profile_completed || false,
+          identityVerified: data.user.identity_verification_status === 'approved',
+          identityDocumentUploaded: data.user.identity_verification_submitted || false,
+          firstName: data.user.first_name,
+          lastName: data.user.last_name,
+        };
+
+        console.log('🔄 VerificationBanner status updated:', mappedStatus);
+        setVerificationStatus(mappedStatus);
+
         if (onVerificationUpdate) {
           onVerificationUpdate();
         }

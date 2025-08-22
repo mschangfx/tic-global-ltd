@@ -143,41 +143,63 @@ export default function DashboardOverviewPage() {
     try {
       const response = await fetch(`/api/auth/verification-status?email=${encodeURIComponent(email)}`);
       if (response.ok) {
-        const status = await response.json();
-        setVerificationStatus(status);
-        if (status.phoneNumber) {
-          setPhoneNumber(status.phoneNumber);
-        }
+        const data = await response.json();
+        console.log('📋 Dashboard verification status response:', data);
 
-        // Update user name based on profile data from database
-        let nameToDisplay = "Valued Member";
-        if (status.firstName) {
-          nameToDisplay = status.firstName;
-        } else if (status.name) {
-          nameToDisplay = status.name.split(' ')[0]; // Get first name from full name
-        } else if (email) {
-          nameToDisplay = email.split('@')[0]; // Fallback to email username
-        }
-        setUserName(nameToDisplay);
+        if (data.success && data.user) {
+          // Map API response to dashboard verification status format
+          const mappedStatus = {
+            emailVerified: data.user.email_verified || false,
+            phoneVerified: data.user.phone_verified || true, // Always true since phone verification is removed
+            profileCompleted: data.user.profile_completed || false,
+            identityVerified: data.user.identity_verification_status === 'approved',
+            identityDocumentUploaded: data.user.identity_verification_submitted || false,
+            phoneNumber: data.user.phone_number || null,
+            firstName: data.user.first_name || null,
+            lastName: data.user.last_name || null,
+            name: data.user.first_name && data.user.last_name
+              ? `${data.user.first_name} ${data.user.last_name}`
+              : null,
+            countryOfBirth: data.user.country_of_residence || data.user.country_of_birth || null
+          };
 
-        // Update identity form with user data
-        if (status.firstName && status.lastName) {
-          setIdentityForm(prev => ({
-            ...prev,
-            fullName: `${status.firstName} ${status.lastName}`,
-            country: status.countryOfBirth || "Philippines"
-          }));
-        } else if (status.name) {
-          setIdentityForm(prev => ({
-            ...prev,
-            fullName: status.name,
-            country: status.countryOfBirth || "Philippines"
-          }));
-        } else if (status.countryOfBirth) {
-          setIdentityForm(prev => ({
-            ...prev,
-            country: status.countryOfBirth
-          }));
+          console.log('📋 Mapped verification status:', mappedStatus);
+          setVerificationStatus(mappedStatus);
+
+          if (data.user.phone_number) {
+            setPhoneNumber(data.user.phone_number);
+          }
+
+          // Update user name based on profile data from database
+          let nameToDisplay = "Valued Member";
+          if (data.user.first_name) {
+            nameToDisplay = data.user.first_name;
+          } else if (data.user.name) {
+            nameToDisplay = data.user.name.split(' ')[0]; // Get first name from full name
+          } else if (email) {
+            nameToDisplay = email.split('@')[0]; // Fallback to email username
+          }
+          setUserName(nameToDisplay);
+
+          // Update identity form with user data
+          if (data.user.first_name && data.user.last_name) {
+            setIdentityForm(prev => ({
+              ...prev,
+              fullName: `${data.user.first_name} ${data.user.last_name}`,
+              country: data.user.country_of_birth || data.user.country_of_residence || "Philippines"
+            }));
+          } else if (data.user.name) {
+            setIdentityForm(prev => ({
+              ...prev,
+              fullName: data.user.name,
+              country: data.user.country_of_birth || data.user.country_of_residence || "Philippines"
+            }));
+          } else if (data.user.country_of_birth || data.user.country_of_residence) {
+            setIdentityForm(prev => ({
+              ...prev,
+              country: data.user.country_of_birth || data.user.country_of_residence || "Philippines"
+            }));
+          }
         }
       }
     } catch (error) {
@@ -929,9 +951,12 @@ export default function DashboardOverviewPage() {
       <VStack spacing={8} align="stretch">
 
         {/* Verification Banner */}
-        <VerificationBanner onVerificationUpdate={() => {
-          // Refresh any dashboard data if needed
-          console.log('Verification status updated');
+        <VerificationBanner onVerificationUpdate={async () => {
+          // Refresh dashboard verification status when VerificationBanner updates
+          console.log('Verification status updated - refreshing dashboard');
+          if (userEmail) {
+            await fetchVerificationStatus(userEmail);
+          }
         }} />
 
         {/* Profile Completion Banner */}
