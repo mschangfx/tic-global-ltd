@@ -95,6 +95,7 @@ export default function ProfilePage() {
   const { isOpen: isEmailModalOpen, onOpen: onEmailModalOpen, onClose: onEmailModalClose } = useDisclosure();
   const { isOpen: isProfileModalOpen, onOpen: onProfileModalOpen, onClose: onProfileModalClose } = useDisclosure();
   const { isOpen: isIdentityModalOpen, onOpen: onIdentityModalOpen, onClose: onIdentityModalClose } = useDisclosure();
+  const { isOpen: isEditProfileModalOpen, onOpen: onEditProfileModalOpen, onClose: onEditProfileModalClose } = useDisclosure();
 
   // Manual refresh states
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -123,8 +124,7 @@ export default function ProfilePage() {
   const [issuingCountry, setIssuingCountry] = useState('');
   const [isIdentityUploading, setIsIdentityUploading] = useState(false);
 
-  // GIC Pricing state for peso display
-  const [gicPricing, setGicPricing] = useState<any>(null);
+  // Removed unused GIC pricing state
 
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
@@ -755,6 +755,175 @@ export default function ProfilePage() {
             )}
           </Box>
 
+          {/* User Profile Information Card */}
+          <Card bg={cardBg} shadow="lg">
+            <CardBody p={8}>
+              <Flex align="center" justify="space-between" mb={6}>
+                <Heading as="h2" size="lg" color={textColor}>
+                  Profile Information
+                </Heading>
+                <Button
+                  colorScheme="blue"
+                  size="sm"
+                  leftIcon={<Icon as={FaEdit} />}
+                  onClick={() => {
+                    // Pre-fill form with existing data for editing
+                    setProfileForm({
+                      firstName: userProfile?.firstName || '',
+                      lastName: userProfile?.lastName || '',
+                      dateOfBirth: '',
+                      countryOfBirth: userProfile?.country || '',
+                      gender: '',
+                      address: '',
+                    });
+                    onEditProfileModalOpen();
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              </Flex>
+
+              <VStack spacing={4} align="stretch">
+                <HStack spacing={8} wrap="wrap">
+                  <VStack align="start" spacing={1} minW="200px">
+                    <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                      Email Address
+                    </Text>
+                    <Text fontSize="md" color={textColor} fontWeight="semibold">
+                      {userProfile?.email || session?.user?.email || 'Not provided'}
+                    </Text>
+                    <Badge
+                      colorScheme={verificationStatus.emailVerified ? 'green' : 'red'}
+                      size="sm"
+                    >
+                      {verificationStatus.emailVerified ? '✓ Verified' : '✗ Not Verified'}
+                    </Badge>
+                  </VStack>
+
+                  <VStack align="start" spacing={1} minW="200px">
+                    <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                      Full Name
+                    </Text>
+                    <Text fontSize="md" color={textColor} fontWeight="semibold">
+                      {userProfile?.firstName && userProfile?.lastName
+                        ? `${userProfile.firstName} ${userProfile.lastName}`
+                        : 'Not provided'
+                      }
+                    </Text>
+                    <Badge
+                      colorScheme={verificationStatus.profileCompleted ? 'green' : 'orange'}
+                      size="sm"
+                    >
+                      {verificationStatus.profileCompleted ? '✓ Complete' : '⚠ Incomplete'}
+                    </Badge>
+                  </VStack>
+                </HStack>
+
+                <HStack spacing={8} wrap="wrap">
+                  <VStack align="start" spacing={1} minW="200px">
+                    <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                      Phone Number
+                    </Text>
+                    <Text fontSize="md" color={textColor} fontWeight="semibold">
+                      {userProfile?.phoneNumber || 'Not provided'}
+                    </Text>
+                    <Badge colorScheme="green" size="sm">
+                      ✓ Verified (Auto)
+                    </Badge>
+                  </VStack>
+
+                  <VStack align="start" spacing={1} minW="200px">
+                    <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                      Country
+                    </Text>
+                    <Text fontSize="md" color={textColor} fontWeight="semibold">
+                      {userProfile?.country || 'Not provided'}
+                    </Text>
+                  </VStack>
+                </HStack>
+
+                <VStack align="start" spacing={1}>
+                  <Text fontSize="sm" color={subtleTextColor} fontWeight="medium">
+                    Identity Verification Status
+                  </Text>
+                  <HStack>
+                    <Text fontSize="md" color={textColor} fontWeight="semibold">
+                      {verificationStatus.identityStatus === 'approved'
+                        ? 'Identity Verified'
+                        : verificationStatus.identityStatus === 'pending'
+                        ? 'Under Review'
+                        : verificationStatus.identityStatus === 'rejected'
+                        ? 'Verification Rejected'
+                        : 'Not Submitted'
+                      }
+                    </Text>
+                    <Badge
+                      colorScheme={
+                        verificationStatus.identityStatus === 'approved' ? 'green' :
+                        verificationStatus.identityStatus === 'pending' ? 'yellow' :
+                        verificationStatus.identityStatus === 'rejected' ? 'red' : 'gray'
+                      }
+                      size="sm"
+                    >
+                      {verificationStatus.identityStatus === 'approved' ? '✓ Approved' :
+                       verificationStatus.identityStatus === 'pending' ? '⏳ Pending' :
+                       verificationStatus.identityStatus === 'rejected' ? '✗ Rejected' : '○ Not Submitted'
+                      }
+                    </Badge>
+                  </HStack>
+                </VStack>
+
+                {/* Quick Actions */}
+                <Divider my={4} />
+                <HStack spacing={4} wrap="wrap">
+                  {!verificationStatus.emailVerified && (
+                    <Button
+                      size="sm"
+                      colorScheme="blue"
+                      variant="outline"
+                      leftIcon={<Icon as={FaEnvelope} />}
+                      onClick={onEmailModalOpen}
+                    >
+                      Verify Email
+                    </Button>
+                  )}
+                  {!verificationStatus.profileCompleted && (
+                    <Button
+                      size="sm"
+                      colorScheme="orange"
+                      variant="outline"
+                      leftIcon={<Icon as={FaUser} />}
+                      onClick={() => {
+                        setProfileForm({
+                          firstName: userProfile?.firstName || '',
+                          lastName: userProfile?.lastName || '',
+                          dateOfBirth: '',
+                          countryOfBirth: userProfile?.country || '',
+                          gender: '',
+                          address: '',
+                        });
+                        onProfileModalOpen();
+                      }}
+                    >
+                      Complete Profile
+                    </Button>
+                  )}
+                  {!verificationStatus.identityVerified && verificationStatus.identityStatus !== 'pending' && (
+                    <Button
+                      size="sm"
+                      colorScheme="purple"
+                      variant="outline"
+                      leftIcon={<Icon as={FaIdCard} />}
+                      onClick={onIdentityModalOpen}
+                    >
+                      {verificationStatus.identityStatus === 'rejected' ? 'Resubmit ID' : 'Upload ID'}
+                    </Button>
+                  )}
+                </HStack>
+              </VStack>
+            </CardBody>
+          </Card>
+
           {/* Account Status Card */}
           <Card bg={cardBg} shadow="lg">
             <CardBody p={8}>
@@ -1173,12 +1342,6 @@ export default function ProfilePage() {
                   <option value="Vietnam">🇻🇳 Vietnam</option>
                   <option value="Yemen">🇾🇪 Yemen</option>
                   <option value="Other">🌏 Other</option>
-                  <option value="Thailand">Thailand</option>
-                  <option value="Vietnam">Vietnam</option>
-                  <option value="India">India</option>
-                  <option value="China">China</option>
-                  <option value="South Korea">South Korea</option>
-                  <option value="Other">Other</option>
                 </Select>
               </FormControl>
 
@@ -1340,6 +1503,187 @@ export default function ProfilePage() {
               isDisabled={!selectedFile || !documentType || !issuingCountry}
             >
               Upload Document
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Profile Modal (for existing users) */}
+      <Modal isOpen={isEditProfileModalOpen} onClose={onEditProfileModalClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit Profile Information</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              <Alert status="info">
+                <AlertIcon />
+                <Box>
+                  <AlertTitle>Update Your Information</AlertTitle>
+                  <AlertDescription>
+                    Update your personal details. Changes will be reflected immediately.
+                  </AlertDescription>
+                </Box>
+              </Alert>
+
+              <HStack spacing={4}>
+                <FormControl>
+                  <FormLabel>First Name</FormLabel>
+                  <Input
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    placeholder="Enter your first name"
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Last Name</FormLabel>
+                  <Input
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    placeholder="Enter your last name"
+                  />
+                </FormControl>
+              </HStack>
+
+              <FormControl>
+                <FormLabel>Country of Residence</FormLabel>
+                <Select
+                  value={profileForm.countryOfBirth}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, countryOfBirth: e.target.value }))}
+                  placeholder="Select your country"
+                >
+                  <option value="Afghanistan">🇦🇫 Afghanistan</option>
+                  <option value="Armenia">🇦🇲 Armenia</option>
+                  <option value="Azerbaijan">🇦🇿 Azerbaijan</option>
+                  <option value="Bahrain">🇧🇭 Bahrain</option>
+                  <option value="Bangladesh">🇧🇩 Bangladesh</option>
+                  <option value="Bhutan">🇧🇹 Bhutan</option>
+                  <option value="Brunei">🇧🇳 Brunei</option>
+                  <option value="Cambodia">🇰🇭 Cambodia</option>
+                  <option value="China">🇨🇳 China</option>
+                  <option value="Cyprus">🇨🇾 Cyprus</option>
+                  <option value="Georgia">🇬🇪 Georgia</option>
+                  <option value="India">🇮🇳 India</option>
+                  <option value="Indonesia">🇮🇩 Indonesia</option>
+                  <option value="Iran">🇮🇷 Iran</option>
+                  <option value="Iraq">🇮🇶 Iraq</option>
+                  <option value="Israel">🇮🇱 Israel</option>
+                  <option value="Japan">🇯🇵 Japan</option>
+                  <option value="Jordan">🇯🇴 Jordan</option>
+                  <option value="Kazakhstan">🇰🇿 Kazakhstan</option>
+                  <option value="Kuwait">🇰🇼 Kuwait</option>
+                  <option value="Kyrgyzstan">🇰🇬 Kyrgyzstan</option>
+                  <option value="Laos">🇱🇦 Laos</option>
+                  <option value="Lebanon">🇱🇧 Lebanon</option>
+                  <option value="Malaysia">🇲🇾 Malaysia</option>
+                  <option value="Maldives">🇲🇻 Maldives</option>
+                  <option value="Mongolia">🇲🇳 Mongolia</option>
+                  <option value="Myanmar">🇲🇲 Myanmar</option>
+                  <option value="Nepal">🇳🇵 Nepal</option>
+                  <option value="North Korea">🇰🇵 North Korea</option>
+                  <option value="Oman">🇴🇲 Oman</option>
+                  <option value="Pakistan">🇵🇰 Pakistan</option>
+                  <option value="Palestine">🇵🇸 Palestine</option>
+                  <option value="Philippines">🇵🇭 Philippines</option>
+                  <option value="Qatar">🇶🇦 Qatar</option>
+                  <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
+                  <option value="Singapore">🇸🇬 Singapore</option>
+                  <option value="South Korea">🇰🇷 South Korea</option>
+                  <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
+                  <option value="Syria">🇸🇾 Syria</option>
+                  <option value="Taiwan">🇹🇼 Taiwan</option>
+                  <option value="Tajikistan">🇹🇯 Tajikistan</option>
+                  <option value="Thailand">🇹🇭 Thailand</option>
+                  <option value="Timor-Leste">🇹🇱 Timor-Leste</option>
+                  <option value="Turkey">🇹🇷 Turkey</option>
+                  <option value="Turkmenistan">🇹🇲 Turkmenistan</option>
+                  <option value="United Arab Emirates">🇦🇪 United Arab Emirates</option>
+                  <option value="Uzbekistan">🇺🇿 Uzbekistan</option>
+                  <option value="Vietnam">🇻🇳 Vietnam</option>
+                  <option value="Yemen">🇾🇪 Yemen</option>
+                  <option value="Other">🌏 Other</option>
+                </Select>
+              </FormControl>
+
+              <Alert status="warning" size="sm">
+                <AlertIcon />
+                <AlertDescription fontSize="sm">
+                  Note: Some profile changes may require re-verification of your account.
+                </AlertDescription>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onEditProfileModalClose}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="blue"
+              onClick={async () => {
+                // Update profile with basic information
+                const userEmail = session?.user?.email || userProfile?.email;
+                if (!userEmail) {
+                  toast({
+                    title: 'Error',
+                    description: 'No email address found',
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                  });
+                  return;
+                }
+
+                try {
+                  setIsProfileSubmitting(true);
+                  const response = await fetch('/api/auth/complete-profile', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      email: userEmail,
+                      firstName: profileForm.firstName,
+                      lastName: profileForm.lastName,
+                      countryOfBirth: profileForm.countryOfBirth,
+                      // Keep existing values for required fields if not provided
+                      dateOfBirth: profileForm.dateOfBirth || '1990-01-01',
+                      gender: profileForm.gender || 'prefer-not-to-say',
+                      address: profileForm.address || 'Not provided',
+                    }),
+                  });
+
+                  const data = await response.json();
+
+                  if (response.ok) {
+                    onEditProfileModalClose();
+                    toast({
+                      title: 'Profile Updated',
+                      description: 'Your profile has been successfully updated',
+                      status: 'success',
+                      duration: 5000,
+                      isClosable: true,
+                    });
+                    fetchUserProfile(); // Refresh data
+                  } else {
+                    throw new Error(data.error || 'Failed to update profile');
+                  }
+                } catch (error: any) {
+                  console.error('Error updating profile:', error);
+                  toast({
+                    title: 'Error',
+                    description: error.message || 'Failed to update profile',
+                    status: 'error',
+                    duration: 5000,
+                    isClosable: true,
+                  });
+                } finally {
+                  setIsProfileSubmitting(false);
+                }
+              }}
+              isLoading={isProfileSubmitting}
+              loadingText="Updating..."
+            >
+              Update Profile
             </Button>
           </ModalFooter>
         </ModalContent>
