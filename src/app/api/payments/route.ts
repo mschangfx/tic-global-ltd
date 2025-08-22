@@ -153,8 +153,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Get current user from session
+    console.log('🔍 Payment API: Checking authentication...');
     const session = await getServerSession(authOptions);
+    console.log('🔍 Payment API: Session data:', session ? 'Session exists' : 'No session');
+    console.log('🔍 Payment API: User email:', session?.user?.email || 'No email');
+
     if (!session?.user?.email) {
+      console.log('❌ Payment API: User not authenticated - no session or email');
       return NextResponse.json(
         { error: 'User not authenticated' },
         { status: 401 }

@@ -389,9 +389,12 @@ class WalletService {
   // Process plan payment using the payments API
   async processPayment(planId: string, planName: string): Promise<{ success: boolean; message: string; newBalance?: WalletBalance; transaction?: any }> {
     try {
+      console.log('🔍 WalletService: Starting payment process for plan:', planId);
       const userEmail = await this.getAuthenticatedUserEmail();
+      console.log('🔍 WalletService: User email from auth check:', userEmail);
 
       if (!userEmail) {
+        console.log('❌ WalletService: No user email found, payment cannot proceed');
         return {
           success: false,
           message: 'User not authenticated'
@@ -399,6 +402,7 @@ class WalletService {
       }
 
       // Use the payments API (userEmail is now obtained from session server-side)
+      console.log('🔍 WalletService: Making API call to /api/payments with planId:', planId);
       const response = await fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -407,7 +411,9 @@ class WalletService {
         })
       });
 
+      console.log('🔍 WalletService: API response status:', response.status);
       const data = await response.json();
+      console.log('🔍 WalletService: API response data:', data);
 
       if (!data.success) {
         return {
