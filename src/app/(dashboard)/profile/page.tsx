@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -155,7 +155,7 @@ export default function ProfilePage() {
   }
 
   // Function to check for verification status updates (for real-time updates)
-  const checkVerificationStatusUpdate = async (silent = true) => {
+  const checkVerificationStatusUpdate = useCallback(async (silent = true) => {
     try {
       if (!silent) {
         setIsPolling(true);
@@ -234,31 +234,7 @@ export default function ProfilePage() {
         setIsPolling(false);
       }
     }
-  };
-
-  // Start polling for verification status updates
-  const startPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    // Poll every 30 seconds for verification status updates
-    const interval = setInterval(() => {
-      checkVerificationStatusUpdate(true);
-    }, 30000);
-
-    setPollingInterval(interval);
-    console.log('🔄 Started polling for verification status updates');
-  };
-
-  // Stop polling
-  const stopPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-      console.log('⏹️ Stopped polling for verification status updates');
-    }
-  };
+  }, [verificationStatus, toast]);
 
   // Manual refresh function
   const refreshVerificationStatus = () => {
@@ -451,25 +427,36 @@ export default function ProfilePage() {
 
   // useEffect to manage polling for real-time updates
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
     // Start polling when user is authenticated and has pending identity verification
     if (status === 'authenticated' && verificationStatus.identityStatus === 'pending') {
-      startPolling();
-    } else {
-      stopPolling();
+      console.log('🔄 Starting polling for verification status updates');
+      interval = setInterval(() => {
+        checkVerificationStatusUpdate(true);
+      }, 30000);
+      setPollingInterval(interval);
     }
 
-    // Cleanup on unmount
+    // Cleanup function
     return () => {
-      stopPolling();
+      if (interval) {
+        clearInterval(interval);
+        console.log('⏹️ Stopped polling for verification status updates');
+      }
+      setPollingInterval(null);
     };
   }, [status, verificationStatus.identityStatus]);
 
   // Cleanup polling on component unmount
   useEffect(() => {
     return () => {
-      stopPolling();
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
     };
-  }, []);
+  }, [pollingInterval]);
 
   // Email verification functions
   const sendEmailVerificationCode = async () => {
