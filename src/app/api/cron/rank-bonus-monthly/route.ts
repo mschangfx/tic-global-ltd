@@ -98,10 +98,11 @@ export async function POST(request: NextRequest) {
             distribution_month_param: currentMonth
           });
 
-          if (error) {
-            throw new Error(`Database error for ${userEmail}: ${error.message}`);
-          }
+        if (error) {
+          throw new Error(`Database error for ${userEmail}: ${error.message}`);
+        }
 
+        if (data && bonusAmount > 0) {
           results.successful++;
           results.totalBonusDistributed += bonusAmount;
           results.totalTicDistributed += bonusAmount / 2;

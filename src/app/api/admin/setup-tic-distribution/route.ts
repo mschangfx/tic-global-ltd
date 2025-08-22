@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the setup
-    const { data: functionCheck, error: functionError } = await supabase
+    const { data: verificationCheck, error: functionError } = await supabase
       .rpc('increment_tic_balance_daily_distribution', {
         user_email: 'test@example.com',
         tic_amount: 0,
