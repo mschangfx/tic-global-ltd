@@ -311,47 +311,27 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
         </Collapse>
 
         {/* Action Buttons */}
-        <HStack spacing={3}>
-          {isFullyVerified ? (
-            <>
-              <Button
-                colorScheme="green"
-                size="sm"
-                onClick={() => router.push('/profile')}
-              >
-                View Profile
-              </Button>
+        {!isFullyVerified && (
+          <HStack spacing={3}>
+            <Button
+              colorScheme="blue"
+              size="sm"
+              onClick={() => router.push('/verify-account')}
+            >
+              {hasStartedVerification ? 'Continue Verification' : 'Start Verification'}
+            </Button>
+
+            {hasStartedVerification && (
               <Button
                 variant="outline"
-                colorScheme="green"
                 size="sm"
-                onClick={() => router.push('/wallet/withdrawal')}
+                onClick={loadVerificationStatus}
               >
-                Make Withdrawal
+                Refresh Status
               </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                colorScheme="blue"
-                size="sm"
-                onClick={() => router.push('/verify-account')}
-              >
-                {hasStartedVerification ? 'Continue Verification' : 'Start Verification'}
-              </Button>
-
-              {hasStartedVerification && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadVerificationStatus}
-                >
-                  Refresh Status
-                </Button>
-              )}
-            </>
-          )}
-        </HStack>
+            )}
+          </HStack>
+        )}
       </Box>
     </Alert>
   );
