@@ -149,12 +149,15 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
     verificationStatus.identityDocumentUploaded;
 
   // ✅ RENDER LOGIC AFTER ALL HOOKS - NO EARLY RETURNS ABOVE
-  // Don't show banner if fully verified or still loading
-  if (isLoading || isFullyVerified) {
+  // Don't show banner if still loading
+  if (isLoading) {
     return null;
   }
 
   const getAlertStatus = () => {
+    if (isFullyVerified) {
+      return 'success'; // Fully verified
+    }
     if (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) {
       return 'info'; // Under review
     }
@@ -165,16 +168,22 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
   };
 
   const getAlertTitle = () => {
+    if (isFullyVerified) {
+      return 'Fully Verified';
+    }
     if (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) {
       return 'Verification Under Review';
     }
     if (hasStartedVerification) {
       return 'Complete Your Verification';
     }
-    return 'Account Verification Required';
+    return 'Complete the Verification';
   };
 
   const getAlertDescription = () => {
+    if (isFullyVerified) {
+      return 'Your account is fully verified! You now have access to all features including withdrawals and higher limits.';
+    }
     if (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) {
       return 'Your documents are being reviewed by our team. This usually takes 1-2 business days.';
     }
@@ -231,7 +240,11 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
           </HStack>
           <Progress
             value={getCompletionPercentage()}
-            colorScheme={getAlertStatus() === 'error' ? 'red' : getAlertStatus() === 'warning' ? 'orange' : 'blue'}
+            colorScheme={
+              getAlertStatus() === 'success' ? 'green' :
+              getAlertStatus() === 'error' ? 'red' :
+              getAlertStatus() === 'warning' ? 'orange' : 'blue'
+            }
             size="sm"
             borderRadius="full"
           />
@@ -299,22 +312,44 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
 
         {/* Action Buttons */}
         <HStack spacing={3}>
-          <Button
-            colorScheme="blue"
-            size="sm"
-            onClick={() => router.push('/verify-account')}
-          >
-            {hasStartedVerification ? 'Continue Verification' : 'Start Verification'}
-          </Button>
-          
-          {hasStartedVerification && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadVerificationStatus}
-            >
-              Refresh Status
-            </Button>
+          {isFullyVerified ? (
+            <>
+              <Button
+                colorScheme="green"
+                size="sm"
+                onClick={() => router.push('/profile')}
+              >
+                View Profile
+              </Button>
+              <Button
+                variant="outline"
+                colorScheme="green"
+                size="sm"
+                onClick={() => router.push('/wallet/withdrawal')}
+              >
+                Make Withdrawal
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                colorScheme="blue"
+                size="sm"
+                onClick={() => router.push('/verify-account')}
+              >
+                {hasStartedVerification ? 'Continue Verification' : 'Start Verification'}
+              </Button>
+
+              {hasStartedVerification && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadVerificationStatus}
+                >
+                  Refresh Status
+                </Button>
+              )}
+            </>
           )}
         </HStack>
       </Box>
