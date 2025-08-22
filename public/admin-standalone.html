@@ -1072,24 +1072,40 @@
                     };
 
                     // First get the deposit details
+                    console.log(`🔍 Attempting to ${action} deposit with ID: ${id}`);
                     const getDepositResponse = await fetch(`${SUPABASE_URL}/rest/v1/deposits?id=eq.${id}&select=*`, {
                         headers: headers
                     });
 
+                    console.log(`🔍 Deposit fetch response status: ${getDepositResponse.status}`);
                     if (!getDepositResponse.ok) {
+                        const errorText = await getDepositResponse.text();
+                        console.error(`❌ Failed to fetch deposit: ${errorText}`);
                         throw new Error('Failed to fetch deposit details');
                     }
 
                     const deposits = await getDepositResponse.json();
+                    console.log(`🔍 Found deposits:`, deposits);
                     if (deposits.length === 0) {
+                        console.error(`❌ No deposit found with ID: ${id}`);
                         throw new Error('Deposit not found');
                     }
 
                     const deposit = deposits[0];
+                    console.log(`🔍 Current deposit status: "${deposit.status}"`);
+                    console.log(`🔍 Deposit details:`, deposit);
+
+                    // Check if deposit is already in the target status
+                    const targetStatus = action === 'approve' ? 'completed' : 'rejected';
+                    if (deposit.status === targetStatus) {
+                        console.log(`⚠️ Deposit is already ${targetStatus}, no update needed`);
+                        showMessage(`⚠️ Deposit is already ${targetStatus}!`, 'warning');
+                        return;
+                    }
 
                     // Update deposit status with admin info
                     const updateData = {
-                        status: action === 'approve' ? 'completed' : 'rejected',
+                        status: targetStatus,
                         updated_at: new Date().toISOString(),
                         admin_email: 'admin@ticgloballtd.com',
                         admin_notes: `${action === 'approve' ? 'Approved' : 'Rejected'} via standalone admin panel`
@@ -1103,16 +1119,22 @@
                         updateData.rejected_at = new Date().toISOString();
                     }
 
+                    console.log(`🔍 Updating deposit with data:`, updateData);
                     const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/deposits?id=eq.${id}`, {
                         method: 'PATCH',
                         headers: headers,
                         body: JSON.stringify(updateData)
                     });
 
+                    console.log(`🔍 Update response status: ${updateResponse.status}`);
                     if (!updateResponse.ok) {
                         const errorText = await updateResponse.text();
+                        console.error(`❌ Update failed: ${errorText}`);
                         throw new Error(`Failed to update deposit status: ${errorText}`);
                     }
+
+                    const updateResult = await updateResponse.json();
+                    console.log(`✅ Update successful:`, updateResult);
 
                     // If approved, the database trigger will automatically credit the wallet
                     // No manual wallet crediting needed - the trigger handles it
@@ -1125,6 +1147,12 @@
                     }
 
                     showMessage(`✅ Deposit ${action === 'approve' ? 'approved and completed' : 'rejected'} successfully!`, 'success');
+
+                    // Force refresh the transactions list to show the updated status
+                    console.log(`🔄 Forcing transaction list refresh after ${action}`);
+                    setTimeout(() => {
+                        loadTransactions(currentTransactionStatus, false);
+                    }, 1000); // Wait 1 second for database to update
 
                 } else if (type === 'withdrawal') {
                     // Handle withdrawal with improved error handling
@@ -1182,6 +1210,12 @@
                         const refundAmount = json.refunded || 'unknown amount';
                         showMessage(`✅ Withdrawal rejected and $${refundAmount} refunded to user wallet!`, 'success');
                     }
+
+                    // Force refresh the transactions list to show the updated status
+                    console.log(`🔄 Forcing transaction list refresh after withdrawal ${action}`);
+                    setTimeout(() => {
+                        loadTransactions(currentTransactionStatus, false);
+                    }, 1000); // Wait 1 second for database to update
                 }
 
             } catch (error) {
