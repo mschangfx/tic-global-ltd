@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get unique user emails
-    const uniqueUsers = [...new Set(usersWithReferrals?.map(u => u.referrer_email) || [])];
+    const userEmails = usersWithReferrals?.map(u => u.referrer_email) || [];
+    const uniqueUsers = Array.from(new Set(userEmails));
     console.log(`📊 Found ${uniqueUsers.length} users with referrals to check`);
 
     if (uniqueUsers.length === 0) {
