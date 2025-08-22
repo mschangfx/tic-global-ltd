@@ -347,6 +347,98 @@ export default function ProfilePage() {
     }
   };
 
+  // Edit profile function
+  const handleEditProfile = async () => {
+    const userEmail = session?.user?.email || userProfile?.email;
+    if (!userEmail) {
+      toast({
+        title: 'Error',
+        description: 'No email address found',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!profileForm.firstName.trim() || !profileForm.lastName.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'First name and last name are required',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setIsProfileSubmitting(true);
+      const response = await fetch('/api/auth/complete-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          firstName: profileForm.firstName.trim(),
+          lastName: profileForm.lastName.trim(),
+          countryOfBirth: profileForm.countryOfBirth || userProfile?.country || '',
+          // Keep existing values for required fields if not provided
+          dateOfBirth: profileForm.dateOfBirth || '1990-01-01',
+          gender: profileForm.gender || 'prefer-not-to-say',
+          address: profileForm.address || 'Not provided',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update local state with new profile data
+        setUserProfile(prev => ({
+          ...prev!,
+          firstName: profileForm.firstName.trim(),
+          lastName: profileForm.lastName.trim(),
+          country: profileForm.countryOfBirth || prev?.country || '',
+        }));
+
+        // Update verification status if profile is now complete
+        setVerificationStatus(prev => ({
+          ...prev,
+          profileCompleted: true,
+        }));
+
+        onEditProfileModalClose();
+        toast({
+          title: '✅ Profile Updated!',
+          description: 'Your profile has been successfully updated.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+
+        // Refresh profile data from server
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        throw new Error(data.error || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update profile',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsProfileSubmitting(false);
+    }
+  };
+
   // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   // Show loading spinner while session is loading or fetching profile
   if (status === 'loading' || (status === 'authenticated' && isLoading)) {
@@ -416,7 +508,18 @@ export default function ProfilePage() {
                   colorScheme="blue"
                   size="sm"
                   leftIcon={<Icon as={FaEdit} />}
-                  onClick={onEditProfileModalOpen}
+                  onClick={() => {
+                    // Pre-fill form with existing data
+                    setProfileForm({
+                      firstName: userProfile?.firstName || '',
+                      lastName: userProfile?.lastName || '',
+                      dateOfBirth: '',
+                      countryOfBirth: userProfile?.country || '',
+                      gender: '',
+                      address: '',
+                    });
+                    onEditProfileModalOpen();
+                  }}
                 >
                   Edit Profile
                 </Button>
@@ -554,6 +657,125 @@ export default function ProfilePage() {
           </Card>
         </VStack>
       </Container>
+
+      {/* Edit Profile Modal */}
+      <Modal isOpen={isEditProfileModalOpen} onClose={onEditProfileModalClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit Profile</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack spacing={4}>
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                  <AlertTitle>Update Your Profile Information</AlertTitle>
+                  <AlertDescription>
+                    Please provide accurate information. This will help complete your profile verification.
+                  </AlertDescription>
+                </Box>
+              </Alert>
+
+              <HStack spacing={4} width="100%">
+                <FormControl isRequired>
+                  <FormLabel>First Name</FormLabel>
+                  <Input
+                    placeholder="Enter your first name"
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Last Name</FormLabel>
+                  <Input
+                    placeholder="Enter your last name"
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  />
+                </FormControl>
+              </HStack>
+
+              <HStack spacing={4} width="100%">
+                <FormControl>
+                  <FormLabel>Date of Birth</FormLabel>
+                  <Input
+                    type="date"
+                    value={profileForm.dateOfBirth}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Gender</FormLabel>
+                  <Select
+                    placeholder="Select gender"
+                    value={profileForm.gender}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, gender: e.target.value }))}
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="prefer-not-to-say">Prefer not to say</option>
+                  </Select>
+                </FormControl>
+              </HStack>
+
+              <FormControl>
+                <FormLabel>Country of Birth</FormLabel>
+                <Select
+                  placeholder="Select your country of birth"
+                  value={profileForm.countryOfBirth}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, countryOfBirth: e.target.value }))}
+                >
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="Japan">Japan</option>
+                  <option value="South Korea">South Korea</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Malaysia">Malaysia</option>
+                  <option value="Thailand">Thailand</option>
+                  <option value="Philippines">Philippines</option>
+                  <option value="Indonesia">Indonesia</option>
+                  <option value="Vietnam">Vietnam</option>
+                  <option value="India">India</option>
+                  <option value="China">China</option>
+                  <option value="Hong Kong">Hong Kong</option>
+                  <option value="Taiwan">Taiwan</option>
+                  <option value="Other">Other</option>
+                </Select>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Address</FormLabel>
+                <Input
+                  placeholder="Enter your address (optional)"
+                  value={profileForm.address}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, address: e.target.value }))}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={handleEditProfile}
+              isLoading={isProfileSubmitting}
+              loadingText="Updating..."
+            >
+              Update Profile
+            </Button>
+            <Button variant="ghost" onClick={onEditProfileModalClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
