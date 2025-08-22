@@ -147,10 +147,20 @@ export default function ProfilePage() {
     );
   }
 
-  // Redirect to login if not authenticated
+  // Handle unauthenticated redirect via useEffect
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/join');
+    }
+  }, [status, router]);
+
+  // Show loading placeholder while redirecting
   if (status === 'unauthenticated') {
-    router.push('/join');
-    return null;
+    return (
+      <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
+        <Spinner />
+      </Box>
+    );
   }
 
   // Manual refresh function
@@ -241,8 +251,6 @@ export default function ProfilePage() {
 
   const fetchUserProfile = async () => {
     try {
-      setIsLoading(true);
-
       // Use API route to fetch profile data
       const response = await fetch('/api/auth/verification-status', {
         method: 'GET',
@@ -313,122 +321,33 @@ export default function ProfilePage() {
         duration: 5000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  // Unified effect to fetch profile data (prevents duplication and race conditions)
   useEffect(() => {
     let isMounted = true;
+    const ac = new AbortController();
 
-    const loadProfile = async () => {
-      if (status !== 'authenticated' || !session?.user?.email) {
-        return;
-      }
-
+    const run = async () => {
+      if (status !== 'authenticated' || !session?.user?.email) return;
       try {
         setIsLoading(true);
-
-        const response = await fetch('/api/auth/verification-status', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch profile data: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!isMounted) return; // Prevent state updates if component unmounted
-
-        if (data.success && data.user) {
-          setUserProfile({
-            email: data.user.email || '',
-            firstName: data.user.first_name || '',
-            lastName: data.user.last_name || '',
-            phoneNumber: data.user.phone_number || '',
-            country: data.user.country_of_residence || '',
-          });
-
-          setVerificationStatus({
-            emailVerified: data.user.email_verified || false,
-            phoneVerified: data.user.phone_verified || false,
-            profileCompleted: data.user.profile_completed || false,
-            identityVerified: data.user.identity_verification_status === 'approved',
-            identityStatus: data.user.identity_verification_submitted
-              ? data.user.identity_verification_status || 'pending'
-              : null,
-          });
-        } else {
-          // Set default values
-          setUserProfile({
-            email: session?.user?.email || '',
-            firstName: '',
-            lastName: '',
-            phoneNumber: '',
-            country: '',
-          });
-
-          setVerificationStatus({
-            emailVerified: false,
-            phoneVerified: false,
-            profileCompleted: false,
-            identityVerified: false,
-            identityStatus: null,
-          });
-        }
-      } catch (error) {
-        if (!isMounted) return;
-
-        console.error('Error fetching profile:', error);
-
-        // Set default values to prevent UI errors
-        setUserProfile({
-          email: session?.user?.email || '',
-          firstName: '',
-          lastName: '',
-          phoneNumber: '',
-          country: '',
-        });
-
-        setVerificationStatus({
-          emailVerified: false,
-          phoneVerified: false,
-          profileCompleted: false,
-          identityVerified: false,
-          identityStatus: null,
-        });
-
-        toast({
-          title: "Error",
-          description: "Failed to load profile data. Please refresh the page.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
+        await fetchUserProfile(); // re-use existing function (it does its own try/catch)
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    loadProfile();
+    run();
 
     return () => {
-      isMounted = false; // Cleanup flag
+      isMounted = false;
+      ac.abort();
     };
-  }, [status, session?.user?.email, toast]);
+  }, [status, session?.user?.email]);
 
-  // Simple useEffect to fetch initial data
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchUserProfile();
-    }
-  }, [status]);
+
 
   // Email verification functions
   const sendEmailVerificationCode = async () => {
