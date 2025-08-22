@@ -96,6 +96,7 @@ export default function ProfilePage() {
   const [profileForm, setProfileForm] = useState({
     firstName: '',
     lastName: '',
+    phoneNumber: '',
     dateOfBirth: '',
     countryOfBirth: '',
     gender: '',
@@ -154,7 +155,7 @@ export default function ProfilePage() {
             firstName: data.user.first_name,
             lastName: data.user.last_name,
             phoneNumber: data.user.phone_number,
-            country: data.user.country,
+            country: data.user.country_of_birth || data.user.country,
           });
 
           setVerificationStatus({
@@ -390,6 +391,7 @@ export default function ProfilePage() {
           email: userEmail,
           firstName: profileForm.firstName.trim(),
           lastName: profileForm.lastName.trim(),
+          phoneNumber: profileForm.phoneNumber.trim(),
           countryOfBirth: profileForm.countryOfBirth || userProfile?.country || '',
           // Keep existing values for required fields if not provided
           dateOfBirth: profileForm.dateOfBirth || '1990-01-01',
@@ -406,6 +408,7 @@ export default function ProfilePage() {
           ...prev!,
           firstName: profileForm.firstName.trim(),
           lastName: profileForm.lastName.trim(),
+          phoneNumber: profileForm.phoneNumber.trim(),
           country: profileForm.countryOfBirth || prev?.country || '',
         }));
 
@@ -622,6 +625,7 @@ export default function ProfilePage() {
                     setProfileForm({
                       firstName: userProfile?.firstName || '',
                       lastName: userProfile?.lastName || '',
+                      phoneNumber: userProfile?.phoneNumber || '',
                       dateOfBirth: '',
                       countryOfBirth: userProfile?.country || '',
                       gender: '',
@@ -830,6 +834,15 @@ export default function ProfilePage() {
                   />
                 </FormControl>
               </HStack>
+
+              <FormControl>
+                <FormLabel>Phone Number</FormLabel>
+                <Input
+                  placeholder="Enter your phone number (e.g., +1234567890)"
+                  value={profileForm.phoneNumber}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                />
+              </FormControl>
 
               <HStack spacing={4} width="100%">
                 <FormControl>

@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
       email,
       firstName,
       lastName,
+      phoneNumber,
       dateOfBirth,
       countryOfBirth,
       gender,
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     if (!email || !firstName || !lastName || !dateOfBirth || !countryOfBirth || !gender || !address) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'All required fields must be provided' },
         { status: 400 }
       );
     }
@@ -32,10 +33,16 @@ export async function POST(request: NextRequest) {
       last_name: lastName,
       date_of_birth: dateOfBirth,
       country_of_birth: countryOfBirth,
+      country: countryOfBirth, // Store in both fields for compatibility
       gender: gender,
       address: address,
       updated_at: new Date().toISOString()
     };
+
+    // Add phone number if provided
+    if (phoneNumber && phoneNumber.trim()) {
+      updateData.phone_number = phoneNumber.trim();
+    }
 
     console.log('Profile completion API - Email:', email);
     console.log('Profile completion API - Update data:', updateData);
