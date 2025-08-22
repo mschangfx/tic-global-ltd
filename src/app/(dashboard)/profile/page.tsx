@@ -96,6 +96,11 @@ export default function ProfilePage() {
   const { isOpen: isProfileModalOpen, onOpen: onProfileModalOpen, onClose: onProfileModalClose } = useDisclosure();
   const { isOpen: isIdentityModalOpen, onOpen: onIdentityModalOpen, onClose: onIdentityModalClose } = useDisclosure();
 
+  // Real-time update states
+  const [isPolling, setIsPolling] = useState(false);
+  const [lastStatusCheck, setLastStatusCheck] = useState<Date | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
   // Email verification states
   const [emailCode, setEmailCode] = useState('');
   const [isEmailCodeSent, setIsEmailCodeSent] = useState(false);
@@ -148,6 +153,117 @@ export default function ProfilePage() {
     router.push('/join');
     return null;
   }
+
+  // Function to check for verification status updates (for real-time updates)
+  const checkVerificationStatusUpdate = async (silent = true) => {
+    try {
+      if (!silent) {
+        setIsPolling(true);
+      }
+
+      // Add cache-busting parameter to ensure fresh data
+      const response = await fetch(`/api/auth/verification-status?_t=${Date.now()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch verification status');
+      }
+
+      const data = await response.json();
+      console.log('🔄 Real-time verification status check:', data);
+
+      if (data.success && data.user) {
+        const newVerificationStatus = {
+          emailVerified: data.user.email_verified || false,
+          phoneVerified: data.user.phone_verified || false,
+          profileCompleted: data.user.profile_completed || false,
+          identityVerified: data.user.identity_verification_status === 'approved',
+          identityStatus: data.user.identity_verification_submitted
+            ? data.user.identity_verification_status || 'pending'
+            : null,
+        };
+
+        // Check if verification status has changed
+        const hasStatusChanged =
+          newVerificationStatus.identityVerified !== verificationStatus.identityVerified ||
+          newVerificationStatus.identityStatus !== verificationStatus.identityStatus;
+
+        if (hasStatusChanged) {
+          console.log('✅ Verification status changed, updating UI');
+          setVerificationStatus(newVerificationStatus);
+
+          // Show toast notification for status changes
+          if (newVerificationStatus.identityStatus === 'approved' && !verificationStatus.identityVerified) {
+            toast({
+              title: '🎉 Identity Verified!',
+              description: 'Your identity verification has been approved.',
+              status: 'success',
+              duration: 5000,
+              isClosable: true,
+            });
+          } else if (newVerificationStatus.identityStatus === 'rejected' && verificationStatus.identityStatus !== 'rejected') {
+            toast({
+              title: '❌ Identity Verification Rejected',
+              description: 'Your identity verification was rejected. Please resubmit your documents.',
+              status: 'error',
+              duration: 8000,
+              isClosable: true,
+            });
+          }
+        }
+
+        setLastStatusCheck(new Date());
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+      if (!silent) {
+        toast({
+          title: 'Error',
+          description: 'Failed to check verification status',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } finally {
+      if (!silent) {
+        setIsPolling(false);
+      }
+    }
+  };
+
+  // Start polling for verification status updates
+  const startPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+
+    // Poll every 30 seconds for verification status updates
+    const interval = setInterval(() => {
+      checkVerificationStatusUpdate(true);
+    }, 30000);
+
+    setPollingInterval(interval);
+    console.log('🔄 Started polling for verification status updates');
+  };
+
+  // Stop polling
+  const stopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+      console.log('⏹️ Stopped polling for verification status updates');
+    }
+  };
+
+  // Manual refresh function
+  const refreshVerificationStatus = () => {
+    checkVerificationStatusUpdate(false);
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -332,6 +448,28 @@ export default function ProfilePage() {
       isMounted = false; // Cleanup flag
     };
   }, [status, session?.user?.email, toast]);
+
+  // useEffect to manage polling for real-time updates
+  useEffect(() => {
+    // Start polling when user is authenticated and has pending identity verification
+    if (status === 'authenticated' && verificationStatus.identityStatus === 'pending') {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      stopPolling();
+    };
+  }, [status, verificationStatus.identityStatus]);
+
+  // Cleanup polling on component unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
 
   // Email verification functions
   const sendEmailVerificationCode = async () => {
@@ -712,12 +850,30 @@ export default function ProfilePage() {
           
           {/* Header */}
           <Box textAlign="center" py={4}>
-            <Heading as="h1" size="2xl" color={textColor} mb={4}>
-              Profile & Verification
-            </Heading>
+            <Flex justify="center" align="center" mb={4}>
+              <Heading as="h1" size="2xl" color={textColor}>
+                Profile & Verification
+              </Heading>
+              <Button
+                ml={4}
+                size="sm"
+                colorScheme="blue"
+                variant="outline"
+                onClick={refreshVerificationStatus}
+                isLoading={isPolling}
+                loadingText="Checking..."
+              >
+                🔄 Refresh Status
+              </Button>
+            </Flex>
             <Text fontSize="lg" color={subtleTextColor}>
               Manage your account information and verification status
             </Text>
+            {lastStatusCheck && (
+              <Text fontSize="sm" color={subtleTextColor} mt={2}>
+                Last updated: {lastStatusCheck.toLocaleTimeString()}
+              </Text>
+            )}
           </Box>
 
           {/* Account Status Card */}
@@ -789,6 +945,21 @@ export default function ProfilePage() {
                     size="md"
                     borderRadius="full"
                   />
+                </Box>
+              )}
+
+              {/* Real-time Status Indicator */}
+              {verificationStatus.identityStatus === 'pending' && pollingInterval && (
+                <Box mt={4} p={3} bg="blue.50" borderRadius="md" border="1px solid" borderColor="blue.200">
+                  <HStack spacing={2}>
+                    <Spinner size="sm" color="blue.500" />
+                    <Text fontSize="sm" color="blue.700" fontWeight="medium">
+                      🔄 Monitoring for verification updates...
+                    </Text>
+                  </HStack>
+                  <Text fontSize="xs" color="blue.600" mt={1}>
+                    We'll notify you immediately when your verification status changes
+                  </Text>
                 </Box>
               )}
             </CardBody>
