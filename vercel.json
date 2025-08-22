@@ -6,16 +6,12 @@
   },
   "crons": [
     {
-      "path": "/api/cron/daily-tic-distribution",
+      "path": "/api/cron/daily-operations",
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/cron/update-expired-subscriptions",
-      "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/cron/daily-rank-maintenance",
-      "schedule": "0 2 * * *"
+      "path": "/api/cron/rank-bonus-monthly",
+      "schedule": "0 0 1 * *"
     }
   ],
   "buildCommand": "npm run build"
