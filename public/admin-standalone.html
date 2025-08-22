@@ -542,6 +542,10 @@
                             <button onclick="loadTransactions('cancelled')" class="btn" style="background: #e74c3c; color: white;">❌ Cancelled/Rejected</button>
                             <button onclick="loadTransactions('all')" class="btn" style="background: #6c757d; color: white;">📊 All</button>
                         </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <button onclick="createTestDeposit()" class="btn" style="background: #17a2b8; color: white;">🧪 Create Test Deposit</button>
+                            <button onclick="createTestWithdrawal()" class="btn" style="background: #ffc107; color: black;">🧪 Create Test Withdrawal</button>
+                        </div>
                     </div>
                     <div id="transactionsList">
                         <div class="loading">
@@ -623,6 +627,76 @@
 
         // Global variable to track current transaction status filter
         let currentTransactionStatus = 'all';
+
+        // Function to create test deposit for approval testing
+        async function createTestDeposit() {
+            if (!confirm('🧪 Create a test deposit with pending status for approval testing?')) {
+                return;
+            }
+
+            try {
+                showMessage('🔄 Creating test deposit...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/create-test-deposit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage(`✅ Test deposit created successfully! Amount: $${data.deposit.amount}`, 'success');
+                    // Switch to pending view to show the new deposit
+                    setTimeout(() => {
+                        loadTransactions('pending', false);
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Failed to create test deposit');
+                }
+
+            } catch (error) {
+                console.error('❌ Error creating test deposit:', error);
+                showMessage(`❌ Error creating test deposit: ${error.message}`, 'error');
+            }
+        }
+
+        // Function to create test withdrawal for approval testing
+        async function createTestWithdrawal() {
+            if (!confirm('🧪 Create a test withdrawal with pending status for approval testing?')) {
+                return;
+            }
+
+            try {
+                showMessage('🔄 Creating test withdrawal...', 'success');
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/create-test-withdrawal`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin-key-2024'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage(`✅ Test withdrawal created successfully! Amount: $${data.withdrawal.amount}`, 'success');
+                    // Switch to pending view to show the new withdrawal
+                    setTimeout(() => {
+                        loadTransactions('pending', false);
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Failed to create test withdrawal');
+                }
+
+            } catch (error) {
+                console.error('❌ Error creating test withdrawal:', error);
+                showMessage(`❌ Error creating test withdrawal: ${error.message}`, 'error');
+            }
+        }
 
         // Helper functions for transaction status display
         function getStatusColor(status) {
