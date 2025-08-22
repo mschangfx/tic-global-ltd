@@ -628,6 +628,55 @@
         // Global variable to track current transaction status filter
         let currentTransactionStatus = 'all';
 
+        // Function to update filter button labels with transaction counts
+        function updateFilterButtonCounts(deposits, withdrawals) {
+            try {
+                // Combine all transactions
+                const allTransactions = [
+                    ...deposits.map(d => ({ ...d, type: 'deposit' })),
+                    ...withdrawals.map(w => ({ ...w, type: 'withdrawal' }))
+                ];
+
+                // Count by status
+                const statusCounts = allTransactions.reduce((acc, transaction) => {
+                    const status = transaction.status;
+                    acc[status] = (acc[status] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const pendingCount = statusCounts.pending || 0;
+                const completedCount = statusCounts.completed || 0;
+                const rejectedCount = (statusCounts.rejected || 0) + (statusCounts.cancelled || 0);
+                const totalCount = allTransactions.length;
+
+                // Update button text with counts
+                const buttons = document.querySelectorAll('.transaction-controls button');
+                buttons.forEach(button => {
+                    const text = button.textContent.trim();
+                    if (text.includes('Pending')) {
+                        button.innerHTML = `📋 Pending ${pendingCount > 0 ? `(${pendingCount})` : ''}`;
+                        // Highlight pending button if there are pending transactions
+                        if (pendingCount > 0) {
+                            button.style.background = '#dc3545';
+                            button.style.color = 'white';
+                            button.style.fontWeight = 'bold';
+                        }
+                    } else if (text.includes('Completed')) {
+                        button.innerHTML = `✅ Completed ${completedCount > 0 ? `(${completedCount})` : ''}`;
+                    } else if (text.includes('Cancelled')) {
+                        button.innerHTML = `❌ Cancelled/Rejected ${rejectedCount > 0 ? `(${rejectedCount})` : ''}`;
+                    } else if (text.includes('All')) {
+                        button.innerHTML = `📊 All (${totalCount})`;
+                    }
+                });
+
+                console.log('📊 Transaction counts updated:', { pending: pendingCount, completed: completedCount, rejected: rejectedCount, total: totalCount });
+
+            } catch (error) {
+                console.error('❌ Error updating filter button counts:', error);
+            }
+        }
+
         // Function to create test deposit for approval testing
         async function createTestDeposit() {
             if (!confirm('🧪 Create a test deposit with pending status for approval testing?')) {
@@ -1018,6 +1067,9 @@
                 displayTransactions(transactions);
                 const statusText = status === 'all' ? 'total' : status;
                 showMessage(`✅ Loaded ${transactions.length} ${statusText} transactions (${deposits.length} deposits, ${withdrawals.length} withdrawals)`, 'success');
+
+                // Update filter button labels with counts
+                updateFilterButtonCounts(deposits, withdrawals);
             } catch (error) {
                 console.error('Error loading transactions:', error);
                 showMessage(`❌ Error loading transactions: ${error.message}`, 'error');
@@ -1118,12 +1170,21 @@
                     </div>
 
                     <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                        <button onclick="handleTransaction('${transaction.id}', 'approve', '${transaction.type}')" class="btn btn-success">
-                            ✅ Approve
-                        </button>
-                        <button onclick="handleTransaction('${transaction.id}', 'reject', '${transaction.type}')" class="btn btn-danger">
-                            ❌ Reject
-                        </button>
+                        ${transaction.status === 'pending' ? `
+                            <button onclick="handleTransaction('${transaction.id}', 'approve', '${transaction.type}')" class="btn btn-success">
+                                ✅ Approve
+                            </button>
+                            <button onclick="handleTransaction('${transaction.id}', 'reject', '${transaction.type}')" class="btn btn-danger">
+                                ❌ Reject
+                            </button>
+                        ` : `
+                            <div style="padding: 8px 16px; background: #f8f9fa; border-radius: 4px; color: #6c757d; font-size: 14px;">
+                                ${transaction.status === 'completed' ? '✅ Already Processed' :
+                                  transaction.status === 'rejected' ? '❌ Already Rejected' :
+                                  transaction.status === 'cancelled' ? '❌ Already Cancelled' :
+                                  '📋 No Actions Available'}
+                            </div>
+                        `}
                     </div>
                 </div>
             `).join('');
