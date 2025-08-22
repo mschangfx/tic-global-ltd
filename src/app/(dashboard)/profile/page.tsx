@@ -440,6 +440,15 @@ export default function ProfilePage() {
         checkVerificationStatusUpdate(true);
       }, 30000);
       setPollingInterval(interval);
+    } else {
+      // Clear any existing interval when conditions are not met
+      setPollingInterval(prev => {
+        if (prev) {
+          clearInterval(prev);
+          console.log('⏹️ Stopped polling for verification status updates');
+        }
+        return null;
+      });
     }
 
     // Cleanup function
@@ -448,19 +457,22 @@ export default function ProfilePage() {
         clearInterval(interval);
         console.log('⏹️ Stopped polling for verification status updates');
       }
-      setPollingInterval(null);
     };
   }, [status, verificationStatus.identityStatus]);
 
-  // Cleanup polling on component unmount
+  // Final cleanup on component unmount
   useEffect(() => {
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
-      }
+      // Clean up any remaining intervals on unmount
+      setPollingInterval(prev => {
+        if (prev) {
+          clearInterval(prev);
+          console.log('🧹 Final cleanup: Stopped polling on unmount');
+        }
+        return null;
+      });
     };
-  }, [pollingInterval]);
+  }, []); // Empty dependency array - only runs on mount/unmount
 
   // Email verification functions
   const sendEmailVerificationCode = async () => {
