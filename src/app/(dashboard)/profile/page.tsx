@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -155,7 +155,7 @@ export default function ProfilePage() {
   }
 
   // Function to check for verification status updates (for real-time updates)
-  const checkVerificationStatusUpdate = useCallback(async (silent = true) => {
+  const checkVerificationStatusUpdate = async (silent = true) => {
     try {
       if (!silent) {
         setIsPolling(true);
@@ -238,7 +238,7 @@ export default function ProfilePage() {
         setIsPolling(false);
       }
     }
-  }, [toast]);
+  };
 
   // Manual refresh function
   const refreshVerificationStatus = () => {
