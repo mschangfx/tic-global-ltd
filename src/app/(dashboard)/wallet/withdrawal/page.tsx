@@ -163,20 +163,32 @@ function WithdrawalPageWithParams() {
       const response = await fetch(`/api/auth/verification-status?email=${encodeURIComponent(session.user.email)}`);
       const data = await response.json();
 
-      if (response.ok) {
-        setVerificationStatus(data);
+      if (response.ok && data.success && data.user) {
+        // Map API response to withdrawal page format
+        const mappedStatus = {
+          emailVerified: data.user.email_verified || false,
+          phoneVerified: data.user.phone_verified || true, // Always true since phone verification is removed
+          profileCompleted: data.user.profile_completed || false,
+          identityVerified: data.user.identity_verification_status === 'approved',
+          identityDocumentUploaded: data.user.identity_verification_submitted || false,
+          identityStatus: data.user.identity_verification_submitted
+            ? data.user.identity_verification_status || 'pending'
+            : null,
+        };
 
-        // Check if fully verified
-        const isVerified = data.emailVerified &&
-          data.profileCompleted &&
-          data.identityVerified &&
-          data.identityDocumentUploaded;
+        setVerificationStatus(mappedStatus);
+
+        // Check if fully verified - all steps must be completed
+        const isVerified = mappedStatus.emailVerified &&
+          mappedStatus.profileCompleted &&
+          mappedStatus.identityVerified &&
+          mappedStatus.identityDocumentUploaded;
 
         setIsFullyVerified(isVerified);
-        console.log('🔍 Verification status:', data);
-        console.log('✅ Is fully verified:', isVerified);
+        console.log('🔍 Withdrawal verification status:', mappedStatus);
+        console.log('✅ Is fully verified for withdrawal:', isVerified);
       } else {
-        console.error('Failed to fetch verification status:', data.message);
+        console.error('Failed to fetch verification status:', data.message || 'API error');
       }
     } catch (error) {
       console.error('Error checking verification status:', error);
@@ -1032,36 +1044,61 @@ function WithdrawalPageWithParams() {
                   <VStack spacing={1} align="start" pl={4}>
                     {verificationStatus && (
                       <>
-                        {!verificationStatus.emailVerified && (
-                          <Text fontSize="sm">• ❌ Email verification</Text>
-                        )}
-                        {!verificationStatus.profileCompleted && (
-                          <Text fontSize="sm">• ❌ Profile completion</Text>
-                        )}
-                        {!verificationStatus.identityDocumentUploaded && (
-                          <Text fontSize="sm">• ❌ Identity document upload</Text>
-                        )}
-                        {!verificationStatus.identityVerified && (
-                          <Text fontSize="sm">
-                            • ❌ Identity verification (required)
-                          </Text>
-                        )}
+                        <Text fontSize="sm" color={verificationStatus.emailVerified ? 'green.500' : 'red.500'}>
+                          • {verificationStatus.emailVerified ? '✅' : '❌'} Email verification
+                        </Text>
+                        <Text fontSize="sm" color={verificationStatus.profileCompleted ? 'green.500' : 'red.500'}>
+                          • {verificationStatus.profileCompleted ? '✅' : '❌'} Profile completion
+                        </Text>
+                        <Text fontSize="sm" color={verificationStatus.identityDocumentUploaded ? 'green.500' : 'red.500'}>
+                          • {verificationStatus.identityDocumentUploaded ? '✅' : '❌'} Identity document upload
+                        </Text>
+                        <Text fontSize="sm" color={verificationStatus.identityVerified ? 'green.500' : 'red.500'}>
+                          • {verificationStatus.identityVerified ? '✅' : '❌'} Identity verification
+                          {verificationStatus.identityStatus === 'pending' && ' (under review)'}
+                          {verificationStatus.identityStatus === 'rejected' && ' (rejected - please reupload)'}
+                          {!verificationStatus.identityDocumentUploaded && ' (required)'}
+                        </Text>
                       </>
                     )}
                   </VStack>
-                  <Button
-                    colorScheme="blue"
-                    size="sm"
-                    onClick={() => router.push('/verify-account')}
-                    mt={2}
-                  >
-                    Complete Verification
-                  </Button>
+                  <HStack spacing={3} mt={3}>
+                    <Button
+                      colorScheme="blue"
+                      size="sm"
+                      onClick={() => router.push('/verify-account')}
+                    >
+                      Complete Verification
+                    </Button>
+                    <Button
+                      variant="outline"
+                      colorScheme="blue"
+                      size="sm"
+                      onClick={checkVerificationStatus}
+                      isLoading={isLoadingVerification}
+                      loadingText="Checking..."
+                    >
+                      Refresh Status
+                    </Button>
+                  </HStack>
                 </VStack>
               </AlertDescription>
             </Box>
           </Alert>
         ) : null}
+
+        {/* Verification Success Message */}
+        {isFullyVerified && (
+          <Alert status="success" borderRadius="xl" p={4} mb={6}>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Account Fully Verified! ✅</AlertTitle>
+              <AlertDescription>
+                Your account is fully verified and you can now make withdrawals. All verification steps have been completed successfully.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
 
         {/* Main Withdrawal Content - Only show if fully verified */}
         {isFullyVerified && (
