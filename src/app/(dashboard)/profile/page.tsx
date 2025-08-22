@@ -39,7 +39,7 @@ import {
 } from '@chakra-ui/react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FaUser, FaEnvelope, FaIdCard, FaEdit } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaIdCard, FaEdit, FaFileUpload, FaCheckCircle } from 'react-icons/fa';
 
 // Types
 interface VerificationStatus {
@@ -48,6 +48,9 @@ interface VerificationStatus {
   profileCompleted: boolean;
   identityVerified: boolean;
   identityStatus: 'pending' | 'approved' | 'rejected' | null;
+  identityRejectionReason?: string | null;
+  identityVerifiedAt?: string | null;
+  identityUploadDate?: string | null;
 }
 
 interface UserProfile {
@@ -162,6 +165,9 @@ export default function ProfilePage() {
             identityStatus: data.user.identity_verification_submitted
               ? data.user.identity_verification_status || 'pending'
               : null,
+            identityRejectionReason: data.user.identity_document_rejection_reason,
+            identityVerifiedAt: data.user.identity_document_verified_at,
+            identityUploadDate: data.user.identity_document_upload_date,
           });
         }
       } catch (error) {
@@ -439,6 +445,109 @@ export default function ProfilePage() {
     }
   };
 
+  // Identity document upload function
+  const uploadIdentityDocument = async () => {
+    const userEmail = session?.user?.email || userProfile?.email;
+    if (!userEmail || !selectedFile || !documentType || !issuingCountry) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please select a document, document type, and issuing country',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setIsIdentityUploading(true);
+      const formData = new FormData();
+      formData.append('document', selectedFile);
+      formData.append('email', userEmail);
+      formData.append('documentType', documentType);
+      formData.append('issuingCountry', issuingCountry);
+
+      const response = await fetch('/api/auth/upload-identity-document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update verification status to show document uploaded
+        setVerificationStatus(prev => ({
+          ...prev,
+          identityStatus: 'pending',
+        }));
+
+        onIdentityModalClose();
+        setSelectedFile(null);
+        setDocumentType('');
+        setIssuingCountry('');
+
+        toast({
+          title: '✅ Document Uploaded!',
+          description: 'Your identity document has been uploaded and is under review.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+
+        // Refresh verification status
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        throw new Error(data.error || 'Failed to upload document');
+      }
+    } catch (error: any) {
+      console.error('Error uploading document:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload identity document',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsIdentityUploading(false);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Please select a file smaller than 10MB',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: 'Invalid File Type',
+          description: 'Please select a JPEG, PNG, WebP, or PDF file',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+    }
+  };
+
   // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   // Show loading spinner while session is loading or fetching profile
   if (status === 'loading' || (status === 'authenticated' && isLoading)) {
@@ -613,6 +722,32 @@ export default function ProfilePage() {
                       }
                     </Badge>
                   </HStack>
+
+                  {/* Show additional info for different statuses */}
+                  {verificationStatus.identityStatus === 'approved' && verificationStatus.identityVerifiedAt && (
+                    <Text fontSize="xs" color="green.500">
+                      Verified on {new Date(verificationStatus.identityVerifiedAt).toLocaleDateString()}
+                    </Text>
+                  )}
+
+                  {verificationStatus.identityStatus === 'pending' && verificationStatus.identityUploadDate && (
+                    <Text fontSize="xs" color="yellow.600">
+                      Submitted on {new Date(verificationStatus.identityUploadDate).toLocaleDateString()} - Please wait for admin review
+                    </Text>
+                  )}
+
+                  {verificationStatus.identityStatus === 'rejected' && (
+                    <VStack align="start" spacing={1}>
+                      {verificationStatus.identityRejectionReason && (
+                        <Text fontSize="xs" color="red.500" fontWeight="medium">
+                          Reason: {verificationStatus.identityRejectionReason}
+                        </Text>
+                      )}
+                      <Text fontSize="xs" color="red.400">
+                        Please upload a new document with the required corrections
+                      </Text>
+                    </VStack>
+                  )}
                 </VStack>
 
                 {/* Quick Actions */}
@@ -643,12 +778,12 @@ export default function ProfilePage() {
                   {!verificationStatus.identityVerified && verificationStatus.identityStatus !== 'pending' && (
                     <Button
                       size="sm"
-                      colorScheme="purple"
+                      colorScheme={verificationStatus.identityStatus === 'rejected' ? 'red' : 'purple'}
                       variant="outline"
                       leftIcon={<Icon as={FaIdCard} />}
                       onClick={onIdentityModalOpen}
                     >
-                      {verificationStatus.identityStatus === 'rejected' ? 'Resubmit ID' : 'Upload ID'}
+                      {verificationStatus.identityStatus === 'rejected' ? 'Reupload ID Document' : 'Upload ID Document'}
                     </Button>
                   )}
                 </HStack>
@@ -771,6 +906,169 @@ export default function ProfilePage() {
               Update Profile
             </Button>
             <Button variant="ghost" onClick={onEditProfileModalClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Identity Document Upload Modal */}
+      <Modal isOpen={isIdentityModalOpen} onClose={onIdentityModalClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {verificationStatus.identityStatus === 'rejected' ? 'Reupload Identity Document' : 'Upload Identity Document'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack spacing={4}>
+              {verificationStatus.identityStatus === 'rejected' && (
+                <Alert status="warning" borderRadius="md">
+                  <AlertIcon />
+                  <Box>
+                    <AlertTitle>Document Rejected</AlertTitle>
+                    <AlertDescription>
+                      {verificationStatus.identityRejectionReason || 'Your previous document was rejected. Please upload a new document that meets our requirements.'}
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              )}
+
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                  <AlertTitle>Identity Verification Required</AlertTitle>
+                  <AlertDescription>
+                    Please upload a clear photo of your government-issued ID (passport, driver's license, or national ID card).
+                  </AlertDescription>
+                </Box>
+              </Alert>
+
+              <FormControl isRequired>
+                <FormLabel>Document Type</FormLabel>
+                <Select
+                  placeholder="Select document type"
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                >
+                  <option value="passport">Passport</option>
+                  <option value="drivers_license">Driver's License</option>
+                  <option value="national_id">National ID Card</option>
+                  <option value="other">Other Government ID</option>
+                </Select>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Issuing Country</FormLabel>
+                <Select
+                  placeholder="Select issuing country"
+                  value={issuingCountry}
+                  onChange={(e) => setIssuingCountry(e.target.value)}
+                >
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="Japan">Japan</option>
+                  <option value="South Korea">South Korea</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Malaysia">Malaysia</option>
+                  <option value="Thailand">Thailand</option>
+                  <option value="Philippines">Philippines</option>
+                  <option value="Indonesia">Indonesia</option>
+                  <option value="Vietnam">Vietnam</option>
+                  <option value="India">India</option>
+                  <option value="China">China</option>
+                  <option value="Hong Kong">Hong Kong</option>
+                  <option value="Taiwan">Taiwan</option>
+                  <option value="Other">Other</option>
+                </Select>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Upload Document</FormLabel>
+                <Box
+                  border="2px dashed"
+                  borderColor={selectedFile ? "green.300" : "gray.300"}
+                  borderRadius="lg"
+                  p={6}
+                  textAlign="center"
+                  bg={selectedFile ? useColorModeValue('green.50', 'green.900') : 'transparent'}
+                  transition="all 0.2s"
+                >
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileSelect}
+                    display="none"
+                    id="document-upload"
+                  />
+                  <VStack spacing={3}>
+                    <Icon
+                      as={selectedFile ? FaCheckCircle : FaFileUpload}
+                      boxSize={8}
+                      color={selectedFile ? "green.500" : "gray.400"}
+                    />
+                    {selectedFile ? (
+                      <VStack spacing={1}>
+                        <Text fontWeight="bold" color="green.500">
+                          ✓ File Selected
+                        </Text>
+                        <Text fontSize="sm" color={subtleTextColor}>
+                          {selectedFile.name}
+                        </Text>
+                        <Text fontSize="xs" color={subtleTextColor}>
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </Text>
+                      </VStack>
+                    ) : (
+                      <VStack spacing={1}>
+                        <Text fontWeight="bold" color="gray.500">
+                          Click to upload or drag and drop
+                        </Text>
+                        <Text fontSize="sm" color={subtleTextColor}>
+                          JPEG, PNG, WebP, or PDF (max 10MB)
+                        </Text>
+                      </VStack>
+                    )}
+                    <Button
+                      as="label"
+                      htmlFor="document-upload"
+                      size="sm"
+                      colorScheme="blue"
+                      variant="outline"
+                      cursor="pointer"
+                    >
+                      Choose File
+                    </Button>
+                  </VStack>
+                </Box>
+              </FormControl>
+
+              <Alert status="warning" borderRadius="md" fontSize="sm">
+                <AlertIcon />
+                <AlertDescription>
+                  <strong>Important:</strong> Ensure your document is clear, well-lit, and all text is readable.
+                  Blurry or unclear images will be rejected.
+                </AlertDescription>
+              </Alert>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={uploadIdentityDocument}
+              isLoading={isIdentityUploading}
+              loadingText="Uploading..."
+              isDisabled={!selectedFile || !documentType || !issuingCountry}
+            >
+              {verificationStatus.identityStatus === 'rejected' ? 'Reupload Document' : 'Upload Document'}
+            </Button>
+            <Button variant="ghost" onClick={onIdentityModalClose}>
               Cancel
             </Button>
           </ModalFooter>

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Get Supabase admin client to bypass RLS
     const supabase = supabaseAdmin;
 
-    // Get user verification status and profile data
+    // Get user verification status and profile data, including latest identity document info
     const { data: user, error } = await supabase
       .from('users')
       .select(`
@@ -47,6 +47,20 @@ export async function GET(request: NextRequest) {
       `)
       .eq('email', email)
       .maybeSingle();
+
+    // Also get the latest identity document status for more detailed info
+    let latestDocument = null;
+    if (user?.identity_document_uploaded) {
+      const { data: docData } = await supabase
+        .from('identity_documents')
+        .select('verification_status, rejection_reason, verified_at, upload_date')
+        .eq('email', email)
+        .order('upload_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      latestDocument = docData;
+    }
 
     console.log('Verification status API - Email:', email);
     console.log('Verification status API - User data:', user);
@@ -84,6 +98,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Map verification status properly
+    let mappedStatus = user.identity_verification_status;
+    if (latestDocument) {
+      // Use document status if available (more up-to-date)
+      if (latestDocument.verification_status === 'approved') {
+        mappedStatus = 'approved';
+      } else if (latestDocument.verification_status === 'rejected') {
+        mappedStatus = 'rejected';
+      } else if (latestDocument.verification_status === 'pending') {
+        mappedStatus = 'pending';
+      }
+    } else if (user.identity_verification_status === 'verified') {
+      // Map legacy 'verified' status to 'approved'
+      mappedStatus = 'approved';
+    }
+
     // Return user data in expected format
     const response = {
       success: true,
@@ -92,13 +122,17 @@ export async function GET(request: NextRequest) {
         email_verified: user.email_verified || false,
         phone_verified: user.phone_verified || false,
         profile_completed: user.profile_completed || false,
-        identity_verification_status: user.identity_verification_status,
+        identity_verification_status: mappedStatus,
         identity_verification_submitted: user.identity_verification_submitted || false,
         identity_document_uploaded: user.identity_document_uploaded || false,
         first_name: user.first_name,
         last_name: user.last_name,
         phone_number: user.phone_number,
-        country_of_residence: user.country_of_residence || user.country_of_birth
+        country_of_residence: user.country_of_residence || user.country_of_birth,
+        // Include document-specific info for better UX
+        identity_document_rejection_reason: latestDocument?.rejection_reason || null,
+        identity_document_verified_at: latestDocument?.verified_at || null,
+        identity_document_upload_date: latestDocument?.upload_date || null
       }
     };
 
