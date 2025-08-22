@@ -46,6 +46,7 @@ interface VerificationBannerProps {
 }
 
 export default function VerificationBanner({ onVerificationUpdate }: VerificationBannerProps) {
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
   const router = useRouter();
   const { isOpen, onToggle } = useDisclosure();
   const { data: session } = useSession();
@@ -105,16 +106,17 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
   };
 
   // Check if fully verified
-  const isFullyVerified = verificationStatus.emailVerified && 
-    verificationStatus.profileCompleted && 
-    verificationStatus.identityDocumentUploaded && 
+  const isFullyVerified = verificationStatus.emailVerified &&
+    verificationStatus.profileCompleted &&
+    verificationStatus.identityDocumentUploaded &&
     verificationStatus.identityVerified;
 
   // Check if verification is in progress
-  const hasStartedVerification = verificationStatus.emailVerified || 
-    verificationStatus.profileCompleted || 
+  const hasStartedVerification = verificationStatus.emailVerified ||
+    verificationStatus.profileCompleted ||
     verificationStatus.identityDocumentUploaded;
 
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - NO EARLY RETURNS ABOVE
   // Don't show banner if fully verified or still loading
   if (isLoading || isFullyVerified) {
     return null;

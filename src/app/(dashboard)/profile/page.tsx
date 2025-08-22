@@ -131,6 +131,7 @@ export default function ProfilePage() {
   const textColor = useColorModeValue('gray.800', 'white');
   const subtleTextColor = useColorModeValue('gray.600', 'gray.400');
 
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   // Show loading spinner while session is loading or fetching profile
   if (status === 'loading' || (status === 'authenticated' && isLoading)) {
     return (

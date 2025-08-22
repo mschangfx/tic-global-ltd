@@ -48,6 +48,7 @@ interface Web3Status {
 }
 
 export default function Web3StatusDashboard() {
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
   const [status, setStatus] = useState<Web3Status | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,8 +96,8 @@ export default function Web3StatusDashboard() {
   };
 
   const getStatusIcon = (success: boolean) => {
-    return success ? 
-      <Icon as={FaCheckCircle} color="green.500" /> : 
+    return success ?
+      <Icon as={FaCheckCircle} color="green.500" /> :
       <Icon as={FaTimesCircle} color="red.500" />;
   };
 
@@ -108,6 +109,7 @@ export default function Web3StatusDashboard() {
     );
   };
 
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   if (isLoading) {
     return (
       <Box p={6} bg={bgColor} borderRadius="lg" border="1px" borderColor={borderColor}>

@@ -176,6 +176,7 @@ const verificationSteps = [
 ];
 
 export default function VerifyAccountPage() {
+  // ✅ ALL HOOKS FIRST - NEVER RETURN BEFORE THIS POINT
   const router = useRouter();
   const toast = useToast();
   const { data: session, status: sessionStatus } = useSession();
@@ -230,6 +231,13 @@ export default function VerifyAccountPage() {
   const { isOpen: isProfileModalOpen, onOpen: onProfileModalOpen, onClose: onProfileModalClose } = useDisclosure();
   const { isOpen: isIdentityModalOpen, onOpen: onIdentityModalOpen, onClose: onIdentityModalClose } = useDisclosure();
 
+  // Handle unauthenticated redirect via useEffect
+  useEffect(() => {
+    if (sessionStatus === 'unauthenticated') {
+      router.push('/join');
+    }
+  }, [sessionStatus, router]);
+
   // Load user data and verification status
   useEffect(() => {
     if (sessionStatus !== 'loading') {
@@ -244,9 +252,6 @@ export default function VerifyAccountPage() {
 
   const loadUserData = async () => {
     if (sessionStatus !== 'authenticated' || !session?.user?.email) {
-      if (sessionStatus === 'unauthenticated') {
-        router.push('/join');
-      }
       return;
     }
 
@@ -636,6 +641,7 @@ export default function VerifyAccountPage() {
     }
   };
 
+  // ✅ RENDER LOGIC AFTER ALL HOOKS - CONDITIONAL RENDERING ONLY
   // Loading state
   if (sessionStatus === 'loading' || isLoading) {
     return (
@@ -654,10 +660,17 @@ export default function VerifyAccountPage() {
     );
   }
 
-  // Redirect if not authenticated
+  // Show loading placeholder while redirecting (redirect handled in useEffect)
   if (sessionStatus === 'unauthenticated') {
-    router.push('/join');
-    return null;
+    return (
+      <Box bg={bgColor} minH="100vh" py={8}>
+        <Container maxW="6xl">
+          <Center minH="60vh">
+            <Spinner size="xl" color="blue.500" thickness="4px" />
+          </Center>
+        </Container>
+      </Box>
+    );
   }
 
   const steps = getStepData();
