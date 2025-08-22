@@ -17,10 +17,15 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const sidebarBg = useColorModeValue('white', 'gray.700');
-  const bgColor = useColorModeValue('gray.100', 'gray.800');
-  const { t } = useLanguage();
+  // 🔍 TEMPORARY INSTRUMENTATION - REMOVE AFTER FIXING
+  let __hookStep = 0;
+  const __mark = (label?: string) =>
+    console.log(`[HOOK-STEP] Layout ${label ?? ""} step=`, ++__hookStep);
+
+  __mark('pathname'); const pathname = usePathname();
+  __mark('sidebarBg'); const sidebarBg = useColorModeValue('white', 'gray.700');
+  __mark('bgColor'); const bgColor = useColorModeValue('gray.100', 'gray.800');
+  __mark('language'); const { t } = useLanguage();
 
   const dashboardNavItems = [
     { icon: FaHome, label: t('navbar.overview'), href: '/dashboard' },
@@ -34,6 +39,7 @@ export default function DashboardLayout({
     { icon: FaLifeRing, label: t('navbar.supportHub'), href: '/support-hub' },
   ];
 
+  console.log('[BEFORE RETURN] Layout reached after', __hookStep, 'hooks');
   return (
     <Flex direction="column" h="100vh" bg={bgColor}>
       <DashboardNavbar />
