@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { WalletService } from '@/lib/WalletService';
+import WalletService from '@/lib/services/walletService';
 
 type WalletBalance = {
   total: number;
