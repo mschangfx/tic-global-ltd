@@ -119,7 +119,7 @@ export default function TestWalletRouting() {
           duration: 5000,
           isClosable: true,
         });
-        setTestResults(prev => ({ ...prev, commission_test: data.data }));
+        setTestResults((prev: any) => ({ ...prev, commission_test: data.data }));
         fetchRoutingStatus(); // Refresh status
       } else {
         toast({
