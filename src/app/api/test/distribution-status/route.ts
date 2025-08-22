@@ -69,7 +69,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       database_function: {
         exists: !functionError,
-        error: functionError?.message || null,
+        error: functionError ? (functionError as any).message || 'Unknown error' : null,
         test_result: functionExists
       },
       active_subscriptions: {
