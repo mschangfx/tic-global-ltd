@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 // Token allocation per plan (yearly amounts)
 const TOKEN_ALLOCATIONS = {
   'vip': 6900,      // VIP Plan: 6900 TIC tokens per year
