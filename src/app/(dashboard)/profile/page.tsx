@@ -187,34 +187,38 @@ export default function ProfilePage() {
             : null,
         };
 
-        // Check if verification status has changed
-        const hasStatusChanged =
-          newVerificationStatus.identityVerified !== verificationStatus.identityVerified ||
-          newVerificationStatus.identityStatus !== verificationStatus.identityStatus;
+        // Use functional update to access current state
+        setVerificationStatus(currentStatus => {
+          // Check if verification status has changed
+          const hasStatusChanged =
+            newVerificationStatus.identityVerified !== currentStatus.identityVerified ||
+            newVerificationStatus.identityStatus !== currentStatus.identityStatus;
 
-        if (hasStatusChanged) {
-          console.log('✅ Verification status changed, updating UI');
-          setVerificationStatus(newVerificationStatus);
+          if (hasStatusChanged) {
+            console.log('✅ Verification status changed, updating UI');
 
-          // Show toast notification for status changes
-          if (newVerificationStatus.identityStatus === 'approved' && !verificationStatus.identityVerified) {
-            toast({
-              title: '🎉 Identity Verified!',
-              description: 'Your identity verification has been approved.',
-              status: 'success',
-              duration: 5000,
-              isClosable: true,
-            });
-          } else if (newVerificationStatus.identityStatus === 'rejected' && verificationStatus.identityStatus !== 'rejected') {
-            toast({
-              title: '❌ Identity Verification Rejected',
-              description: 'Your identity verification was rejected. Please resubmit your documents.',
-              status: 'error',
-              duration: 8000,
-              isClosable: true,
-            });
+            // Show toast notification for status changes
+            if (newVerificationStatus.identityStatus === 'approved' && !currentStatus.identityVerified) {
+              toast({
+                title: '🎉 Identity Verified!',
+                description: 'Your identity verification has been approved.',
+                status: 'success',
+                duration: 5000,
+                isClosable: true,
+              });
+            } else if (newVerificationStatus.identityStatus === 'rejected' && currentStatus.identityStatus !== 'rejected') {
+              toast({
+                title: '❌ Identity Verification Rejected',
+                description: 'Your identity verification was rejected. Please resubmit your documents.',
+                status: 'error',
+                duration: 8000,
+                isClosable: true,
+              });
+            }
           }
-        }
+
+          return newVerificationStatus;
+        });
 
         setLastStatusCheck(new Date());
       }
@@ -234,7 +238,7 @@ export default function ProfilePage() {
         setIsPolling(false);
       }
     }
-  }, [verificationStatus, toast]);
+  }, [toast]);
 
   // Manual refresh function
   const refreshVerificationStatus = () => {
