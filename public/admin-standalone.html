@@ -822,20 +822,63 @@
                     fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?status=eq.pending&select=*`, { headers })
                 ]);
 
+                console.log('🔍 Deposits Response Status:', depositsResponse.status);
+                console.log('🔍 Withdrawals Response Status:', withdrawalsResponse.status);
+
                 if (!depositsResponse.ok || !withdrawalsResponse.ok) {
-                    throw new Error('Failed to fetch data from database');
+                    const depositError = depositsResponse.ok ? null : await depositsResponse.text();
+                    const withdrawalError = withdrawalsResponse.ok ? null : await withdrawalsResponse.text();
+                    console.error('❌ Deposits Error:', depositError);
+                    console.error('❌ Withdrawals Error:', withdrawalError);
+                    throw new Error(`Failed to fetch data from database. Deposits: ${depositError}, Withdrawals: ${withdrawalError}`);
                 }
 
                 const deposits = await depositsResponse.json();
                 const withdrawals = await withdrawalsResponse.json();
+
+                console.log('✅ Deposits Data:', deposits);
+                console.log('✅ Withdrawals Data:', withdrawals);
+                console.log('📊 Deposits Count:', deposits?.length || 0);
+                console.log('📊 Withdrawals Count:', withdrawals?.length || 0);
 
                 const transactions = [
                     ...deposits.map(d => ({ ...d, type: 'deposit' })),
                     ...withdrawals.map(w => ({ ...w, type: 'withdrawal' }))
                 ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+                console.log('📋 Combined Transactions:', transactions);
+
+                // Also check for all statuses to see what's in the database
+                try {
+                    const [allDepositsResponse, allWithdrawalsResponse] = await Promise.all([
+                        fetch(`${SUPABASE_URL}/rest/v1/deposits?select=*&limit=10`, { headers }),
+                        fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&limit=10`, { headers })
+                    ]);
+
+                    if (allDepositsResponse.ok && allWithdrawalsResponse.ok) {
+                        const allDeposits = await allDepositsResponse.json();
+                        const allWithdrawals = await allWithdrawalsResponse.json();
+                        console.log('📊 All Deposits (last 10):', allDeposits);
+                        console.log('📊 All Withdrawals (last 10):', allWithdrawals);
+
+                        // Show status breakdown
+                        const depositStatuses = allDeposits.reduce((acc, d) => {
+                            acc[d.status] = (acc[d.status] || 0) + 1;
+                            return acc;
+                        }, {});
+                        const withdrawalStatuses = allWithdrawals.reduce((acc, w) => {
+                            acc[w.status] = (acc[w.status] || 0) + 1;
+                            return acc;
+                        }, {});
+                        console.log('📊 Deposit Status Breakdown:', depositStatuses);
+                        console.log('📊 Withdrawal Status Breakdown:', withdrawalStatuses);
+                    }
+                } catch (debugError) {
+                    console.log('🔍 Debug query failed:', debugError);
+                }
+
                 displayTransactions(transactions);
-                showMessage(`✅ Loaded ${transactions.length} pending transactions`, 'success');
+                showMessage(`✅ Loaded ${transactions.length} pending transactions (${deposits.length} deposits, ${withdrawals.length} withdrawals)`, 'success');
             } catch (error) {
                 console.error('Error loading transactions:', error);
                 showMessage(`❌ Error loading transactions: ${error.message}`, 'error');
