@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export interface ReferralKitData {
   referralCode: string;
@@ -201,8 +202,8 @@ export class ReferralKitService {
       // Find the referrer by code - check both user_referral_codes and user_profiles tables
       let referrerData = null;
 
-      // First check user_referral_codes table
-      const { data: referralCodeData, error: codeError } = await this.supabase
+      // First check user_referral_codes table using admin client
+      const { data: referralCodeData, error: codeError } = await supabaseAdmin
         .from('user_referral_codes')
         .select('user_email')
         .eq('referral_code', referrerCode)
@@ -211,8 +212,8 @@ export class ReferralKitService {
       if (referralCodeData) {
         referrerData = { email: referralCodeData.user_email };
       } else {
-        // Check users table for referral_code field
-        const { data: userReferralData, error: userReferralError } = await this.supabase
+        // Check users table for referral_code field using admin client
+        const { data: userReferralData, error: userReferralError } = await supabaseAdmin
           .from('users')
           .select('email')
           .eq('referral_code', referrerCode)
@@ -221,8 +222,8 @@ export class ReferralKitService {
         if (userReferralData) {
           referrerData = userReferralData;
         } else {
-          // Fallback to users table referral_id field (legacy support)
-          const { data: profileData, error: profileError } = await this.supabase
+          // Fallback to users table referral_id field (legacy support) using admin client
+          const { data: profileData, error: profileError } = await supabaseAdmin
             .from('users')
             .select('email')
             .eq('referral_id', referrerCode)
@@ -244,8 +245,8 @@ export class ReferralKitService {
 
       console.log('✅ Found referrer:', referrerData.email, 'for code:', referrerCode);
 
-      // Check if the new user is already referred by someone
-      const { data: existingReferral } = await this.supabase
+      // Check if the new user is already referred by someone using admin client
+      const { data: existingReferral } = await supabaseAdmin
         .from('referral_relationships')
         .select('referrer_email')
         .eq('referred_email', newUserEmail)
@@ -261,8 +262,8 @@ export class ReferralKitService {
       // Note: We don't need to update user profile since we're tracking relationships
       // in the referral_relationships table directly
 
-      // Create referral relationship
-      const { error: relationshipError } = await this.supabase
+      // Create referral relationship using admin client
+      const { error: relationshipError } = await supabaseAdmin
         .from('referral_relationships')
         .insert({
           referrer_email: referrerData.email,
@@ -280,8 +281,8 @@ export class ReferralKitService {
       // Build multi-level referral chain
       await this.buildReferralChain(referrerData.email, newUserEmail, 2);
 
-      // Update referrer's total referral count
-      const { data: currentCount } = await this.supabase
+      // Update referrer's total referral count using admin client
+      const { data: currentCount } = await supabaseAdmin
         .from('user_referral_codes')
         .select('total_referrals')
         .eq('user_email', referrerData.email)
@@ -289,7 +290,7 @@ export class ReferralKitService {
 
       const newCount = (currentCount?.total_referrals || 0) + 1;
 
-      const { error: updateCountError } = await this.supabase
+      const { error: updateCountError } = await supabaseAdmin
         .from('user_referral_codes')
         .update({
           total_referrals: newCount,
@@ -325,16 +326,16 @@ export class ReferralKitService {
     if (level > 15) return; // Max 15 levels
 
     try {
-      // Find who referred the current referrer
-      const { data: upperReferrer } = await this.supabase
+      // Find who referred the current referrer using admin client
+      const { data: upperReferrer } = await supabaseAdmin
         .from('referral_relationships')
         .select('referrer_email')
         .eq('referred_email', currentReferrerEmail)
         .single();
 
       if (upperReferrer?.referrer_email) {
-        // Create relationship at this level
-        await this.supabase
+        // Create relationship at this level using admin client
+        await supabaseAdmin
           .from('referral_relationships')
           .insert({
             referrer_email: upperReferrer.referrer_email,
@@ -415,51 +416,69 @@ export class ReferralKitService {
   // Validate referral code
   async validateReferralCode(code: string): Promise<{ valid: boolean; referrerEmail?: string }> {
     try {
-      // First check user_referral_codes table
-      const { data: referralCodeData, error: codeError } = await this.supabase
+      console.log('🔍 ReferralKitService: Validating referral code:', code);
+
+      // First check user_referral_codes table using admin client
+      const { data: referralCodeData, error: codeError } = await supabaseAdmin
         .from('user_referral_codes')
         .select('user_email')
         .eq('referral_code', code)
         .single();
 
+      if (codeError && codeError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.log('❌ ReferralKitService: Error querying user_referral_codes:', codeError);
+      }
+
       if (referralCodeData) {
+        console.log('✅ ReferralKitService: Found referral code in user_referral_codes:', referralCodeData.user_email);
         return {
           valid: true,
           referrerEmail: referralCodeData.user_email
         };
       }
 
-      // Check users table for referral_code field
-      const { data: userReferralData, error: userReferralError } = await this.supabase
+      // Check users table for referral_code field using admin client
+      const { data: userReferralData, error: userReferralError } = await supabaseAdmin
         .from('users')
         .select('email')
         .eq('referral_code', code)
         .single();
 
+      if (userReferralError && userReferralError.code !== 'PGRST116') {
+        console.log('❌ ReferralKitService: Error querying users table for referral_code:', userReferralError);
+      }
+
       if (userReferralData) {
+        console.log('✅ ReferralKitService: Found referral code in users table (referral_code):', userReferralData.email);
         return {
           valid: true,
           referrerEmail: userReferralData.email
         };
       }
 
-      // Fallback to users table referral_id field (legacy support)
-      const { data: profileData, error: profileError } = await this.supabase
+      // Fallback to users table referral_id field (legacy support) using admin client
+      const { data: profileData, error: profileError } = await supabaseAdmin
         .from('users')
         .select('email')
         .eq('referral_id', code)
         .single();
 
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.log('❌ ReferralKitService: Error querying users table for referral_id:', profileError);
+      }
+
       if (profileData) {
+        console.log('✅ ReferralKitService: Found referral code in users table (referral_id):', profileData.email);
         return {
           valid: true,
           referrerEmail: profileData.email
         };
       }
 
+      console.log('❌ ReferralKitService: Referral code not found in any table');
       return { valid: false };
     } catch (error) {
-      console.error('Error validating referral code:', error);
+      console.error('❌ ReferralKitService: Error validating referral code:', error);
       return { valid: false };
     }
   }
