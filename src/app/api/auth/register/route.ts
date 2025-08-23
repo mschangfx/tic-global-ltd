@@ -184,6 +184,21 @@ export async function POST(request: NextRequest) {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://ticgloballtd.com';
       const referralLink = `${baseUrl}/join?ref=${newUserReferralCode}`;
 
+      // Update user record with referral code
+      const { error: userUpdateError } = await supabaseAdmin
+        .from('users')
+        .update({
+          referral_code: newUserReferralCode,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', email);
+
+      if (userUpdateError) {
+        console.error('❌ Error updating user with referral code:', userUpdateError);
+      } else {
+        console.log('✅ User updated with referral code:', newUserReferralCode);
+      }
+
       // Create referral code entry for new user
       const { error: referralCodeError } = await supabaseAdmin
         .from('user_referral_codes')

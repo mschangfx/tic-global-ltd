@@ -211,15 +211,26 @@ class ReferralKitService {
       if (referralCodeData) {
         referrerData = { email: referralCodeData.user_email };
       } else {
-        // Fallback to users table
-        const { data: profileData, error: profileError } = await this.supabase
+        // Check users table for referral_code field
+        const { data: userReferralData, error: userReferralError } = await this.supabase
           .from('users')
           .select('email')
-          .eq('referral_id', referrerCode)
+          .eq('referral_code', referrerCode)
           .single();
 
-        if (profileData) {
-          referrerData = profileData;
+        if (userReferralData) {
+          referrerData = userReferralData;
+        } else {
+          // Fallback to users table referral_id field (legacy support)
+          const { data: profileData, error: profileError } = await this.supabase
+            .from('users')
+            .select('email')
+            .eq('referral_id', referrerCode)
+            .single();
+
+          if (profileData) {
+            referrerData = profileData;
+          }
         }
       }
 
@@ -418,7 +429,21 @@ class ReferralKitService {
         };
       }
 
-      // Fallback to users table
+      // Check users table for referral_code field
+      const { data: userReferralData, error: userReferralError } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('referral_code', code)
+        .single();
+
+      if (userReferralData) {
+        return {
+          valid: true,
+          referrerEmail: userReferralData.email
+        };
+      }
+
+      // Fallback to users table referral_id field (legacy support)
       const { data: profileData, error: profileError } = await this.supabase
         .from('users')
         .select('email')
@@ -439,11 +464,70 @@ class ReferralKitService {
     }
   }
 
+  // Ensure user has referral code (migration helper)
+  async ensureUserHasReferralCode(userEmail: string): Promise<string> {
+    try {
+      // Check if user already has a referral code
+      const { data: userData, error: userError } = await this.supabase
+        .from('users')
+        .select('referral_code')
+        .eq('email', userEmail)
+        .single();
+
+      if (userData?.referral_code) {
+        return userData.referral_code;
+      }
+
+      // Generate new referral code
+      const referralCode = this.generateReferralCode(userEmail);
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ticgloballtd.com';
+      const referralLink = `${baseUrl}/join?ref=${referralCode}`;
+
+      // Update users table
+      const { error: updateError } = await this.supabase
+        .from('users')
+        .update({
+          referral_code: referralCode,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', userEmail);
+
+      if (updateError) {
+        console.error('Error updating user with referral code:', updateError);
+        throw updateError;
+      }
+
+      // Create/update user_referral_codes entry
+      const { error: referralCodeError } = await this.supabase
+        .from('user_referral_codes')
+        .upsert({
+          user_email: userEmail,
+          referral_code: referralCode,
+          referral_link: referralLink,
+          total_referrals: 0,
+          total_earnings: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_email'
+        });
+
+      if (referralCodeError) {
+        console.warn('Warning: Failed to create user_referral_codes entry:', referralCodeError);
+      }
+
+      return referralCode;
+    } catch (error) {
+      console.error('Error ensuring user has referral code:', error);
+      throw error;
+    }
+  }
+
   // Fallback data for demo/testing
   private getFallbackReferralKit(userEmail: string): ReferralKitData {
     const code = this.generateReferralCode(userEmail);
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ticgloballtd.com';
-    
+
     return {
       referralCode: code,
       referralLink: `${baseUrl}/join?ref=${code}`,

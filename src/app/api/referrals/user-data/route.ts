@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { ReferralKitService } from '@/lib/services/referralKitService';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
@@ -31,57 +32,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user already has a referral code
-    const { data: existingUser, error: fetchError } = await supabaseAdmin
-      .from('users')
-      .select('referral_code, id')
-      .eq('email', email)
-      .single();
+    // Use ReferralKitService to ensure user has referral code (handles migration)
+    const referralKitService = ReferralKitService.getInstance();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Error fetching user:', fetchError);
+    try {
+      const referralCode = await referralKitService.ensureUserHasReferralCode(email);
+
+      // Generate referral link
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://ticgloballtd.com';
+      const referralLink = `${baseUrl}/join?ref=${referralCode}`;
+
+      // Get referral statistics
+      const stats = await getReferralStats(email, referralCode);
+
+      return NextResponse.json({
+        referralCode,
+        referralLink,
+        stats
+      });
+
+    } catch (referralError) {
+      console.error('Error ensuring user has referral code:', referralError);
       return NextResponse.json(
-        { message: 'Database error occurred' },
+        { message: 'Failed to generate or retrieve referral code' },
         { status: 500 }
       );
     }
-
-    let referralCode = existingUser?.referral_code;
-
-    // If user doesn't have a referral code, generate one
-    if (!referralCode) {
-      referralCode = generateReferralCode(email);
-      
-      // Update user with new referral code
-      const { error: updateError } = await supabaseAdmin
-        .from('users')
-        .update({ 
-          referral_code: referralCode,
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', email);
-
-      if (updateError) {
-        console.error('Error updating user with referral code:', updateError);
-        return NextResponse.json(
-          { message: 'Failed to generate referral code' },
-          { status: 500 }
-        );
-      }
-    }
-
-    // Generate referral link
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://ticgloballtd.com';
-    const referralLink = `${baseUrl}/join?ref=${referralCode}`;
-
-    // Get referral statistics
-    const stats = await getReferralStats(email, referralCode);
-
-    return NextResponse.json({
-      referralCode,
-      referralLink,
-      stats
-    });
 
   } catch (error) {
     console.error('Error in referral user-data API:', error);

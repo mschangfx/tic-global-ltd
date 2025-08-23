@@ -10,14 +10,14 @@ async function validateReferralCode(code: string): Promise<{ valid: boolean; ref
   try {
     console.log('🔍 Validating referral code:', code);
 
-    // First check user_referral_codes table
+    // First check user_referral_codes table (primary source)
     const { data: referralCodeData, error: codeError } = await supabaseAdmin
       .from('user_referral_codes')
       .select('user_email')
       .eq('referral_code', code)
       .single();
 
-    if (codeError) {
+    if (codeError && codeError.code !== 'PGRST116') { // PGRST116 = no rows returned
       console.log('❌ Error querying user_referral_codes:', codeError);
     }
 
@@ -29,19 +29,38 @@ async function validateReferralCode(code: string): Promise<{ valid: boolean; ref
       };
     }
 
-    // Fallback to users table
+    // Check users table for referral_code field (not referral_id)
+    const { data: userReferralData, error: userReferralError } = await supabaseAdmin
+      .from('users')
+      .select('email')
+      .eq('referral_code', code)
+      .single();
+
+    if (userReferralError && userReferralError.code !== 'PGRST116') {
+      console.log('❌ Error querying users table for referral_code:', userReferralError);
+    }
+
+    if (userReferralData) {
+      console.log('✅ Found referral code in users table (referral_code):', userReferralData.email);
+      return {
+        valid: true,
+        referrerEmail: userReferralData.email
+      };
+    }
+
+    // Fallback to users table referral_id field (legacy support)
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('users')
       .select('email')
       .eq('referral_id', code)
       .single();
 
-    if (profileError) {
-      console.log('❌ Error querying users table:', profileError);
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.log('❌ Error querying users table for referral_id:', profileError);
     }
 
     if (profileData) {
-      console.log('✅ Found referral code in users table:', profileData.email);
+      console.log('✅ Found referral code in users table (referral_id):', profileData.email);
       return {
         valid: true,
         referrerEmail: profileData.email
