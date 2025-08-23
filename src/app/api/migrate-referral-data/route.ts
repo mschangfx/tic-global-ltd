@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           email: user.email,
           oldReferralCode: user.referral_code,
           newReferralCode: referralCode,
-          actions: []
+          actions: [] as string[]
         };
 
         if (!dryRun) {

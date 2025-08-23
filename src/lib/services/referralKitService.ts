@@ -17,7 +17,7 @@ export interface ReferralCodeGeneration {
   message: string;
 }
 
-class ReferralKitService {
+export class ReferralKitService {
   private static instance: ReferralKitService;
   private supabase = createClient();
 
