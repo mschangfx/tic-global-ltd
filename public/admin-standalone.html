@@ -1496,7 +1496,7 @@
             try {
                 showMessage(`🔄 Loading ${status} verifications...`, 'success');
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents?status=${status}&limit=50&_t=${Date.now()}`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/verifications?status=${status}&limit=50&_t=${Date.now()}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1511,7 +1511,7 @@
                 const data = await response.json();
                 console.log('✅ Verification data loaded:', data);
 
-                displayVerifications(data.documents || []);
+                displayVerifications(data.users || []);
                 updateVerificationStats();
 
             } catch (error) {
@@ -1529,10 +1529,10 @@
             }
         }
 
-        function displayVerifications(documents) {
+        function displayVerifications(users) {
             const container = document.getElementById('verificationsList');
 
-            if (!documents || documents.length === 0) {
+            if (!users || users.length === 0) {
                 container.innerHTML = `
                     <div class="no-data">
                         <h3>📭 No Verifications Found</h3>
@@ -1543,8 +1543,8 @@
             }
 
             let html = '';
-            documents.forEach(doc => {
-                const user = doc.users;
+            users.forEach(user => {
+                const doc = user.identity_documents[0]; // Get the first document
                 const statusClass = `status-${doc.verification_status}`;
 
                 html += `
@@ -1641,14 +1641,14 @@
             try {
                 showMessage('🔄 Approving verification...', 'success');
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/verifications`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer admin-key-2024'
                     },
                     body: JSON.stringify({
-                        documentId: documentId,
+                        email: userEmail,
                         action: 'approve'
                     })
                 });
@@ -1679,14 +1679,14 @@
             try {
                 showMessage('🔄 Rejecting verification...', 'success');
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/identity-documents`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/verifications`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer admin-key-2024'
                     },
                     body: JSON.stringify({
-                        documentId: documentId,
+                        email: userEmail,
                         action: 'reject',
                         rejectionReason: reason || 'No reason provided'
                     })

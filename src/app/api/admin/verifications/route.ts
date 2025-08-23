@@ -42,10 +42,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get users with uploaded documents
+    // Get users with uploaded documents and their document details
     const { data: users, error } = await supabaseAdmin
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        identity_documents!inner(
+          id,
+          document_type,
+          verification_status,
+          upload_date,
+          file_name,
+          file_url,
+          rejection_reason,
+          verified_at,
+          verified_by
+        )
+      `)
       .eq('identity_document_uploaded', true)
       .order('created_at', { ascending: false });
 
@@ -102,7 +115,7 @@ export async function PATCH(request: NextRequest) {
     // Update user verification status
     const updateData: any = {
       identity_verification_status: status,
-      verification_updated_at: new Date().toISOString()
+      identity_verified_at: status === 'approved' ? new Date().toISOString() : null
     };
 
     // Add rejection reason if status is rejected
@@ -117,11 +130,32 @@ export async function PATCH(request: NextRequest) {
       .select();
 
     if (error) {
-      console.error('Error updating verification status:', error);
+      console.error('Error updating user verification status:', error);
       return NextResponse.json(
-        { error: 'Failed to update verification status' },
+        { error: 'Failed to update user verification status' },
         { status: 500, headers: corsHeaders }
       );
+    }
+
+    // Also update the identity_documents table to keep them in sync
+    const docUpdateData: any = {
+      verification_status: status,
+      verified_at: status === 'approved' ? new Date().toISOString() : null,
+      verified_by: 'admin'
+    };
+
+    if (status === 'rejected' && reason) {
+      docUpdateData.rejection_reason = reason;
+    }
+
+    const { error: docError } = await supabaseAdmin
+      .from('identity_documents')
+      .update(docUpdateData)
+      .eq('email', email);
+
+    if (docError) {
+      console.warn('Warning: Failed to update identity_documents table:', docError);
+      // Don't fail the request if document update fails, just log it
     }
 
     if (!data || data.length === 0) {
