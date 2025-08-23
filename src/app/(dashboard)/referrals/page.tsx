@@ -326,41 +326,46 @@ export default function ReferralPage() {
 
     setIsLoading(true);
     try {
-      // Create a referral code using the current user's email
       const userEmail = session.user.email;
-      const referralCode = `TIC${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const referralLink = `https://ticgloballtd.com/join?ref=${referralCode}`;
 
-      const response = await fetch('/api/referral', {
+      // Use the new referral data API to regenerate code
+      const response = await fetch('/api/user/referral-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'create-referral-code',
-          referralCode,
-          referralLink,
-          userEmail
+          email: userEmail,
+          action: 'regenerate'
         })
       });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // Reload referral data
-          await loadReferralData();
+          // Update referral data with new code
+          setReferralData(prev => prev ? {
+            ...prev,
+            referralCode: result.data.referralCode,
+            referralLink: result.data.referralLink
+          } : null);
+
           toast({
-            title: 'Referral Code Generated',
-            description: 'Your referral code has been created successfully.',
+            title: 'Referral Code Regenerated',
+            description: 'Your new referral code has been created successfully.',
             status: 'success',
             duration: 3000,
             isClosable: true,
           });
+        } else {
+          throw new Error(result.error || 'Failed to regenerate referral code');
         }
+      } else {
+        throw new Error('Failed to regenerate referral code');
       }
     } catch (error) {
       console.error('Error generating referral code:', error);
       toast({
         title: 'Generation Failed',
-        description: 'Failed to generate referral code. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to generate referral code. Please try again.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -393,12 +398,14 @@ export default function ReferralPage() {
         const referralResult = await referralResponse.json();
         console.log('Referral result:', referralResult);
         if (referralResult.success) {
-          // Set referral code and link from the new API
-          setReferralCode(referralResult.data.referralCode);
-          setReferralLink(referralResult.data.referralLink);
-
-          // Set referral data
-          setReferralData(referralResult.data);
+          // Set referral data with the new structure
+          setReferralData({
+            referralCode: referralResult.data.referralCode,
+            referralLink: referralResult.data.referralLink,
+            totalReferrals: referralResult.data.totalReferrals,
+            totalEarnings: referralResult.data.totalEarnings,
+            createdAt: referralResult.data.stats.createdAt
+          });
         } else {
           console.error('Referral API returned error:', referralResult.error);
         }
