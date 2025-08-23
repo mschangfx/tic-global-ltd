@@ -35,6 +35,7 @@ import { createClient } from '@/lib/supabase/client';
 import WalletService, { WalletBalance } from '@/lib/services/walletService';
 import { getSession } from 'next-auth/react';
 import { useLanguage, formatCurrency } from '@/contexts/LanguageContext';
+import { useWallet } from '@/providers/WalletProvider';
 
 // Plan data (same as in my-accounts page)
 const INVESTMENT_TIERS_DATA = [
@@ -95,6 +96,7 @@ function BillingPageContent() {
 
   const walletService = WalletService.getInstance();
   const supabase = createClient();
+  const { refresh: refreshWalletProvider } = useWallet();
 
   // Helper method to get authenticated user email from both auth methods
   const getAuthenticatedUserEmail = async (): Promise<string | null> => {
@@ -188,6 +190,7 @@ function BillingPageContent() {
         // Force refresh wallet balance to reflect the payment
         try {
           await walletService.forceRefreshBalance();
+          await refreshWalletProvider(); // Also refresh WalletProvider context
           console.log('✅ Wallet balance refreshed after payment');
         } catch (refreshError) {
           console.error('Error refreshing wallet balance:', refreshError);

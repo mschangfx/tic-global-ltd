@@ -113,7 +113,13 @@ export default function TransferPage() {
         }
 
         console.log('🔍 Fetching balance for user:', userEmail);
-        const response = await fetch(`/api/wallet/balance?email=${encodeURIComponent(userEmail)}`);
+        const response = await fetch('/api/wallet/balance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userEmail })
+        });
         const data = await response.json();
 
         if (response.ok && data.wallet) {

@@ -67,8 +67,8 @@ export default function TraderPaymentPage() {
 
         if (walletResponse.ok) {
           const walletData = await walletResponse.json();
-          if (walletData.success) {
-            setWalletBalance(walletData.balance);
+          if (walletData.wallet) {
+            setWalletBalance(walletData.wallet);
           }
         }
       }

@@ -95,8 +95,8 @@ function GICTradePageContent() {
         body: JSON.stringify({ userEmail: user.email })
       });
       const walletData = await walletResponse.json();
-      if (walletData.success) {
-        setWalletBalance(walletData.balance.total_balance || 0);
+      if (walletData.wallet) {
+        setWalletBalance(parseFloat(walletData.wallet.total_balance) || 0);
       }
 
       // Load GIC summary

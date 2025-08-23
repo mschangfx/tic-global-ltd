@@ -516,8 +516,10 @@ class WalletService {
   async forceRefreshBalance(): Promise<WalletBalance> {
     console.log('🔄 Force refreshing wallet balance...');
 
-    // Clear cache
+    // Clear all caches
     this.balanceCache = null;
+    this.lastFetch = null; // Clear TTL cache
+    this.inFlight = null; // Clear in-flight promise
 
     // Get fresh balance
     const balance = await this.getBalance();
