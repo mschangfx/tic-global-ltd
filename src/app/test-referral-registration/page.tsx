@@ -160,6 +160,11 @@ export default function TestReferralRegistration() {
     setIsLoading(true);
     clearResults();
 
+    // Generate a unique test email to avoid "user already has referrer" errors
+    const timestamp = Date.now();
+    const uniqueTestEmail = `test-${timestamp}@example.com`;
+    addTestResult('info', 'running', `Using unique test email: ${uniqueTestEmail}`);
+
     // Step 1: Validate referral code
     addTestResult('step1', 'running', 'Step 1: Validating referral code...');
     
@@ -183,7 +188,7 @@ export default function TestReferralRegistration() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           referralCode: testReferralCode,
-          newUserEmail: testNewUserEmail
+          newUserEmail: uniqueTestEmail
         })
       });
 
@@ -200,7 +205,7 @@ export default function TestReferralRegistration() {
       // Step 3: Verify relationship was created
       addTestResult('step3', 'running', 'Step 3: Verifying referral relationship...');
 
-      const verifyResponse = await fetch(`/api/debug-referral?action=check_relationship&referrerEmail=${validateData.referrer.email}&referredEmail=${testNewUserEmail}`);
+      const verifyResponse = await fetch(`/api/debug-referral?action=check_relationship&referrerEmail=${validateData.referrer.email}&referredEmail=${uniqueTestEmail}`);
       const verifyData = await verifyResponse.json();
 
       if (verifyData.relationshipExists) {
@@ -314,12 +319,21 @@ export default function TestReferralRegistration() {
 
                 <FormControl>
                   <FormLabel>New User Email (for testing)</FormLabel>
-                  <Input
-                    value={testNewUserEmail}
-                    onChange={(e) => setTestNewUserEmail(e.target.value)}
-                    placeholder="test@example.com"
-                    type="email"
-                  />
+                  <HStack>
+                    <Input
+                      value={testNewUserEmail}
+                      onChange={(e) => setTestNewUserEmail(e.target.value)}
+                      placeholder="test@example.com"
+                      type="email"
+                    />
+                    <Button
+                      onClick={() => setTestNewUserEmail(`test-${Date.now()}@example.com`)}
+                      size="sm"
+                      colorScheme="green"
+                    >
+                      Generate Unique
+                    </Button>
+                  </HStack>
                 </FormControl>
               </SimpleGrid>
             </VStack>
