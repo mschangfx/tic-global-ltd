@@ -542,10 +542,7 @@
                             <button onclick="loadTransactions('cancelled')" class="btn" style="background: #e74c3c; color: white;">❌ Cancelled/Rejected</button>
                             <button onclick="loadTransactions('all')" class="btn" style="background: #6c757d; color: white;">📊 All</button>
                         </div>
-                        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                            <button onclick="createTestDeposit()" class="btn" style="background: #17a2b8; color: white;">🧪 Create Test Deposit</button>
-                            <button onclick="createTestWithdrawal()" class="btn" style="background: #ffc107; color: black;">🧪 Create Test Withdrawal</button>
-                        </div>
+
                     </div>
                     <div id="transactionsList">
                         <div class="loading">
@@ -677,75 +674,9 @@
             }
         }
 
-        // Function to create test deposit for approval testing
-        async function createTestDeposit() {
-            if (!confirm('🧪 Create a test deposit with pending status for approval testing?')) {
-                return;
-            }
 
-            try {
-                showMessage('🔄 Creating test deposit...', 'success');
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/create-test-deposit`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer admin-key-2024'
-                    }
-                });
 
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    showMessage(`✅ Test deposit created successfully! Amount: $${data.deposit.amount}`, 'success');
-                    // Switch to pending view to show the new deposit
-                    setTimeout(() => {
-                        loadTransactions('pending', false);
-                    }, 1000);
-                } else {
-                    throw new Error(data.error || 'Failed to create test deposit');
-                }
-
-            } catch (error) {
-                console.error('❌ Error creating test deposit:', error);
-                showMessage(`❌ Error creating test deposit: ${error.message}`, 'error');
-            }
-        }
-
-        // Function to create test withdrawal for approval testing
-        async function createTestWithdrawal() {
-            if (!confirm('🧪 Create a test withdrawal with pending status for approval testing?')) {
-                return;
-            }
-
-            try {
-                showMessage('🔄 Creating test withdrawal...', 'success');
-
-                const response = await fetch(`${API_BASE_URL}/api/admin/create-test-withdrawal`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer admin-key-2024'
-                    }
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    showMessage(`✅ Test withdrawal created successfully! Amount: $${data.withdrawal.amount}`, 'success');
-                    // Switch to pending view to show the new withdrawal
-                    setTimeout(() => {
-                        loadTransactions('pending', false);
-                    }, 1000);
-                } else {
-                    throw new Error(data.error || 'Failed to create test withdrawal');
-                }
-
-            } catch (error) {
-                console.error('❌ Error creating test withdrawal:', error);
-                showMessage(`❌ Error creating test withdrawal: ${error.message}`, 'error');
-            }
-        }
 
         // Helper functions for transaction status display
         function getStatusColor(status) {
@@ -799,7 +730,7 @@
 
         function startAutoRefresh() {
             stopAutoRefresh(); // Clear any existing intervals
-            autoRefreshInterval = setInterval(loadTransactions, AUTO_REFRESH_SECONDS * 1000);
+            autoRefreshInterval = setInterval(() => loadTransactions('pending', true), AUTO_REFRESH_SECONDS * 1000);
             startCountdown();
             console.log('Auto-refresh started: every', AUTO_REFRESH_SECONDS, 'seconds');
         }
@@ -957,7 +888,7 @@
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('dashboardSection').classList.remove('hidden');
-                loadTransactions('all'); // Load all transactions by default
+                loadTransactions('pending'); // Load only pending transactions by default
                 updateVerificationStats(); // Load verification stats
                 startAutoRefresh(); // Start auto-refresh after login
             } else {
@@ -1087,10 +1018,23 @@
             const deposits = transactions.filter(t => t.type === 'deposit');
             const withdrawals = transactions.filter(t => t.type === 'withdrawal');
 
-            // Update stats
-            document.getElementById('totalPending').textContent = transactions.length;
-            document.getElementById('pendingDeposits').textContent = deposits.length;
-            document.getElementById('pendingWithdrawals').textContent = withdrawals.length;
+            // Calculate actual pending counts from all transactions
+            const pendingDeposits = deposits.filter(t => t.status === 'pending');
+            const pendingWithdrawals = withdrawals.filter(t => t.status === 'pending');
+            const totalPending = pendingDeposits.length + pendingWithdrawals.length;
+
+            // Debug log to show what we're calculating
+            console.log('📊 Transaction counts updated:', {
+                pending: totalPending,
+                completed: deposits.filter(t => t.status === 'completed').length + withdrawals.filter(t => t.status === 'completed').length,
+                rejected: deposits.filter(t => t.status === 'rejected').length + withdrawals.filter(t => t.status === 'cancelled' || t.status === 'rejected').length,
+                total: transactions.length
+            });
+
+            // Update stats with actual pending counts
+            document.getElementById('totalPending').textContent = totalPending;
+            document.getElementById('pendingDeposits').textContent = pendingDeposits.length;
+            document.getElementById('pendingWithdrawals').textContent = pendingWithdrawals.length;
 
             // Display transactions
             const transactionsList = document.getElementById('transactionsList');
