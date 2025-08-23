@@ -11,53 +11,53 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
-        
+
         .admin-card {
             background: white;
             border-radius: 12px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
             padding: 20px;
             text-align: center;
         }
-        
+
         .content {
             padding: 30px;
         }
-        
+
         .login-form {
             max-width: 400px;
             margin: 0 auto;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #2c3e50;
         }
-        
+
         .form-input {
             width: 100%;
             padding: 12px;
@@ -65,7 +65,7 @@
             border-radius: 6px;
             font-size: 16px;
         }
-        
+
         .btn {
             padding: 12px 24px;
             border: none;
@@ -74,27 +74,27 @@
             font-weight: 600;
             transition: all 0.3s ease;
         }
-        
+
         .btn-primary {
             background: #3498db;
             color: white;
             width: 100%;
         }
-        
+
         .btn-primary:hover {
             background: #2980b9;
         }
-        
+
         .btn-success {
             background: #27ae60;
             color: white;
         }
-        
+
         .btn-danger {
             background: #e74c3c;
             color: white;
         }
-        
+
         .transaction-card {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -102,14 +102,14 @@
             padding: 20px;
             margin-bottom: 15px;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
-        
+
         .stat-card {
             background: white;
             padding: 20px;
@@ -117,30 +117,30 @@
             border-left: 4px solid #3498db;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         .stat-number {
             font-size: 2rem;
             font-weight: bold;
             color: #2c3e50;
         }
-        
+
         .hidden {
             display: none;
         }
-        
+
         .loading {
             text-align: center;
             padding: 40px;
             color: #6c757d;
         }
-        
+
         .controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-        
+
         .error {
             background: #f8d7da;
             color: #721c24;
@@ -148,7 +148,7 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        
+
         .success {
             background: #d4edda;
             color: #155724;
@@ -156,7 +156,7 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        
+
         .receipt-btn {
             margin-left: 10px;
             padding: 5px 10px;
@@ -474,7 +474,7 @@
                 <h1>🔐 TIC Global Admin Panel</h1>
                 <p>Standalone Transaction Management System</p>
             </div>
-            
+
             <!-- Login Form -->
             <div id="loginSection" class="content">
                 <div class="login-form">
@@ -489,7 +489,7 @@
                     <button onclick="login()" class="btn btn-primary">🚀 Login to Admin Panel</button>
                 </div>
             </div>
-            
+
             <!-- Admin Dashboard -->
             <div id="dashboardSection" class="content hidden">
                 <div class="controls">
@@ -503,9 +503,9 @@
                         <button onclick="logout()" class="btn btn-danger">🚪 Logout</button>
                     </div>
                 </div>
-                
+
                 <div id="messageArea"></div>
-                
+
                 <!-- Stats -->
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -531,7 +531,7 @@
                     <button class="tab-btn active" onclick="showTab('transactions')">💰 Transactions</button>
                     <button class="tab-btn" onclick="showTab('verifications')">🔍 Verifications</button>
                 </div>
-                
+
                 <!-- Transactions Tab -->
                 <div id="transactionsTab" class="tab-content active">
                     <div class="transaction-controls" style="margin-bottom: 20px;">
@@ -540,7 +540,7 @@
                             <button onclick="loadTransactions('pending')" class="btn btn-primary">📋 Pending</button>
                             <button onclick="loadTransactions('completed')" class="btn" style="background: #27ae60; color: white;">✅ Completed</button>
                             <button onclick="loadTransactions('cancelled')" class="btn" style="background: #e74c3c; color: white;">❌ Cancelled/Rejected</button>
-                            <button onclick="loadTransactions('all')" class="btn" style="background: #6c757d; color: white;">📊 All</button>
+                            <button onclick="loadTransactionHistory()" class="btn" style="background: #17a2b8; color: white;">📚 History (All)</button>
                         </div>
 
                     </div>
@@ -678,6 +678,125 @@
 
 
 
+        async function loadTransactionHistory() {
+            try {
+                showMessage('🔄 Loading transaction history...', 'success');
+
+                // Use service role key for admin operations
+                const headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // Get all transactions with higher limit for history
+                const timestamp = Date.now();
+                const [depositsResponse, withdrawalsResponse] = await Promise.all([
+                    fetch(`${SUPABASE_URL}/rest/v1/deposits?select=*&order=created_at.desc&limit=100&_t=${timestamp}`, { headers }),
+                    fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&order=created_at.desc&limit=100&_t=${timestamp}`, { headers })
+                ]);
+
+                if (!depositsResponse.ok || !withdrawalsResponse.ok) {
+                    throw new Error('Failed to fetch transaction history from database');
+                }
+
+                const deposits = await depositsResponse.json();
+                const withdrawals = await withdrawalsResponse.json();
+
+                const transactions = [
+                    ...deposits.map(d => ({ ...d, type: 'deposit' })),
+                    ...withdrawals.map(w => ({ ...w, type: 'withdrawal' }))
+                ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                displayTransactionHistory(transactions);
+                showMessage(`✅ Loaded ${transactions.length} transactions from history (${deposits.length} deposits, ${withdrawals.length} withdrawals)`, 'success');
+
+            } catch (error) {
+                console.error('Error loading transaction history:', error);
+                showMessage(`❌ Error loading transaction history: ${error.message}`, 'error');
+                document.getElementById('transactionsList').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #e74c3c;">
+                        <h3>❌ Error Loading Transaction History</h3>
+                        <p>Error: ${error.message}</p>
+                        <button onclick="loadTransactionHistory()" class="btn btn-primary">🔄 Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayTransactionHistory(transactions) {
+            const transactionsList = document.getElementById('transactionsList');
+
+            if (transactions.length === 0) {
+                transactionsList.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #6c757d;">
+                        <h3>📚 No Transaction History</h3>
+                        <p>No transactions found in the database.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group transactions by status for summary
+            const statusCounts = transactions.reduce((acc, t) => {
+                const status = t.status === 'cancelled' ? 'cancelled/rejected' : t.status;
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+
+            let html = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3>📚 Transaction History Summary</h3>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        ${Object.entries(statusCounts).map(([status, count]) => `
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid ${getStatusColor(status)};">
+                                <strong>${status.charAt(0).toUpperCase() + status.slice(1)}</strong>: ${count}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            transactions.forEach(transaction => {
+                const statusColor = getStatusColor(transaction.status);
+                const statusText = getStatusText(transaction.status);
+                const date = new Date(transaction.created_at).toLocaleString();
+                const amount = transaction.amount || 0;
+
+                html += `
+                    <div class="transaction-card" style="border-left: 4px solid ${statusColor};">
+                        <div class="transaction-header">
+                            <h4>${transaction.type === 'deposit' ? '💰' : '💸'} ${transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)} - $${amount}</h4>
+                            <span class="transaction-status" style="background: ${statusColor}; color: ${transaction.status === 'pending' ? '#000' : '#fff'};">${statusText}</span>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-field">
+                                <label>User Email</label>
+                                <span>${transaction.user_email || 'N/A'}</span>
+                            </div>
+                            <div class="transaction-field">
+                                <label>Date</label>
+                                <span>${date}</span>
+                            </div>
+                            ${transaction.type === 'withdrawal' ? `
+                                <div class="transaction-field">
+                                    <label>Wallet Address</label>
+                                    <span style="font-family: monospace; font-size: 12px;">${transaction.wallet_address || 'N/A'}</span>
+                                </div>
+                            ` : ''}
+                            ${transaction.transaction_hash ? `
+                                <div class="transaction-field">
+                                    <label>Transaction Hash</label>
+                                    <span style="font-family: monospace; font-size: 12px;">${transaction.transaction_hash}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            transactionsList.innerHTML = html;
+        }
         // Helper functions for transaction status display
         function getStatusColor(status) {
             switch(status) {
@@ -884,7 +1003,7 @@
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
+
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('dashboardSection').classList.remove('hidden');
@@ -1038,7 +1157,7 @@
 
             // Display transactions
             const transactionsList = document.getElementById('transactionsList');
-            
+
             if (transactions.length === 0) {
                 transactionsList.innerHTML = `
                     <div style="text-align: center; padding: 60px; color: #6c757d;">
@@ -1078,7 +1197,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div style="margin-bottom: 15px;">
                         <div><strong>👤 User:</strong> ${transaction.user_email}</div>
                         <div><strong>🆔 ID:</strong> ${transaction.id.substring(0, 8)}...</div>
@@ -1310,7 +1429,7 @@
 
         // Auto-focus username field
         document.getElementById('username').focus();
-        
+
         // Enter key support
         document.getElementById('password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -1440,22 +1559,30 @@
             try {
                 showMessage(`🔄 Loading ${status} verifications...`, 'success');
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/verifications?status=${status}&limit=50&_t=${Date.now()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer admin-key-2024'
-                    }
-                });
+                // Use service role key for admin operations
+                const headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // Build query for identity documents with user data
+                let query = `${SUPABASE_URL}/rest/v1/identity_documents?select=*,users(*)&order=upload_date.desc&limit=50`;
+
+                if (status !== 'all') {
+                    query += `&verification_status=eq.${status}`;
+                }
+
+                const response = await fetch(query, { headers });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('✅ Verification data loaded:', data);
+                const documents = await response.json();
+                console.log('✅ Verification documents loaded:', documents);
 
-                displayVerifications(data.users || []);
+                displayVerifications(documents);
                 updateVerificationStats();
 
             } catch (error) {
@@ -1473,10 +1600,10 @@
             }
         }
 
-        function displayVerifications(users) {
+        function displayVerifications(documents) {
             const container = document.getElementById('verificationsList');
 
-            if (!users || users.length === 0) {
+            if (!documents || documents.length === 0) {
                 container.innerHTML = `
                     <div class="no-data">
                         <h3>📭 No Verifications Found</h3>
@@ -1487,15 +1614,15 @@
             }
 
             let html = '';
-            users.forEach(user => {
-                const doc = user.identity_documents[0]; // Get the first document
+            documents.forEach(doc => {
+                const user = doc.users; // User data is nested in the document
                 const statusClass = `status-${doc.verification_status}`;
 
                 html += `
                     <div class="verification-card">
                         <div class="verification-header">
                             <div class="verification-user">
-                                👤 ${user.first_name || 'N/A'} ${user.last_name || 'N/A'}
+                                👤 ${user?.first_name || 'N/A'} ${user?.last_name || 'N/A'}
                             </div>
                             <div class="verification-status ${statusClass}">
                                 ${doc.verification_status.toUpperCase()}
@@ -1506,34 +1633,34 @@
                         <div class="user-identity-section">
                             <div class="identity-field">
                                 <label>👤 FULL NAME</label>
-                                <span class="identity-value">${user.first_name || 'N/A'} ${user.last_name || 'N/A'}</span>
+                                <span class="identity-value">${user?.first_name || 'N/A'} ${user?.last_name || 'N/A'}</span>
                             </div>
                             <div class="identity-field">
                                 <label>🏠 ADDRESS</label>
-                                <span class="identity-value">${user.address || 'N/A'}</span>
+                                <span class="identity-value">${user?.address || 'N/A'}</span>
                             </div>
                         </div>
 
                         <div class="verification-details">
                             <div class="verification-field">
                                 <label>Email</label>
-                                <span>${user.email}</span>
+                                <span>${user?.email || 'N/A'}</span>
                             </div>
                             <div class="verification-field">
                                 <label>Phone</label>
-                                <span>${user.phone_number || 'N/A'}</span>
+                                <span>${user?.phone_number || 'N/A'}</span>
                             </div>
                             <div class="verification-field">
                                 <label>Country of Birth</label>
-                                <span>${user.country_of_birth || 'N/A'}</span>
+                                <span>${user?.country_of_birth || 'N/A'}</span>
                             </div>
                             <div class="verification-field">
                                 <label>Date of Birth</label>
-                                <span>${user.date_of_birth || 'N/A'}</span>
+                                <span>${user?.date_of_birth || 'N/A'}</span>
                             </div>
                             <div class="verification-field">
                                 <label>Gender</label>
-                                <span>${user.gender || 'N/A'}</span>
+                                <span>${user?.gender || 'N/A'}</span>
                             </div>
                             <div class="verification-field">
                                 <label>Document Type</label>
@@ -1549,11 +1676,11 @@
                             </div>
                             <div class="verification-field">
                                 <label>Email Verified</label>
-                                <span>${user.email_verified ? '✅ Yes' : '❌ No'}</span>
+                                <span>${user?.email_verified ? '✅ Yes' : '❌ No'}</span>
                             </div>
                             <div class="verification-field">
                                 <label>Profile Completed</label>
-                                <span>${user.profile_completed ? '✅ Yes' : '❌ No'}</span>
+                                <span>${user?.profile_completed ? '✅ Yes' : '❌ No'}</span>
                             </div>
                             ${doc.rejection_reason ? `
                                 <div class="verification-field">
@@ -1566,8 +1693,8 @@
                         <div class="verification-actions">
                             ${doc.file_url ? `<button class="btn-view-document" onclick="viewDocument('${doc.file_url}')">📄 View Document</button>` : ''}
                             ${doc.verification_status === 'pending' ? `
-                                <button class="btn-approve" onclick="approveVerification('${doc.id}', '${user.email}')">✅ Approve</button>
-                                <button class="btn-reject" onclick="rejectVerification('${doc.id}', '${user.email}')">❌ Reject</button>
+                                <button class="btn-approve" onclick="approveVerification('${doc.id}', '${user?.email}')">✅ Approve</button>
+                                <button class="btn-reject" onclick="rejectVerification('${doc.id}', '${user?.email}')">❌ Reject</button>
                             ` : ''}
                         </div>
                     </div>
@@ -1687,25 +1814,27 @@
 
         async function updateVerificationStats() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/verifications`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer admin-key-2024'
-                    }
-                });
+                // Use service role key for admin operations
+                const headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // Get count of pending verifications
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/identity_documents?verification_status=eq.pending&select=id`, { headers });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    const stats = data.stats;
+                    const documents = await response.json();
+                    const pendingCount = documents.length;
 
                     // Update the pending verifications stat
                     const pendingElement = document.getElementById('pendingVerifications');
                     if (pendingElement) {
-                        pendingElement.textContent = stats.pendingVerifications || 0;
+                        pendingElement.textContent = pendingCount;
                     }
 
-                    console.log('✅ Verification stats updated:', stats);
+                    console.log('✅ Verification stats updated:', { pendingVerifications: pendingCount });
                 }
             } catch (error) {
                 console.error('❌ Error updating verification stats:', error);
