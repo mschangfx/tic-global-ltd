@@ -235,6 +235,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(testResults);
     }
 
+    // New action: Check if referral relationship exists
+    if (action === 'check_relationship') {
+      const referrerEmail = searchParams.get('referrerEmail');
+      const referredEmail = searchParams.get('referredEmail');
+
+      if (!referrerEmail || !referredEmail) {
+        return NextResponse.json({
+          error: 'Both referrerEmail and referredEmail are required'
+        }, { status: 400 });
+      }
+
+      // Check referral_relationships table
+      const { data: relationship, error: relationshipError } = await supabaseAdmin
+        .from('referral_relationships')
+        .select('*')
+        .eq('referrer_email', referrerEmail)
+        .eq('referred_email', referredEmail)
+        .single();
+
+      // Also check if user has referral_id set
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('email, referral_id, referral_code')
+        .eq('email', referredEmail)
+        .single();
+
+      return NextResponse.json({
+        relationshipExists: !!relationship,
+        relationshipData: relationship,
+        relationshipError: relationshipError?.message || null,
+        userData: userData,
+        userError: userError?.message || null,
+        hasReferralId: !!userData?.referral_id
+      });
+    }
+
     return NextResponse.json(
       { error: 'Invalid action' },
       { status: 400 }
