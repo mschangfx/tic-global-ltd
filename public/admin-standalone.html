@@ -680,7 +680,9 @@
 
         async function loadTransactionHistory() {
             try {
-                showMessage('🔄 Loading transaction history...', 'success');
+                // Stop auto-refresh when viewing history to prevent interruption
+                stopAutoRefresh();
+                showMessage('🔄 Loading transaction history... (Auto-refresh paused)', 'success');
 
                 // Use service role key for admin operations
                 const headers = {
@@ -689,19 +691,29 @@
                     'Content-Type': 'application/json'
                 };
 
-                // Get all transactions with higher limit for history
+                // Get all transactions without status filter for complete history
                 const timestamp = Date.now();
                 const [depositsResponse, withdrawalsResponse] = await Promise.all([
-                    fetch(`${SUPABASE_URL}/rest/v1/deposits?select=*&order=created_at.desc&limit=100&_t=${timestamp}`, { headers }),
-                    fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&order=created_at.desc&limit=100&_t=${timestamp}`, { headers })
+                    fetch(`${SUPABASE_URL}/rest/v1/deposits?select=*&order=created_at.desc&limit=100`, { headers }),
+                    fetch(`${SUPABASE_URL}/rest/v1/withdrawal_requests?select=*&order=created_at.desc&limit=100`, { headers })
                 ]);
 
+                console.log('📊 History - Deposits Response Status:', depositsResponse.status);
+                console.log('📊 History - Withdrawals Response Status:', withdrawalsResponse.status);
+
                 if (!depositsResponse.ok || !withdrawalsResponse.ok) {
-                    throw new Error('Failed to fetch transaction history from database');
+                    const depositError = depositsResponse.ok ? null : await depositsResponse.text();
+                    const withdrawalError = withdrawalsResponse.ok ? null : await withdrawalsResponse.text();
+                    console.error('❌ History - Deposits Error:', depositError);
+                    console.error('❌ History - Withdrawals Error:', withdrawalError);
+                    throw new Error(`Failed to fetch transaction history. Deposits: ${depositError}, Withdrawals: ${withdrawalError}`);
                 }
 
                 const deposits = await depositsResponse.json();
                 const withdrawals = await withdrawalsResponse.json();
+
+                console.log('📊 History - Deposits loaded:', deposits.length);
+                console.log('📊 History - Withdrawals loaded:', withdrawals.length);
 
                 const transactions = [
                     ...deposits.map(d => ({ ...d, type: 'deposit' })),
@@ -709,7 +721,7 @@
                 ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
                 displayTransactionHistory(transactions);
-                showMessage(`✅ Loaded ${transactions.length} transactions from history (${deposits.length} deposits, ${withdrawals.length} withdrawals)`, 'success');
+                showMessage(`✅ Loaded ${transactions.length} transactions from history (${deposits.length} deposits, ${withdrawals.length} withdrawals). Auto-refresh paused for review.`, 'success');
 
             } catch (error) {
                 console.error('Error loading transaction history:', error);
@@ -719,6 +731,7 @@
                         <h3>❌ Error Loading Transaction History</h3>
                         <p>Error: ${error.message}</p>
                         <button onclick="loadTransactionHistory()" class="btn btn-primary">🔄 Retry</button>
+                        <button onclick="loadTransactions('pending')" class="btn btn-secondary" style="margin-left: 10px;">🔄 Back to Pending</button>
                     </div>
                 `;
             }
@@ -746,7 +759,13 @@
 
             let html = `
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h3>📚 Transaction History Summary</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>📚 Transaction History Summary</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="loadTransactions('pending')" class="btn btn-primary" style="font-size: 12px;">🔄 Back to Pending</button>
+                            <button onclick="startAutoRefresh()" class="btn" style="background: #28a745; color: white; font-size: 12px;">▶️ Resume Auto-Refresh</button>
+                        </div>
+                    </div>
                     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                         ${Object.entries(statusCounts).map(([status, count]) => `
                             <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid ${getStatusColor(status)};">
@@ -1027,6 +1046,11 @@
             try {
                 // Update current status tracker
                 currentTransactionStatus = status;
+
+                // Resume auto-refresh when switching back to live views (not history)
+                if (!isAutoRefresh && !autoRefreshInterval) {
+                    startAutoRefresh();
+                }
 
                 if (!isAutoRefresh) {
                     showMessage(`🔄 Loading ${status} transactions...`, 'success');
