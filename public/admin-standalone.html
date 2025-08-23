@@ -849,6 +849,17 @@
                 default: return '❓';
             }
         }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return 'Pending';
+                case 'completed': return 'Completed';
+                case 'rejected': return 'Rejected';
+                case 'cancelled': return 'Cancelled';
+                case 'failed': return 'Failed';
+                default: return status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+            }
+        }
         let countdownInterval = null;
         const AUTO_REFRESH_SECONDS = 10;
         let nextRefreshTime = 0;
