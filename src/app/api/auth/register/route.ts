@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { referralCodeGenerator } from '@/lib/services/referralCodeGenerator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -168,54 +169,17 @@ export async function POST(request: NextRequest) {
       // Don't fail the registration for dashboard creation error
     }
 
-    // Generate referral code for the new user
+    // Generate referral code for the new user using centralized service
     try {
-      console.log('🎯 Generating referral code for new user:', email);
+      console.log('🎯 Creating referral setup for new user:', email);
 
-      // Generate unique referral code
-      const generateReferralCode = (userEmail: string): string => {
-        const username = userEmail.split('@')[0].toUpperCase();
-        const timestamp = Date.now().toString().slice(-4);
-        const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-        return `${username.substring(0, 3)}${randomSuffix}${timestamp}`;
-      };
+      const referralResult = await referralCodeGenerator.createUserReferralSetup(email);
 
-      const newUserReferralCode = generateReferralCode(email);
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://ticgloballtd.com';
-      const referralLink = `${baseUrl}/join?ref=${newUserReferralCode}`;
-
-      // Update user record with referral code
-      const { error: userUpdateError } = await supabaseAdmin
-        .from('users')
-        .update({
-          referral_code: newUserReferralCode,
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', email);
-
-      if (userUpdateError) {
-        console.error('❌ Error updating user with referral code:', userUpdateError);
+      if (referralResult.success) {
+        console.log('✅ Referral setup completed:', referralResult.code);
       } else {
-        console.log('✅ User updated with referral code:', newUserReferralCode);
-      }
-
-      // Create referral code entry for new user
-      const { error: referralCodeError } = await supabaseAdmin
-        .from('user_referral_codes')
-        .insert({
-          user_email: email,
-          referral_code: newUserReferralCode,
-          referral_link: referralLink,
-          total_referrals: 0,
-          total_earnings: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (referralCodeError) {
-        console.error('❌ Error creating referral code:', referralCodeError);
-      } else {
-        console.log('✅ Referral code created successfully:', newUserReferralCode);
+        console.error('❌ Referral setup failed:', referralResult.message);
+        // Don't fail registration for referral code generation error
       }
     } catch (referralCodeGenError) {
       console.error('❌ Error generating referral code:', referralCodeGenError);

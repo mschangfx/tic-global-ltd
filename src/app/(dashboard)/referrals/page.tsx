@@ -384,12 +384,8 @@ export default function ReferralPage() {
 
       console.log('Loading referral data for user:', userEmail);
 
-      // Load real referral data (userEmail now handled server-side)
-      const referralResponse = await fetch('/api/referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-referral-data' })
-      });
+      // Load referral data using the new API endpoint
+      const referralResponse = await fetch(`/api/user/referral-data?email=${encodeURIComponent(userEmail)}`);
 
       console.log('Referral response status:', referralResponse.status);
 
@@ -397,6 +393,11 @@ export default function ReferralPage() {
         const referralResult = await referralResponse.json();
         console.log('Referral result:', referralResult);
         if (referralResult.success) {
+          // Set referral code and link from the new API
+          setReferralCode(referralResult.data.referralCode);
+          setReferralLink(referralResult.data.referralLink);
+
+          // Set referral data
           setReferralData(referralResult.data);
         } else {
           console.error('Referral API returned error:', referralResult.error);
