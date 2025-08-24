@@ -252,6 +252,27 @@ export default function VerifyAccountPage() {
     }
   }, [verificationStatus, isLoading]);
 
+  // Auto-open next step modal when page loads if previous steps are completed
+  useEffect(() => {
+    if (!isLoading && sessionStatus === 'authenticated') {
+      // Small delay to ensure state is properly set
+      const timer = setTimeout(() => {
+        // If email is verified but profile is not completed, open profile modal
+        if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !isProfileModalOpen) {
+          console.log('🚀 Auto-opening profile completion modal on page load');
+          onProfileModalOpen();
+        }
+        // If profile is completed but identity is not uploaded, open identity modal
+        else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen) {
+          console.log('🚀 Auto-opening identity verification modal on page load');
+          onIdentityModalOpen();
+        }
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen]);
+
   // Handle completion of all verification steps
   useEffect(() => {
     const isAllComplete = verificationStatus.emailVerified &&
@@ -279,7 +300,7 @@ export default function VerifyAccountPage() {
       setIsLoading(true);
       setUserEmail(session.user.email);
 
-      const response = await fetch('/api/auth/verification-status', {
+      const response = await fetch(`/api/auth/verification-status?email=${encodeURIComponent(session.user.email)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -291,6 +312,7 @@ export default function VerifyAccountPage() {
       }
 
       const data = await response.json();
+      console.log('🔍 Verification status API response:', data);
 
       if (data.success && data.user) {
         const newStatus: VerificationStatus = {
@@ -309,6 +331,7 @@ export default function VerifyAccountPage() {
           email: data.user.email || session.user.email,
         };
 
+        console.log('🔍 New verification status:', newStatus);
         setVerificationStatus(newStatus);
 
         // Pre-fill profile form with existing data
@@ -347,16 +370,22 @@ export default function VerifyAccountPage() {
   };
 
   const updateActiveStep = () => {
+    console.log('🔍 Updating active step with verification status:', verificationStatus);
+
     if (!verificationStatus.emailVerified) {
+      console.log('📧 Setting active step to email verification');
       setActiveStepId('email');
       setCurrentStepIndex(0);
     } else if (!verificationStatus.profileCompleted) {
+      console.log('👤 Setting active step to profile completion');
       setActiveStepId('profile');
       setCurrentStepIndex(1);
     } else if (!verificationStatus.identityDocumentUploaded) {
+      console.log('🆔 Setting active step to identity verification');
       setActiveStepId('identity');
       setCurrentStepIndex(2);
     } else {
+      console.log('✅ All steps completed, setting to review');
       setActiveStepId('review');
       setCurrentStepIndex(3);
     }
