@@ -326,6 +326,7 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Update verification status immediately for instant visual feedback
         setVerificationStatus(prev => ({ ...prev, emailVerified: true }));
         onEmailModalClose();
         setEmailCode('');
@@ -337,6 +338,11 @@ export default function ProfilePage() {
           duration: 5000,
           isClosable: true,
         });
+
+        // Refresh verification status after a short delay to ensure database is updated
+        setTimeout(() => {
+          refreshVerificationStatus();
+        }, 1000);
       } else {
         throw new Error(data.error || 'Failed to verify email code');
       }

@@ -493,7 +493,7 @@ export default function VerifyAccountPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update verification status
+        // Update verification status immediately for instant visual feedback
         setVerificationStatus(prev => ({ ...prev, emailVerified: true }));
         setEmailCode('');
         setIsEmailCodeSent(false);
@@ -510,15 +510,18 @@ export default function VerifyAccountPage() {
           isClosable: true,
         });
 
-        // Refresh user data to get updated status
-        await loadUserData();
+        // Small delay to ensure database update is processed, then refresh data
+        setTimeout(async () => {
+          await loadUserData();
 
-        // Auto-advance to next step after a short delay
-        setTimeout(() => {
-          if (!verificationStatus.profileCompleted) {
-            onProfileModalOpen();
-          }
-        }, 1500);
+          // Auto-advance to next step after data is refreshed
+          setTimeout(() => {
+            // Use the updated state from loadUserData
+            if (!verificationStatus.profileCompleted) {
+              onProfileModalOpen();
+            }
+          }, 500);
+        }, 1000);
 
       } else {
         throw new Error(data.error || 'Invalid verification code');
@@ -586,7 +589,7 @@ export default function VerifyAccountPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update verification status
+        // Update verification status immediately for instant visual feedback
         setVerificationStatus(prev => ({ ...prev, profileCompleted: true }));
 
         // Close the profile modal
@@ -601,15 +604,17 @@ export default function VerifyAccountPage() {
           isClosable: true,
         });
 
-        // Refresh user data to get updated status
-        await loadUserData();
+        // Small delay to ensure database update is processed, then refresh data
+        setTimeout(async () => {
+          await loadUserData();
 
-        // Auto-advance to next step after a short delay
-        setTimeout(() => {
-          if (!verificationStatus.identityDocumentUploaded) {
-            onIdentityModalOpen();
-          }
-        }, 1500);
+          // Auto-advance to next step after data is refreshed
+          setTimeout(() => {
+            if (!verificationStatus.identityDocumentUploaded) {
+              onIdentityModalOpen();
+            }
+          }, 500);
+        }, 1000);
 
       } else {
         throw new Error(data.error || 'Failed to complete profile');
@@ -657,7 +662,7 @@ export default function VerifyAccountPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update verification status
+        // Update verification status immediately for instant visual feedback
         setVerificationStatus(prev => ({
           ...prev,
           identityDocumentUploaded: true,
@@ -681,8 +686,10 @@ export default function VerifyAccountPage() {
           isClosable: true,
         });
 
-        // Refresh user data to get updated status
-        await loadUserData();
+        // Small delay to ensure database update is processed, then refresh data
+        setTimeout(async () => {
+          await loadUserData();
+        }, 1000);
 
       } else {
         throw new Error(data.error || 'Failed to upload document');
