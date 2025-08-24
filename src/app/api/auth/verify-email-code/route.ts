@@ -48,17 +48,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user's email verification status
-    const { error: updateError } = await supabase
+    // First check if user exists
+    const { data: existingUser, error: checkError } = await supabase
       .from('users')
-      .update({
-        email_verified: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('email', email);
+      .select('email')
+      .eq('email', email)
+      .single();
 
-    if (updateError) {
-      console.error('Error updating user verification status:', updateError);
+    console.log('📧 Email verification - Existing user check:', existingUser);
+    console.log('📧 Email verification - Check error:', checkError);
+
+    let updateResult;
+    if (!existingUser && checkError?.code === 'PGRST116') {
+      // User doesn't exist, create new user record with email verified
+      console.log('📧 Creating new user record with email verified for:', email);
+      const { data, error: createError } = await supabase
+        .from('users')
+        .insert({
+          email: email,
+          email_verified: true,
+          profile_completed: false,
+          identity_verification_submitted: false,
+          identity_verification_status: 'pending',
+          identity_document_uploaded: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      updateResult = { data, error: createError };
+    } else if (existingUser) {
+      // User exists, update email verification status
+      console.log('📧 Updating existing user email verification for:', email);
+      const { data, error: updateError } = await supabase
+        .from('users')
+        .update({
+          email_verified: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', email)
+        .select();
+
+      updateResult = { data, error: updateError };
+    } else {
+      console.error('📧 Unexpected error checking user existence:', checkError);
+      return NextResponse.json(
+        { error: 'Database error during verification' },
+        { status: 500 }
+      );
+    }
+
+    console.log('📧 Email verification update result:', updateResult);
+
+    if (updateResult.error) {
+      console.error('Error updating user verification status:', updateResult.error);
       return NextResponse.json(
         { error: 'Failed to update verification status' },
         { status: 500 }
