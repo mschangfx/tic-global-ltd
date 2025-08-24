@@ -247,8 +247,28 @@ export default function VerifyAccountPage() {
 
   // Update active step based on verification status
   useEffect(() => {
-    updateActiveStep();
-  }, [verificationStatus]);
+    if (!isLoading) {
+      updateActiveStep();
+    }
+  }, [verificationStatus, isLoading]);
+
+  // Handle completion of all verification steps
+  useEffect(() => {
+    const isAllComplete = verificationStatus.emailVerified &&
+                         verificationStatus.profileCompleted &&
+                         verificationStatus.identityDocumentUploaded;
+
+    if (isAllComplete && !isLoading) {
+      // Show completion message
+      toast({
+        title: 'Account Verification Complete! 🎉',
+        description: 'All verification steps have been completed. You now have full access to your account.',
+        status: 'success',
+        duration: 8000,
+        isClosable: true,
+      });
+    }
+  }, [verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isLoading, toast]);
 
   const loadUserData = async () => {
     if (sessionStatus !== 'authenticated' || !session?.user?.email) {
@@ -444,9 +464,15 @@ export default function VerifyAccountPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Update verification status
         setVerificationStatus(prev => ({ ...prev, emailVerified: true }));
         setEmailCode('');
         setIsEmailCodeSent(false);
+
+        // Close the email modal
+        onEmailModalClose();
+
+        // Show success message
         toast({
           title: 'Email Verified Successfully!',
           description: 'Your email has been verified. You can now proceed to the next step.',
@@ -454,7 +480,17 @@ export default function VerifyAccountPage() {
           duration: 5000,
           isClosable: true,
         });
-        loadUserData(); // Refresh data
+
+        // Refresh user data to get updated status
+        await loadUserData();
+
+        // Auto-advance to next step after a short delay
+        setTimeout(() => {
+          if (!verificationStatus.profileCompleted) {
+            onProfileModalOpen();
+          }
+        }, 1500);
+
       } else {
         throw new Error(data.error || 'Invalid verification code');
       }
@@ -521,7 +557,13 @@ export default function VerifyAccountPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Update verification status
         setVerificationStatus(prev => ({ ...prev, profileCompleted: true }));
+
+        // Close the profile modal
+        onProfileModalClose();
+
+        // Show success message
         toast({
           title: 'Profile Completed Successfully!',
           description: 'Your profile has been completed. You can now proceed to identity verification.',
@@ -529,7 +571,17 @@ export default function VerifyAccountPage() {
           duration: 5000,
           isClosable: true,
         });
-        loadUserData(); // Refresh data
+
+        // Refresh user data to get updated status
+        await loadUserData();
+
+        // Auto-advance to next step after a short delay
+        setTimeout(() => {
+          if (!verificationStatus.identityDocumentUploaded) {
+            onIdentityModalOpen();
+          }
+        }, 1500);
+
       } else {
         throw new Error(data.error || 'Failed to complete profile');
       }
@@ -576,14 +628,22 @@ export default function VerifyAccountPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Update verification status
         setVerificationStatus(prev => ({
           ...prev,
           identityDocumentUploaded: true,
           identityStatus: 'pending'
         }));
+
+        // Reset form
         setSelectedFile(null);
         setDocumentType('');
         setIssuingCountry('');
+
+        // Close the identity modal
+        onIdentityModalClose();
+
+        // Show success message
         toast({
           title: 'Document Uploaded Successfully!',
           description: 'Your identity document has been uploaded and is under review. You will receive an email notification once the review is complete.',
@@ -591,7 +651,10 @@ export default function VerifyAccountPage() {
           duration: 7000,
           isClosable: true,
         });
-        loadUserData(); // Refresh data
+
+        // Refresh user data to get updated status
+        await loadUserData();
+
       } else {
         throw new Error(data.error || 'Failed to upload document');
       }
@@ -1046,12 +1109,14 @@ export default function VerifyAccountPage() {
                   <HStack spacing={3} width="full">
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setIsEmailCodeSent(false);
+                      onClick={async () => {
                         setEmailCode('');
+                        await sendEmailVerificationCode();
                       }}
                       size="md"
                       flex={1}
+                      isLoading={isSendingEmailCode}
+                      loadingText="Resending..."
                     >
                       Resend Code
                     </Button>
