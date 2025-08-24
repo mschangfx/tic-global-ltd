@@ -138,6 +138,9 @@ export default function DashboardOverviewPage() {
   // Supabase client removed - using NextAuth for authentication
   const toast = useToast();
 
+  // Debounce mechanism to prevent rapid successive calls
+  const [lastVerificationUpdate, setLastVerificationUpdate] = useState<number>(0);
+
   // Function to fetch verification status and update user name
   const fetchVerificationStatus = async (email: string) => {
     try {
@@ -952,7 +955,14 @@ export default function DashboardOverviewPage() {
 
         {/* Verification Banner */}
         <VerificationBanner onVerificationUpdate={async () => {
-          // Refresh dashboard verification status when VerificationBanner updates
+          // Debounce verification updates to prevent infinite loops
+          const now = Date.now();
+          if (now - lastVerificationUpdate < 2000) { // 2 second debounce
+            console.log('🚫 Dashboard: Verification update debounced');
+            return;
+          }
+
+          setLastVerificationUpdate(now);
           console.log('Verification status updated - refreshing dashboard');
           if (userEmail) {
             await fetchVerificationStatus(userEmail);

@@ -114,9 +114,15 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
         };
 
         console.log('🔄 VerificationBanner status updated:', mappedStatus);
+
+        // Check if status actually changed to prevent infinite loops
+        const statusChanged = JSON.stringify(mappedStatus) !== JSON.stringify(verificationStatus);
+
         setVerificationStatus(mappedStatus);
 
-        if (onVerificationUpdate) {
+        // Only call onVerificationUpdate if status actually changed
+        if (onVerificationUpdate && statusChanged) {
+          console.log('📋 VerificationBanner: Status changed, notifying parent');
           onVerificationUpdate();
         }
       }

@@ -108,6 +108,19 @@ class WalletService {
   async getBalance(): Promise<WalletBalance> {
     try {
       console.log('🔄 WalletService: Getting balance...');
+
+      // Check cache first
+      if (this.lastFetch && (Date.now() - this.lastFetch.at) < this.TTL) {
+        console.log('✅ WalletService: Returning cached balance');
+        return this.lastFetch.data;
+      }
+
+      // If already fetching, return the in-flight promise
+      if (this.inFlight) {
+        console.log('⏳ WalletService: Returning in-flight promise');
+        return this.inFlight;
+      }
+
       const userEmail = await this.getAuthenticatedUserEmail();
 
       if (!userEmail) {
@@ -123,8 +136,20 @@ class WalletService {
         return emptyBalance;
       }
 
-      // Use the same API endpoint as the navbar for consistency
-      return this.getBalanceFromAPI(userEmail);
+      // Create in-flight promise and fetch balance
+      this.inFlight = this.getBalanceFromAPI(userEmail);
+
+      try {
+        const balance = await this.inFlight;
+
+        // Cache the result
+        this.lastFetch = { at: Date.now(), data: balance };
+
+        return balance;
+      } finally {
+        // Clear in-flight promise
+        this.inFlight = null;
+      }
 
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
