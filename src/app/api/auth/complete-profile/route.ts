@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       last_name: lastName,
       date_of_birth: dateOfBirth,
       country_of_birth: countryOfBirth,
-      country: countryOfBirth, // Store in both fields for compatibility
       gender: gender,
       address: address,
       updated_at: new Date().toISOString()
