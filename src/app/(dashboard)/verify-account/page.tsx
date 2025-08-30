@@ -273,23 +273,24 @@ export default function VerifyAccountPage() {
     }
   }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen]);
 
-  // Handle completion of all verification steps
+  // Handle completion of all verification steps - ONLY when identity is actually approved
   useEffect(() => {
     const isAllComplete = verificationStatus.emailVerified &&
                          verificationStatus.profileCompleted &&
-                         verificationStatus.identityDocumentUploaded;
+                         verificationStatus.identityDocumentUploaded &&
+                         verificationStatus.identityVerified;
 
     if (isAllComplete && !isLoading) {
-      // Show completion message
+      // Show completion message only when fully verified (identity approved)
       toast({
         title: 'Account Verification Complete! 🎉',
-        description: 'All verification steps have been completed. You now have full access to your account.',
+        description: 'All verification steps have been completed and approved. You now have full access to your account.',
         status: 'success',
         duration: 8000,
         isClosable: true,
       });
     }
-  }, [verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isLoading, toast]);
+  }, [verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, verificationStatus.identityVerified, isLoading, toast]);
 
   const loadUserData = async () => {
     if (sessionStatus !== 'authenticated' || !session?.user?.email) {
@@ -397,11 +398,11 @@ export default function VerifyAccountPage() {
       isCompleted:
         step.id === 'email' ? verificationStatus.emailVerified :
         step.id === 'profile' ? verificationStatus.profileCompleted :
-        step.id === 'identity' ? verificationStatus.identityVerified :
+        step.id === 'identity' ? verificationStatus.identityDocumentUploaded :
         step.id === 'review' ? verificationStatus.identityVerified : false,
       isPending:
-        step.id === 'identity' ? verificationStatus.identityStatus === 'pending' :
-        step.id === 'review' ? verificationStatus.identityStatus === 'pending' : false,
+        step.id === 'identity' ? (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) :
+        step.id === 'review' ? (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) : false,
       isActive: step.id === activeStepId,
     }));
   };
@@ -1010,12 +1011,12 @@ export default function VerifyAccountPage() {
                   )}
 
                   {currentStep.isPending && (
-                    <Alert status="info" borderRadius="md" maxW="md" mx="auto">
+                    <Alert status="warning" borderRadius="md" maxW="md" mx="auto">
                       <AlertIcon />
                       <Box>
-                        <AlertTitle>Under Review</AlertTitle>
+                        <AlertTitle>Documents Under Review</AlertTitle>
                         <AlertDescription>
-                          Your documents are being reviewed by our team. This usually takes 1-2 business days.
+                          Your documents are under review. This process usually takes 3-7 minutes but might last up to 24 hours.
                         </AlertDescription>
                       </Box>
                     </Alert>

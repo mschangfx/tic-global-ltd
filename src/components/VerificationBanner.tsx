@@ -143,7 +143,7 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
     return (completed / 4) * 100;
   };
 
-  // Check if fully verified
+  // Check if fully verified - ONLY when identity is actually approved, not just uploaded
   const isFullyVerified = verificationStatus.emailVerified &&
     verificationStatus.profileCompleted &&
     verificationStatus.identityDocumentUploaded &&
@@ -162,10 +162,10 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
 
   const getAlertStatus = () => {
     if (isFullyVerified) {
-      return 'success'; // Fully verified
+      return 'success'; // Fully verified (identity approved)
     }
     if (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) {
-      return 'info'; // Under review
+      return 'warning'; // Under review (documents uploaded but not approved)
     }
     if (hasStartedVerification) {
       return 'warning'; // In progress
@@ -178,7 +178,7 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
       return 'Fully Verified';
     }
     if (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) {
-      return 'Verification Under Review';
+      return 'Documents Under Review';
     }
     if (hasStartedVerification) {
       return 'Complete Your Verification';
@@ -191,7 +191,7 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
       return 'Your account is fully verified! You now have access to all features including withdrawals and higher limits.';
     }
     if (verificationStatus.identityDocumentUploaded && !verificationStatus.identityVerified) {
-      return 'Your documents are being reviewed by our team. This usually takes 1-2 business days.';
+      return 'Your documents are under review. This process usually takes 3-7 minutes but might last up to 24 hours.';
     }
     if (hasStartedVerification) {
       return 'You\'ve started the verification process. Complete the remaining steps to unlock all features.';
