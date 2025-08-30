@@ -114,6 +114,7 @@ export default function VerificationBanner({ onVerificationUpdate }: Verificatio
         };
 
         console.log('🔄 VerificationBanner status updated:', mappedStatus);
+        console.log('🔍 Raw API data:', data.user);
 
         // Check if status actually changed to prevent infinite loops
         const statusChanged = JSON.stringify(mappedStatus) !== JSON.stringify(verificationStatus);

@@ -1010,17 +1010,7 @@ export default function VerifyAccountPage() {
                     </Button>
                   )}
 
-                  {currentStep.isPending && (
-                    <Alert status="warning" borderRadius="md" maxW="md" mx="auto">
-                      <AlertIcon />
-                      <Box>
-                        <AlertTitle>Documents Under Review</AlertTitle>
-                        <AlertDescription>
-                          Your documents are under review. This process usually takes 3-7 minutes but might last up to 24 hours.
-                        </AlertDescription>
-                      </Box>
-                    </Alert>
-                  )}
+
 
                   {currentStep.isCompleted && (
                     <Alert status="success" borderRadius="md" maxW="md" mx="auto">

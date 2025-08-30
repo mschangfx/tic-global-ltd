@@ -1014,13 +1014,7 @@ export default function DashboardOverviewPage() {
                   boxSize={5}
                 />
                 <Text color={useColorModeValue('gray.700', 'gray.200')} fontSize="sm">
-                  {verificationStatus.emailVerified &&
-                   verificationStatus.phoneVerified &&
-                   verificationStatus.profileCompleted &&
-                   verificationStatus.identityDocumentUploaded
-                    ? "Your documents are under review. This process usually takes 3-7 minutes but might last up to 24 hours."
-                    : "Hello, Fill in your account details to make your first deposit!"
-                  }
+                  Hello, Fill in your account details to make your first deposit!
                 </Text>
               </HStack>
 
