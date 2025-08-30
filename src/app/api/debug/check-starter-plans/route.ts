@@ -75,11 +75,11 @@ export async function GET(request: NextRequest) {
     const starterDistributions = distributionsByPlan['starter'] || [];
 
     // Get unique users for each plan
-    const vipUsers = [...new Set((subscriptionsByPlan['vip'] || []).map((s: any) => s.user_email))];
-    const starterUsers = [...new Set(starterSubscriptions.map((s: any) => s.user_email))];
+    const vipUsers = Array.from(new Set((subscriptionsByPlan['vip'] || []).map((s: any) => s.user_email)));
+    const starterUsers = Array.from(new Set(starterSubscriptions.map((s: any) => s.user_email)));
 
     // Check which Starter users have distributions
-    const starterUsersWithDistributions = [...new Set(starterDistributions.map((d: any) => d.user_email))];
+    const starterUsersWithDistributions = Array.from(new Set(starterDistributions.map((d: any) => d.user_email)));
     const starterUsersWithoutDistributions = starterUsers.filter(email => !starterUsersWithDistributions.includes(email));
 
     return NextResponse.json({
@@ -95,12 +95,12 @@ export async function GET(request: NextRequest) {
       subscriptions_by_plan: Object.keys(subscriptionsByPlan).map(planId => ({
         plan_id: planId,
         subscription_count: subscriptionsByPlan[planId].length,
-        unique_users: [...new Set(subscriptionsByPlan[planId].map((s: any) => s.user_email))].length
+        unique_users: Array.from(new Set(subscriptionsByPlan[planId].map((s: any) => s.user_email))).length
       })),
       distributions_by_plan: Object.keys(distributionsByPlan).map(planId => ({
         plan_id: planId,
         distribution_count: distributionsByPlan[planId].length,
-        unique_users: [...new Set(distributionsByPlan[planId].map((d: any) => d.user_email))].length
+        unique_users: Array.from(new Set(distributionsByPlan[planId].map((d: any) => d.user_email))).length
       })),
       starter_plan_details: {
         subscriptions: starterSubscriptions.length,
