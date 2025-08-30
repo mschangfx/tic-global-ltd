@@ -65,16 +65,22 @@ export async function POST(request: NextRequest) {
 
     const results = [];
 
-    // Create distributions for the last 7 days
-    for (let i = 6; i >= 0; i--) {
+    // Create distributions for the last 5 days only (not 7) to match "Last 5" display
+    for (let i = 4; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const distributionDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      console.log(`📅 Creating distribution for date: ${distributionDate} (${i} days ago)`);
 
       for (const subscription of subscriptions) {
         const dailyTokens = getDailyTokenAmount(subscription.plan_id);
 
         if (dailyTokens <= 0) continue;
+
+        // Create a specific time for this distribution (morning hours to look realistic)
+        const distributionTime = new Date(date);
+        distributionTime.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0, 0); // Between 8-12 AM
 
         // Create distribution record
         const { data: distribution, error: distError } = await supabaseAdmin
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
             token_amount: dailyTokens,
             distribution_date: distributionDate,
             status: 'completed',
-            created_at: new Date(date.getTime() + Math.random() * 86400000).toISOString() // Random time within the day
+            created_at: distributionTime.toISOString()
           })
           .select()
           .single();
@@ -115,10 +121,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Distribution dates fixed and test data created',
+      message: 'Distribution dates fixed - Created last 5 days of distributions',
       userEmail,
       subscriptions: subscriptions.length,
       distributions_created: results.filter(r => r.status === 'created').length,
+      days_created: 5,
       results
     });
 

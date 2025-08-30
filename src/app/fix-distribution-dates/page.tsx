@@ -142,8 +142,8 @@ const FixDistributionDatesPage: React.FC = () => {
           <Box>
             <AlertTitle>Distribution Date Fix Tool</AlertTitle>
             <AlertDescription>
-              This tool will delete existing distributions and create new ones with proper dates for the last 7 days.
-              This will fix the issue where all distributions show the same date.
+              This tool will delete existing distributions and create new ones with proper dates for the last 5 days.
+              This will fix the issue where distributions show duplicate dates instead of unique daily distributions.
             </AlertDescription>
           </Box>
         </Alert>
