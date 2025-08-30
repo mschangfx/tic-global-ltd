@@ -50,6 +50,7 @@ import {
 import { FaUserCheck, FaClipboardList, FaAward, FaGamepad, FaChartLine, FaCheckCircle, FaFire, FaHeadset, FaBrain, FaRocket, FaUsersCog, FaMedal, FaTimesCircle, FaInfoCircle, FaTimes, FaEnvelope, FaPhone, FaUser, FaLock, FaIdCard, FaCamera, FaCloudUploadAlt, FaClock } from 'react-icons/fa'; // Added FaClock
 // Supabase client removed - using NextAuth for authentication
 import { initializeRecaptcha, sendFirebasePhoneVerification, verifyFirebasePhoneCode, cleanupRecaptcha, isFirebaseConfigured } from '@/lib/firebase';
+import VerificationBanner from '@/components/VerificationBanner';
 
 
 const StepItem = ({ icon, title, description, stepNumber }: { icon: React.ElementType, title: string, description: string, stepNumber: string }) => {
@@ -952,11 +953,24 @@ export default function DashboardOverviewPage() {
   return (
     <Box p={{ base: 4, md: 6 }} bg={sectionBg} minH="calc(100vh - 60px)"> {/* Adjust minH if needed */}
       <VStack spacing={8} align="stretch">
+        {/* Verification Banner */}
+        <VerificationBanner onVerificationUpdate={async () => {
+          // Debounce verification updates to prevent infinite loops
+          const now = Date.now();
+          if (now - lastVerificationUpdate < 2000) { // 2 second debounce
+            console.log('🚫 Dashboard: Verification update debounced');
+            return;
+          }
 
-
+          setLastVerificationUpdate(now);
+          console.log('Verification status updated - refreshing dashboard');
+          if (userEmail) {
+            await fetchVerificationStatus(userEmail);
+          }
+        }} />
 
         {/* Profile Completion Banner */}
-        {showProfileBanner && (
+        {false && showProfileBanner && (
           <Box
             bg={
               verificationStatus.emailVerified &&
