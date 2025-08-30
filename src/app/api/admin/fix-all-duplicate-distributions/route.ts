@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
           status: 'success',
           subscriptions: userSubscriptions.length,
           distributions_created: userDistributions.length,
-          plans: userSubscriptions.map(s => s.plan_name).join(', '),
+          plans: userSubscriptions.map((s: any) => s.plan_name).join(', '),
           distributions: userDistributions
         });
 
