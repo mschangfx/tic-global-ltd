@@ -118,7 +118,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         console.log(`📅 Subscription started: ${subscription.start_date}`);
 
         // Sort distributions by date (newest first)
-        const sortedDistributions = subscriptionDistributions.sort((a, b) =>
+        const sortedDistributions = subscriptionDistributions.sort((a: TokenDistribution, b: TokenDistribution) =>
           new Date(b.distribution_date).getTime() - new Date(a.distribution_date).getTime()
         );
 
