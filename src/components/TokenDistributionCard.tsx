@@ -132,7 +132,7 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         setTotalTokensReceived(subscriptionTotalTokens);
 
         console.log(`💰 Total tokens received for subscription ${subscription.id}: ${subscriptionTotalTokens}`);
-        console.log(`📋 Recent distributions:`, sortedDistributions.slice(0, 5).map(d => ({
+        console.log(`📋 Recent distributions:`, sortedDistributions.slice(0, 5).map((d: TokenDistribution) => ({
           date: d.distribution_date,
           amount: d.token_amount,
           status: d.status
