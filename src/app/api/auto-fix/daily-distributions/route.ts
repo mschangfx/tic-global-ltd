@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     console.log(`👥 Found ${activeSubscriptions.length} active subscriptions`);
 
     // Check which users are missing today's distribution
-    const userEmails = [...new Set(activeSubscriptions.map(sub => sub.user_email))];
+    const userEmails = Array.from(new Set(activeSubscriptions.map(sub => sub.user_email)));
     const usersNeedingDistribution = [];
 
     for (const userEmail of userEmails) {
