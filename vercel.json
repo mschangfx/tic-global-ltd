@@ -6,8 +6,20 @@
   },
   "crons": [
     {
-      "path": "/api/cron/daily-operations",
+      "path": "/api/cron/daily-tic-distribution",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/update-expired-subscriptions",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/daily-rank-maintenance",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/daily-unilevel-commissions",
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/cron/rank-bonus-monthly",
