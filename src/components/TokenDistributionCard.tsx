@@ -17,9 +17,11 @@ import {
   StatHelpText,
   useColorModeValue,
   Divider,
-  SimpleGrid
+  SimpleGrid,
+  Button,
+  Spinner
 } from '@chakra-ui/react';
-import { FaCoins, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { FaCoins, FaCalendarAlt, FaClock, FaSync } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import { useLanguage, formatCurrency } from '@/contexts/LanguageContext';
 
@@ -56,6 +58,7 @@ const TIC_PRICE = 0.02; // 0.02 USD per TIC
 const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail, subscription }) => {
   const [distributions, setDistributions] = useState<TokenDistribution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [totalTokensReceived, setTotalTokensReceived] = useState(0);
   const { language } = useLanguage();
 
@@ -64,60 +67,99 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
   const subtleTextColor = useColorModeValue('gray.600', 'gray.400');
   const distributionItemBg = useColorModeValue('gray.50', 'gray.600');
 
-  useEffect(() => {
-    const fetchDistributions = async () => {
-      try {
-        console.log(`🔍 Fetching distributions for user: ${userEmail}, plan: ${subscription.plan_id}, subscription: ${subscription.id}`);
+  const fetchDistributions = async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
 
-        // Use the tokens/distribute API which fetches real distribution data
-        // Add timestamp to prevent caching issues
-        const timestamp = new Date().getTime();
-        const response = await fetch(`/api/tokens/distribute?planId=${encodeURIComponent(subscription.plan_id)}&limit=30&_t=${timestamp}`);
-        const data = await response.json();
+    try {
+      console.log(`🔍 ${isRefresh ? 'Refreshing' : 'Fetching'} distributions for user: ${userEmail}, plan: ${subscription.plan_id}, subscription: ${subscription.id}`);
 
-        console.log('📊 Distribution API response:', data);
-
-        if (data.success) {
-          // Filter distributions by SPECIFIC SUBSCRIPTION ID, not just plan type
-          // This ensures we only show distributions for THIS subscription, not old ones
-          const subscriptionDistributions = (data.distributions || []).filter(
-            (dist: TokenDistribution) => {
-              // First check if it matches the plan
-              const planMatches = dist.plan_id === subscription.plan_id;
-
-              // Then check if the distribution date is after the subscription start date
-              const distDate = new Date(dist.distribution_date);
-              const subStartDate = new Date(subscription.start_date);
-              const dateAfterStart = distDate >= subStartDate;
-
-              console.log(`🔍 Distribution ${dist.id}: plan=${dist.plan_id}, date=${dist.distribution_date}, planMatches=${planMatches}, dateAfterStart=${dateAfterStart}`);
-
-              return planMatches && dateAfterStart;
-            }
-          );
-
-          console.log(`📈 Found ${subscriptionDistributions.length} distributions for subscription ${subscription.id} (plan: ${subscription.plan_id})`);
-          console.log(`📅 Subscription started: ${subscription.start_date}`);
-          setDistributions(subscriptionDistributions);
-
-          // Calculate total tokens received for this specific subscription only
-          const subscriptionTotalTokens = subscriptionDistributions.reduce(
-            (sum: number, dist: TokenDistribution) => sum + parseFloat(dist.token_amount.toString()),
-            0
-          );
-          setTotalTokensReceived(subscriptionTotalTokens);
-
-          console.log(`💰 Total tokens received for subscription ${subscription.id}: ${subscriptionTotalTokens}`);
-        } else {
-          console.error('❌ Distribution API error:', data.error);
+      // Use the tokens/distribute API which fetches real distribution data
+      // Add timestamp to prevent caching issues
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/tokens/distribute?planId=${encodeURIComponent(subscription.plan_id)}&limit=30&_t=${timestamp}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         }
-      } catch (error) {
-        console.error('❌ Error fetching token distributions:', error);
-      } finally {
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      console.log('📊 Distribution API response:', data);
+
+      if (data.success) {
+        // Filter distributions by SPECIFIC SUBSCRIPTION ID, not just plan type
+        // This ensures we only show distributions for THIS subscription, not old ones
+        const subscriptionDistributions = (data.distributions || []).filter(
+          (dist: TokenDistribution) => {
+            // First check if it matches the plan
+            const planMatches = dist.plan_id === subscription.plan_id;
+
+            // Then check if the distribution date is after the subscription start date
+            const distDate = new Date(dist.distribution_date);
+            const subStartDate = new Date(subscription.start_date);
+            const dateAfterStart = distDate >= subStartDate;
+
+            console.log(`🔍 Distribution ${dist.id}: plan=${dist.plan_id}, date=${dist.distribution_date}, planMatches=${planMatches}, dateAfterStart=${dateAfterStart}`);
+
+            return planMatches && dateAfterStart;
+          }
+        );
+
+        console.log(`📈 Found ${subscriptionDistributions.length} distributions for subscription ${subscription.id} (plan: ${subscription.plan_id})`);
+        console.log(`📅 Subscription started: ${subscription.start_date}`);
+
+        // Sort distributions by date (newest first)
+        const sortedDistributions = subscriptionDistributions.sort((a, b) =>
+          new Date(b.distribution_date).getTime() - new Date(a.distribution_date).getTime()
+        );
+
+        setDistributions(sortedDistributions);
+
+        // Calculate total tokens received for this specific subscription only
+        const subscriptionTotalTokens = subscriptionDistributions.reduce(
+          (sum: number, dist: TokenDistribution) => sum + parseFloat(dist.token_amount.toString()),
+          0
+        );
+        setTotalTokensReceived(subscriptionTotalTokens);
+
+        console.log(`💰 Total tokens received for subscription ${subscription.id}: ${subscriptionTotalTokens}`);
+        console.log(`📋 Recent distributions:`, sortedDistributions.slice(0, 5).map(d => ({
+          date: d.distribution_date,
+          amount: d.token_amount,
+          status: d.status
+        })));
+      } else {
+        console.error('❌ Distribution API error:', data.error);
+        setDistributions([]);
+        setTotalTokensReceived(0);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching token distributions:', error);
+      setDistributions([]);
+      setTotalTokensReceived(0);
+    } finally {
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
         setIsLoading(false);
       }
-    };
+    }
+  };
 
+  const handleRefresh = () => {
+    fetchDistributions(true);
+  };
+
+  useEffect(() => {
     if (userEmail && subscription.plan_id) {
       fetchDistributions();
     }
@@ -174,11 +216,24 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
 
       {/* TIC Token Distribution Section */}
       <VStack spacing={3} align="stretch">
-        <HStack spacing={2}>
-          <Icon as={FaCoins} color="orange.500" boxSize={5} />
-          <Heading as="h4" size="sm" color={textColor}>
-            TIC Token Distribution
-          </Heading>
+        <HStack justify="space-between">
+          <HStack spacing={2}>
+            <Icon as={FaCoins} color="orange.500" boxSize={5} />
+            <Heading as="h4" size="sm" color={textColor}>
+              TIC Token Distribution
+            </Heading>
+          </HStack>
+          <Button
+            size="xs"
+            variant="outline"
+            colorScheme="blue"
+            leftIcon={isRefreshing ? <Spinner size="xs" /> : <Icon as={FaSync} />}
+            onClick={handleRefresh}
+            isLoading={isRefreshing}
+            loadingText="Refreshing"
+          >
+            Refresh
+          </Button>
         </HStack>
 
         {/* Token Statistics */}
