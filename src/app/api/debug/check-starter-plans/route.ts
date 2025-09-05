@@ -130,13 +130,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create missing distributions for Starter plan users
+// POST - Create missing distributions for Starter plan users (batch processing)
 export async function POST(request: NextRequest) {
   try {
     console.log('🔧 Creating missing distributions for Starter plan users...');
 
     const body = await request.json();
     const adminKey = body.adminKey;
+    const batchSize = body.batchSize || 5; // Process 5 users at a time to avoid timeout
 
     // Simple admin verification
     if (adminKey !== (process.env.ADMIN_SECRET_KEY || 'admin123')) {
@@ -151,12 +152,13 @@ export async function POST(request: NextRequest) {
       .from('user_subscriptions')
       .select('*')
       .eq('plan_id', 'starter')
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .limit(batchSize); // Limit to batch size to avoid timeout
 
     if (subsError) {
       console.error('Error fetching Starter subscriptions:', subsError);
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to fetch Starter subscriptions',
           details: subsError.message
         },
@@ -173,7 +175,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`📊 Found ${starterSubscriptions.length} active Starter subscriptions`);
+    console.log(`📊 Processing ${starterSubscriptions.length} Starter subscriptions (batch size: ${batchSize})`);
 
     // Token allocation for Starter plan
     const STARTER_DAILY_TOKENS = 500 / 365; // 1.3699 TIC per day
@@ -181,29 +183,33 @@ export async function POST(request: NextRequest) {
     const results = [];
     let totalDistributionsCreated = 0;
 
-    // Process each Starter subscription
+    // Process each Starter subscription in the batch
     for (const subscription of starterSubscriptions) {
       try {
         console.log(`👤 Processing Starter user: ${subscription.user_email}`);
 
-        // Delete existing distributions for this user (to avoid duplicates)
-        const { error: deleteError } = await supabaseAdmin
+        // Check if user already has distributions
+        const { data: existingDistributions } = await supabaseAdmin
           .from('token_distributions')
-          .delete()
+          .select('distribution_date')
           .eq('user_email', subscription.user_email)
           .eq('plan_id', 'starter');
 
-        if (deleteError) {
-          console.error(`Error deleting existing distributions for ${subscription.user_email}:`, deleteError);
-        }
+        const existingDates = new Set((existingDistributions || []).map(d => d.distribution_date));
 
-        // Create distributions for the last 5 days
+        // Create distributions for the last 5 days (only if they don't exist)
         const userDistributions = [];
-        
+
         for (let i = 4; i >= 0; i--) {
           const date = new Date();
           date.setDate(date.getDate() - i);
           const distributionDate = date.toISOString().split('T')[0];
+
+          // Skip if distribution already exists for this date
+          if (existingDates.has(distributionDate)) {
+            console.log(`⏭️ Skipping ${distributionDate} for ${subscription.user_email} - already exists`);
+            continue;
+          }
 
           // Create a specific time for this distribution
           const distributionTime = new Date(date);
@@ -257,21 +263,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`🎉 Starter plan fix completed! Created ${totalDistributionsCreated} distributions.`);
+    console.log(`🎉 Starter plan batch completed! Created ${totalDistributionsCreated} distributions.`);
 
     return NextResponse.json({
       success: true,
-      message: `Created missing distributions for Starter plan users`,
+      message: `Created missing distributions for ${starterSubscriptions.length} Starter users`,
       starter_subscriptions: starterSubscriptions.length,
       distributions_created: totalDistributionsCreated,
       daily_amount: STARTER_DAILY_TOKENS,
-      results: results.slice(0, 10) // Show first 10 results
+      batch_size: batchSize,
+      results: results
     });
 
   } catch (error) {
     console.error('❌ Unexpected error creating Starter distributions:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
