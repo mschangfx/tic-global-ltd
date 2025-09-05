@@ -9,6 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { FaChartLine, FaGamepad, FaLifeRing, FaUserCheck, FaTachometerAlt, FaHome, FaArrowCircleDown, FaArrowCircleUp, FaHistory } from 'react-icons/fa';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WalletProvider } from '@/providers/WalletProvider';
+import AutoFixDistributions from '@/components/AutoFixDistributions';
 
 // Move this inside the component to access the translation function
 // const dashboardNavItems will be defined inside DashboardLayout
@@ -114,6 +115,8 @@ export default function DashboardLayout({
         </Box>
         {/* Main Content Area */}
         <Box as="main" flex="1" overflowY="auto" h="full"> {/* Ensure main content takes remaining height and scrolls */}
+          {/* Auto-fix distributions in background */}
+          <AutoFixDistributions />
           {children}
         </Box>
       </Flex>
