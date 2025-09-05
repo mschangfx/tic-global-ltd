@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
             // Calculate total daily tokens for ALL active subscriptions for this user
             let totalDailyTokens = 0;
-            let planNames = [];
+            let planNames: string[] = [];
 
             for (const subscription of userSubscriptions) {
               const dailyTokens = getDailyTokenAmount(subscription.plan_id);
