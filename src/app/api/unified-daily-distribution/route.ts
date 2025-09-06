@@ -163,8 +163,11 @@ export async function POST(request: NextRequest) {
 
         const { error: walletError } = await supabaseAdmin
           .rpc('increment_tic_balance_daily_distribution', {
-            p_user_email: userEmail,
-            p_amount: totalDailyTokens
+            user_email_param: userEmail,
+            amount_param: totalDailyTokens,
+            transaction_id_param: transactionId,
+            description_param: description,
+            plan_type_param: primarySubscription.plan_id
           });
 
         if (walletError) {

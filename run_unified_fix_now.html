@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🚀 Run Unified TIC Distribution Fix NOW</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 15px; margin: 15px 0; border-radius: 8px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 2px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+        pre { background-color: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #e9ecef; }
+        .step { margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; }
+        .highlight { background: yellow; padding: 2px 4px; border-radius: 3px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #218838; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 UNIFIED TIC DISTRIBUTION FIX</h1>
+        
+        <div class="status info">
+            <strong>🎯 FIXING VIP DISTRIBUTION ISSUE:</strong><br>
+            • Current Problem: VIP users getting +810 TIC instead of +18.90 TIC<br>
+            • Current Problem: Old dates (8/30/2025) instead of today (9/6/2025)<br>
+            • Solution: Run unified distribution system to create correct distributions
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Check Current Status</h3>
+            <button onclick="checkStatus()" id="checkBtn">📊 Check Distribution Status</button>
+            <div id="statusResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Run Unified Distribution Fix</h3>
+            <button onclick="runUnifiedFix()" id="fixBtn">🚀 Run Unified Distribution NOW</button>
+            <div id="fixResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Verify Results</h3>
+            <button onclick="verifyResults()" id="verifyBtn">✅ Verify Fix Results</button>
+            <div id="verifyResult"></div>
+        </div>
+
+        <div id="mainStatus" class="status info">Ready to fix VIP distribution amounts...</div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://tic-global-3rvewgtzy-changs-projects-b6f8a2cc.vercel.app';
+        
+        async function checkStatus() {
+            const statusDiv = document.getElementById('mainStatus');
+            const resultDiv = document.getElementById('statusResult');
+            const btn = document.getElementById('checkBtn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '🔍 Checking...';
+                statusDiv.innerHTML = '🔍 Checking current distribution status...';
+                statusDiv.className = 'status info';
+                
+                const response = await fetch(`${baseUrl}/api/unified-daily-distribution`, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const coverage = data.status?.distribution_coverage || 0;
+                    const missing = data.status?.users_missing_distributions || 0;
+                    
+                    statusDiv.innerHTML = `📊 STATUS CHECK COMPLETE`;
+                    statusDiv.className = coverage >= 100 ? 'status success' : 'status warning';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status ${coverage >= 100 ? 'success' : 'warning'}">
+                            <strong>Distribution Coverage: ${coverage}%</strong><br>
+                            • Active Users: ${data.status?.unique_active_users || 0}<br>
+                            • Users with Distributions: ${data.status?.unique_users_with_distributions || 0}<br>
+                            • Users Missing Distributions: ${missing}<br>
+                            • VIP Daily Rate: ${data.token_allocations?.vip_daily?.toFixed(4)} TIC<br>
+                            • Starter Daily Rate: ${data.token_allocations?.starter_daily?.toFixed(4)} TIC<br>
+                            ${missing > 0 ? '<br><span class="highlight">⚠️ USERS MISSING TODAY\'S DISTRIBUTIONS!</span>' : '<br>✅ All users have distributions'}
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `❌ STATUS CHECK FAILED: ${data.error}`;
+                    statusDiv.className = 'status error';
+                    resultDiv.innerHTML = `<div class="status error">Error: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ STATUS CHECK ERROR: ${error.message}`;
+                statusDiv.className = 'status error';
+                resultDiv.innerHTML = `<div class="status error">Network Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📊 Check Distribution Status';
+            }
+        }
+        
+        async function runUnifiedFix() {
+            const statusDiv = document.getElementById('mainStatus');
+            const resultDiv = document.getElementById('fixResult');
+            const btn = document.getElementById('fixBtn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '🚀 Running Fix...';
+                statusDiv.innerHTML = '🚀 Running unified distribution fix to create correct TIC amounts...';
+                statusDiv.className = 'status info';
+                
+                const response = await fetch(`${baseUrl}/api/unified-daily-distribution`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const created = data.summary?.distributions_created || 0;
+                    const skipped = data.summary?.distributions_skipped || 0;
+                    
+                    statusDiv.innerHTML = `🎉 UNIFIED FIX COMPLETE!`;
+                    statusDiv.className = 'status success';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ FIX SUCCESSFUL!</strong><br>
+                            • Date: ${data.date}<br>
+                            • Distributions Created: <span class="highlight">${created}</span><br>
+                            • Distributions Skipped: ${skipped}<br>
+                            • Total Active Subscriptions: ${data.summary?.total_active_subscriptions || 0}<br>
+                            • Unique Users Processed: ${data.summary?.unique_users || 0}<br><br>
+                            <strong>Expected Results:</strong><br>
+                            • VIP Users: <span class="highlight">+18.90 TIC per day</span><br>
+                            • Starter Users: <span class="highlight">+1.37 TIC per day</span><br>
+                            • Date: <span class="highlight">${data.date}</span> (TODAY)<br>
+                        </div>
+                        <details>
+                            <summary>View Detailed Results</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    // Auto-verify after successful fix
+                    setTimeout(() => {
+                        verifyResults();
+                    }, 3000);
+                    
+                } else {
+                    statusDiv.innerHTML = `❌ UNIFIED FIX FAILED: ${data.message}`;
+                    statusDiv.className = 'status error';
+                    resultDiv.innerHTML = `<div class="status error">Error: ${data.message || data.error}</div>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ UNIFIED FIX ERROR: ${error.message}`;
+                statusDiv.className = 'status error';
+                resultDiv.innerHTML = `<div class="status error">Network Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Run Unified Distribution NOW';
+            }
+        }
+        
+        async function verifyResults() {
+            const resultDiv = document.getElementById('verifyResult');
+            const btn = document.getElementById('verifyBtn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '✅ Verifying...';
+                
+                // Check status again to verify
+                const response = await fetch(`${baseUrl}/api/unified-daily-distribution`, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const coverage = data.status?.distribution_coverage || 0;
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status ${coverage >= 100 ? 'success' : 'warning'}">
+                            <strong>✅ VERIFICATION COMPLETE</strong><br>
+                            • Distribution Coverage: <span class="highlight">${coverage}%</span><br>
+                            • Users with Today's Distributions: ${data.status?.unique_users_with_distributions || 0}<br>
+                            • Expected VIP Amount: <span class="highlight">18.90 TIC</span><br>
+                            • Expected Starter Amount: <span class="highlight">1.37 TIC</span><br>
+                            • Expected Date: <span class="highlight">${today}</span><br><br>
+                            
+                            <strong>🎯 NEXT STEPS:</strong><br>
+                            1. Go to <a href="${baseUrl}/my-accounts" target="_blank">User Dashboard</a><br>
+                            2. Check TIC Token Distribution section<br>
+                            3. Verify Recent Distributions show:<br>
+                            &nbsp;&nbsp;&nbsp;• Date: ${today} (TODAY)<br>
+                            &nbsp;&nbsp;&nbsp;• Amount: +18.90 TIC (VIP) or +1.37 TIC (Starter)<br>
+                            &nbsp;&nbsp;&nbsp;• Status: COMPLETED<br>
+                            4. Click "Refresh" button if needed<br>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="status error">Verification failed: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Verification error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ Verify Fix Results';
+            }
+        }
+        
+        // Auto-check status on page load
+        window.onload = function() {
+            setTimeout(() => {
+                checkStatus();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
