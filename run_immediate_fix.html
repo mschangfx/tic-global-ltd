@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Run Immediate TIC Distribution Fix</title>
+</head>
+<body>
+    <h1>Running Immediate TIC Distribution Fix...</h1>
+    <div id="status">Starting immediate fix...</div>
+    <div id="results"></div>
+
+    <script>
+        async function runImmediateFix() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                statusDiv.innerHTML = 'Running immediate fix to create today\'s distributions...';
+                
+                const response = await fetch('https://tic-global-iuudjj1t0-changs-projects-b6f8a2cc.vercel.app/api/immediate-fix/create-todays-distributions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                statusDiv.innerHTML = 'Immediate fix completed!';
+                resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (data.success) {
+                    statusDiv.innerHTML = `✅ SUCCESS: Created ${data.distributions_created || 0} distributions for TODAY (${data.date})!`;
+                } else {
+                    statusDiv.innerHTML = `❌ ERROR: ${data.error}`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ ERROR: ${error.message}`;
+                resultsDiv.innerHTML = '<pre>' + error.stack + '</pre>';
+            }
+        }
+        
+        // Run immediate fix
+        runImmediateFix();
+    </script>
+</body>
+</html>
