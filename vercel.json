@@ -6,7 +6,7 @@
   },
   "crons": [
     {
-      "path": "/api/cron/daily-tic-distribution",
+      "path": "/api/unified-daily-distribution",
       "schedule": "0 0 * * *"
     },
     {

@@ -38,7 +38,7 @@ export const useAutoFixDistributions = () => {
     try {
       console.log('🔍 Checking if auto-fix is needed...');
       
-      const response = await fetch('/api/auto-fix/daily-distributions', {
+      const response = await fetch('/api/unified-daily-distribution', {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache'
@@ -75,7 +75,7 @@ export const useAutoFixDistributions = () => {
     try {
       console.log('🚀 Running auto-fix for daily distributions...');
       
-      const response = await fetch('/api/auto-fix/daily-distributions', {
+      const response = await fetch('/api/unified-daily-distribution', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
