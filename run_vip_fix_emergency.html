@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🚨 EMERGENCY VIP DISTRIBUTION FIX</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .container { max-width: 900px; margin: 0 auto; background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .status { padding: 20px; margin: 20px 0; border-radius: 10px; font-weight: bold; border: 2px solid; }
+        .success { background: rgba(40, 167, 69, 0.2); color: #28a745; border-color: #28a745; }
+        .error { background: rgba(220, 53, 69, 0.2); color: #dc3545; border-color: #dc3545; }
+        .info { background: rgba(23, 162, 184, 0.2); color: #17a2b8; border-color: #17a2b8; }
+        .warning { background: rgba(255, 193, 7, 0.2); color: #ffc107; border-color: #ffc107; }
+        pre { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px; overflow-x: auto; border: 1px solid rgba(255,255,255,0.2); color: #f8f9fa; }
+        .step { margin: 25px 0; padding: 20px; background: rgba(255,255,255,0.1); border-left: 5px solid #ffc107; border-radius: 10px; }
+        .highlight { background: #ffc107; color: #000; padding: 3px 6px; border-radius: 5px; font-weight: bold; }
+        button { background: linear-gradient(45deg, #28a745, #20c997); color: white; border: none; padding: 15px 25px; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; margin: 10px 5px; transition: all 0.3s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        button:disabled { background: #6c757d; cursor: not-allowed; transform: none; }
+        .emergency { background: linear-gradient(45deg, #dc3545, #fd7e14); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        .problem { background: rgba(220, 53, 69, 0.3); border: 2px solid #dc3545; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        .solution { background: rgba(40, 167, 69, 0.3); border: 2px solid #28a745; padding: 20px; border-radius: 10px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 EMERGENCY VIP DISTRIBUTION FIX</h1>
+        
+        <div class="problem">
+            <h3>🔥 CRITICAL ISSUE DETECTED:</h3>
+            <ul>
+                <li><strong>Problem:</strong> VIP users receiving <span class="highlight">+810 TIC</span> instead of <span class="highlight">+18.90 TIC</span></li>
+                <li><strong>Problem:</strong> Old dates showing (8/30/2025) instead of today (9/6/2025)</li>
+                <li><strong>Impact:</strong> Wrong distribution amounts in user dashboards</li>
+                <li><strong>Status:</strong> NEEDS IMMEDIATE FIX</li>
+            </ul>
+        </div>
+
+        <div class="solution">
+            <h3>✅ EMERGENCY SOLUTION:</h3>
+            <ul>
+                <li><strong>Step 1:</strong> Delete all wrong VIP distributions (810 TIC amounts)</li>
+                <li><strong>Step 2:</strong> Create correct VIP distributions (18.90 TIC amounts)</li>
+                <li><strong>Step 3:</strong> Update wallet balances with correct amounts</li>
+                <li><strong>Step 4:</strong> Verify fix in user dashboard</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>🔍 Step 1: Check VIP Distribution Status</h3>
+            <button onclick="checkVipStatus()" id="checkBtn">📊 Check VIP Status</button>
+            <div id="statusResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>🚨 Step 2: Run Emergency VIP Fix</h3>
+            <button onclick="runEmergencyVipFix()" id="fixBtn" class="emergency">🚨 EMERGENCY FIX VIP DISTRIBUTIONS</button>
+            <div id="fixResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>✅ Step 3: Verify Results</h3>
+            <button onclick="verifyVipFix()" id="verifyBtn">✅ Verify VIP Fix</button>
+            <div id="verifyResult"></div>
+        </div>
+
+        <div id="mainStatus" class="status info">🚨 Ready to fix VIP distribution emergency...</div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://tic-global-2ecc4ccuk-changs-projects-b6f8a2cc.vercel.app';
+        
+        async function checkVipStatus() {
+            const statusDiv = document.getElementById('mainStatus');
+            const resultDiv = document.getElementById('statusResult');
+            const btn = document.getElementById('checkBtn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '🔍 Checking VIP Status...';
+                statusDiv.innerHTML = '🔍 Checking VIP distribution status...';
+                statusDiv.className = 'status info';
+                
+                const response = await fetch(`${baseUrl}/api/fix-vip-distributions`, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const vipStatus = data.vip_status;
+                    const needsFix = vipStatus?.fix_needed || false;
+                    
+                    statusDiv.innerHTML = `📊 VIP STATUS CHECK COMPLETE`;
+                    statusDiv.className = needsFix ? 'status warning' : 'status success';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status ${needsFix ? 'warning' : 'success'}">
+                            <strong>VIP Distribution Status:</strong><br>
+                            • Total Active VIP Users: <span class="highlight">${vipStatus?.total_active_vip_users || 0}</span><br>
+                            • Wrong Distributions (810 TIC): <span class="highlight">${vipStatus?.wrong_distributions || 0}</span><br>
+                            • Correct Distributions (18.90 TIC): <span class="highlight">${vipStatus?.correct_distributions || 0}</span><br>
+                            • Users with Correct Distributions: <span class="highlight">${vipStatus?.users_with_correct_distributions || 0}</span><br>
+                            • Users Missing Correct Distributions: <span class="highlight">${vipStatus?.users_missing_correct_distributions || 0}</span><br>
+                            • Fix Needed: <span class="highlight">${needsFix ? 'YES - EMERGENCY!' : 'NO'}</span><br><br>
+                            
+                            <strong>Expected Amounts:</strong><br>
+                            • VIP Daily: <span class="highlight">${data.correct_amounts?.vip_display || '+18.90 TIC'}</span><br>
+                            • Starter Daily: <span class="highlight">${data.correct_amounts?.starter_display || '+1.37 TIC'}</span><br>
+                        </div>
+                    `;
+                    
+                    if (needsFix) {
+                        resultDiv.innerHTML += `
+                            <div class="status error">
+                                <strong>🚨 EMERGENCY ACTION REQUIRED!</strong><br>
+                                ${vipStatus?.wrong_distributions || 0} VIP users have wrong distribution amounts!<br>
+                                Click "EMERGENCY FIX VIP DISTRIBUTIONS" button below to fix immediately.
+                            </div>
+                        `;
+                    }
+                } else {
+                    statusDiv.innerHTML = `❌ VIP STATUS CHECK FAILED: ${data.error}`;
+                    statusDiv.className = 'status error';
+                    resultDiv.innerHTML = `<div class="status error">Error: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ VIP STATUS CHECK ERROR: ${error.message}`;
+                statusDiv.className = 'status error';
+                resultDiv.innerHTML = `<div class="status error">Network Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📊 Check VIP Status';
+            }
+        }
+        
+        async function runEmergencyVipFix() {
+            const statusDiv = document.getElementById('mainStatus');
+            const resultDiv = document.getElementById('fixResult');
+            const btn = document.getElementById('fixBtn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '🚨 FIXING VIP DISTRIBUTIONS...';
+                statusDiv.innerHTML = '🚨 Running emergency VIP distribution fix...';
+                statusDiv.className = 'status warning';
+                
+                const response = await fetch(`${baseUrl}/api/fix-vip-distributions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const summary = data.summary;
+                    
+                    statusDiv.innerHTML = `🎉 EMERGENCY VIP FIX COMPLETE!`;
+                    statusDiv.className = 'status success';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ EMERGENCY VIP FIX SUCCESSFUL!</strong><br>
+                            • Date: <span class="highlight">${data.date}</span><br>
+                            • Wrong Distributions Deleted: <span class="highlight">${summary?.wrong_distributions_deleted || 0}</span><br>
+                            • Correct Distributions Created: <span class="highlight">${summary?.correct_distributions_created || 0}</span><br>
+                            • VIP Subscriptions Processed: <span class="highlight">${summary?.vip_subscriptions_processed || 0}</span><br><br>
+                            
+                            <strong>Fixed Amounts:</strong><br>
+                            • VIP Users Now Get: <span class="highlight">${summary?.expected_display || '+18.90 TIC'}</span><br>
+                            • Date Fixed: <span class="highlight">${data.date}</span> (TODAY)<br><br>
+                            
+                            <strong>Problem Solved:</strong><br>
+                            • Old Problem: <span style="text-decoration: line-through;">+810 TIC (WRONG)</span><br>
+                            • New Solution: <span class="highlight">+18.90 TIC (CORRECT)</span><br>
+                        </div>
+                        <details>
+                            <summary>View Detailed Fix Results</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    // Auto-verify after successful fix
+                    setTimeout(() => {
+                        verifyVipFix();
+                    }, 3000);
+                    
+                } else {
+                    statusDiv.innerHTML = `❌ EMERGENCY VIP FIX FAILED: ${data.message}`;
+                    statusDiv.className = 'status error';
+                    resultDiv.innerHTML = `<div class="status error">Error: ${data.message || data.error}</div>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ EMERGENCY VIP FIX ERROR: ${error.message}`;
+                statusDiv.className = 'status error';
+                resultDiv.innerHTML = `<div class="status error">Network Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚨 EMERGENCY FIX VIP DISTRIBUTIONS';
+            }
+        }
+        
+        async function verifyVipFix() {
+            const resultDiv = document.getElementById('verifyResult');
+            const btn = document.getElementById('verifyBtn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '✅ Verifying VIP Fix...';
+                
+                // Check VIP status again to verify fix
+                const response = await fetch(`${baseUrl}/api/fix-vip-distributions`, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const vipStatus = data.vip_status;
+                    const fixNeeded = vipStatus?.fix_needed || false;
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status ${fixNeeded ? 'warning' : 'success'}">
+                            <strong>✅ VIP FIX VERIFICATION COMPLETE</strong><br>
+                            • Fix Status: <span class="highlight">${fixNeeded ? 'STILL NEEDS FIX' : 'FIXED SUCCESSFULLY'}</span><br>
+                            • Wrong Distributions Remaining: <span class="highlight">${vipStatus?.wrong_distributions || 0}</span><br>
+                            • Correct Distributions: <span class="highlight">${vipStatus?.correct_distributions || 0}</span><br>
+                            • VIP Users with Correct Amounts: <span class="highlight">${vipStatus?.users_with_correct_distributions || 0}</span><br><br>
+                            
+                            <strong>🎯 VERIFICATION RESULTS:</strong><br>
+                            ${fixNeeded ? 
+                                '⚠️ Fix may need to be run again or there are still issues.' : 
+                                '✅ All VIP users should now have correct distribution amounts!'
+                            }<br><br>
+                            
+                            <strong>🎯 NEXT STEPS:</strong><br>
+                            1. Go to <a href="${baseUrl}/my-accounts" target="_blank" style="color: #ffc107;">User Dashboard</a><br>
+                            2. Check TIC Token Distribution section<br>
+                            3. Verify Recent Distributions show:<br>
+                            &nbsp;&nbsp;&nbsp;• Date: <span class="highlight">${today}</span> (TODAY)<br>
+                            &nbsp;&nbsp;&nbsp;• Amount: <span class="highlight">+18.90 TIC</span> (VIP users)<br>
+                            &nbsp;&nbsp;&nbsp;• Status: <span class="highlight">COMPLETED</span><br>
+                            4. Click "Refresh" button if needed<br>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="status error">Verification failed: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Verification error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ Verify VIP Fix';
+            }
+        }
+        
+        // Auto-check VIP status on page load
+        window.onload = function() {
+            setTimeout(() => {
+                checkVipStatus();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
