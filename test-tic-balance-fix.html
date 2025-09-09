@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test TIC Balance Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .loading { opacity: 0.6; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test TIC Balance Fix</h1>
+        <p>This tool tests if the TIC wallet balance is correctly calculating from ALL token distributions.</p>
+
+        <div class="test-section">
+            <h3>📧 Test User Email</h3>
+            <input type="email" id="userEmail" placeholder="Enter user email" value="mschangfx@gmail.com" style="width: 300px; padding: 8px;">
+            <button onclick="testTicBalance()">Test TIC Balance</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results</h3>
+            <div id="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Quick Tests</h3>
+            <button onclick="testUser('mschangfx@gmail.com')">Test mschangfx@gmail.com</button>
+            <button onclick="testUser('jayceelauron777@gmail.com')">Test jayceelauron777@gmail.com</button>
+            <button onclick="testUser('gggvillasbrixbryan@gmail.com')">Test gggvillasbrixbryan@gmail.com</button>
+        </div>
+    </div>
+
+    <script>
+        async function testTicBalance() {
+            const email = document.getElementById('userEmail').value;
+            if (!email) {
+                alert('Please enter a user email');
+                return;
+            }
+            await testUser(email);
+        }
+
+        async function testUser(email) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">🔄 Testing TIC balance for: ' + email + '</div>';
+            
+            try {
+                // Test wallet balance API
+                const walletResponse = await fetch(`https://ticgloballtd.com/api/wallet/balance?email=${email}`);
+                const walletData = await walletResponse.json();
+                
+                if (!walletData.wallet) {
+                    throw new Error('No wallet data returned');
+                }
+
+                // Test distribution history API
+                const distResponse = await fetch(`https://ticgloballtd.com/api/distribution/history?limit=1000&_t=${Date.now()}`, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                const distData = await distResponse.json();
+
+                // Calculate expected TIC balance from distributions
+                let expectedTicBalance = 0;
+                let distributionCount = 0;
+                
+                if (distData.distributions && Array.isArray(distData.distributions)) {
+                    distData.distributions.forEach(dist => {
+                        if (dist.status === 'completed') {
+                            expectedTicBalance += parseFloat(dist.token_amount || 0);
+                            distributionCount++;
+                        }
+                    });
+                }
+
+                const walletTicBalance = parseFloat(walletData.wallet.tic_balance);
+                const difference = Math.abs(walletTicBalance - expectedTicBalance);
+                const isAccurate = difference < 0.01; // Allow for small rounding differences
+
+                let resultHtml = `
+<div class="${isAccurate ? 'success' : 'error'}">
+📊 TIC Balance Test Results for: ${email}
+
+🏦 Wallet API TIC Balance: ${walletTicBalance.toFixed(8)} TIC
+📈 Calculated from Distributions: ${expectedTicBalance.toFixed(8)} TIC
+📊 Total Distributions Found: ${distributionCount}
+🔍 Difference: ${difference.toFixed(8)} TIC
+✅ Status: ${isAccurate ? 'ACCURATE - Real-time calculation working!' : 'INACCURATE - Needs investigation'}
+
+💰 USD Value: $${(walletTicBalance * 0.02).toFixed(4)}
+📅 Last Updated: ${walletData.wallet.last_updated}
+</div>`;
+
+                if (!isAccurate) {
+                    resultHtml += `
+<div class="error">
+⚠️ ISSUE DETECTED:
+The wallet TIC balance (${walletTicBalance.toFixed(8)}) does not match 
+the calculated total from distributions (${expectedTicBalance.toFixed(8)}).
+
+This suggests the real-time calculation may not be working properly.
+</div>`;
+                }
+
+                resultsDiv.innerHTML = resultHtml;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+<div class="error">
+❌ Error testing TIC balance for ${email}:
+${error.message}
+
+Please check:
+1. User email exists in the system
+2. API endpoints are accessible
+3. Network connection is stable
+</div>`;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            testUser('mschangfx@gmail.com');
+        };
+    </script>
+</body>
+</html>
