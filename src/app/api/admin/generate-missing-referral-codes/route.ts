@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
             return { success: false, email: user.email, error: result.message };
           }
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          const errorMsg = error instanceof Error ? (error as Error).message : 'Unknown error';
           console.error(`❌ Error processing ${user.email}:`, errorMsg);
           return { success: false, email: user.email, error: errorMsg };
         }

@@ -38,7 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   } catch (error) {
     return NextResponse.json({
       error: "Debug route error",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? (error as Error).message : "Unknown error",
       stack: error instanceof Error ? error.stack : null
     }, { status: 500 });
   }
