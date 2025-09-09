@@ -6,70 +6,61 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔧 Starting token_distributions constraint fix...');
 
-    // Step 1: Check current duplicates
-    const { data: duplicates, error: dupError } = await supabaseAdmin
+    // Step 1: Check current duplicates by getting all distributions and finding duplicates
+    const { data: allDistributions, error: fetchError } = await supabaseAdmin
       .from('token_distributions')
-      .select('user_email, subscription_id, distribution_date, count(*)')
-      .group('user_email, subscription_id, distribution_date')
-      .having('count(*) > 1');
+      .select('id, user_email, subscription_id, distribution_date, created_at')
+      .order('user_email, subscription_id, distribution_date, created_at');
 
-    if (dupError) {
-      console.error('Error checking duplicates:', dupError);
-    } else {
-      console.log(`📊 Found ${duplicates?.length || 0} duplicate groups`);
+    if (fetchError) {
+      console.error('Error fetching distributions:', fetchError);
+      return NextResponse.json({
+        error: 'Failed to fetch distributions',
+        details: fetchError.message
+      }, { status: 500 });
     }
 
-    // Step 2: Clean up duplicates by keeping only the latest record for each group
-    const cleanupSQL = `
-      -- Delete duplicate token_distributions, keeping only the latest one per subscription per day
-      DELETE FROM token_distributions 
-      WHERE id NOT IN (
-        SELECT DISTINCT ON (user_email, subscription_id, distribution_date) id
-        FROM token_distributions
-        ORDER BY user_email, subscription_id, distribution_date, created_at DESC
-      );
-    `;
+    // Find duplicates
+    const duplicateGroups = new Map<string, any[]>();
+    const seen = new Set<string>();
 
-    const { error: cleanupError } = await supabaseAdmin.rpc('exec_sql', {
-      sql_query: cleanupSQL
-    });
-
-    if (cleanupError) {
-      console.error('Error cleaning up duplicates:', cleanupError);
-      // Try alternative approach
-      console.log('Trying alternative cleanup approach...');
-      
-      // Get all duplicates and delete them manually
-      const { data: allDistributions } = await supabaseAdmin
-        .from('token_distributions')
-        .select('*')
-        .order('user_email, subscription_id, distribution_date, created_at');
-
-      if (allDistributions) {
-        const toDelete: string[] = [];
-        const seen = new Set<string>();
-
-        for (const dist of allDistributions) {
-          const key = `${dist.user_email}-${dist.subscription_id}-${dist.distribution_date}`;
-          if (seen.has(key)) {
-            toDelete.push(dist.id);
-          } else {
-            seen.add(key);
-          }
+    for (const dist of allDistributions || []) {
+      const key = `${dist.user_email}-${dist.subscription_id}-${dist.distribution_date}`;
+      if (seen.has(key)) {
+        if (!duplicateGroups.has(key)) {
+          duplicateGroups.set(key, []);
         }
+        duplicateGroups.get(key)?.push(dist);
+      } else {
+        seen.add(key);
+      }
+    }
 
-        console.log(`🗑️ Deleting ${toDelete.length} duplicate records...`);
-        
-        for (const id of toDelete) {
-          await supabaseAdmin
-            .from('token_distributions')
-            .delete()
-            .eq('id', id);
+    console.log(`📊 Found ${duplicateGroups.size} duplicate groups`);
+
+    // Step 2: Clean up duplicates by deleting older records, keeping only the latest one
+    let deletedCount = 0;
+
+    for (const [key, duplicates] of duplicateGroups) {
+      // Sort by created_at descending and delete all but the first (latest)
+      duplicates.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // Delete all but the first (latest) record
+      for (let i = 1; i < duplicates.length; i++) {
+        const { error: deleteError } = await supabaseAdmin
+          .from('token_distributions')
+          .delete()
+          .eq('id', duplicates[i].id);
+
+        if (deleteError) {
+          console.error(`Error deleting duplicate ${duplicates[i].id}:`, deleteError);
+        } else {
+          deletedCount++;
         }
       }
-    } else {
-      console.log('✅ Duplicates cleaned up successfully');
     }
+
+    console.log(`🗑️ Deleted ${deletedCount} duplicate records`);
 
     // Step 3: Add unique constraint
     const constraintSQL = `
@@ -99,14 +90,20 @@ export async function POST(request: NextRequest) {
       console.log('✅ Unique constraint added successfully');
     }
 
-    // Step 4: Verify the fix
-    const { data: remainingDuplicates } = await supabaseAdmin
+    // Step 4: Verify the fix by checking for remaining duplicates
+    const { data: verifyDistributions } = await supabaseAdmin
       .from('token_distributions')
-      .select('user_email, subscription_id, distribution_date, count(*)')
-      .group('user_email, subscription_id, distribution_date')
-      .having('count(*) > 1');
+      .select('user_email, subscription_id, distribution_date')
+      .order('user_email, subscription_id, distribution_date');
 
-    console.log(`📊 Remaining duplicates after fix: ${remainingDuplicates?.length || 0}`);
+    const verifyDuplicates = new Map<string, number>();
+    for (const dist of verifyDistributions || []) {
+      const key = `${dist.user_email}-${dist.subscription_id}-${dist.distribution_date}`;
+      verifyDuplicates.set(key, (verifyDuplicates.get(key) || 0) + 1);
+    }
+
+    const remainingDuplicateCount = Array.from(verifyDuplicates.values()).filter(count => count > 1).length;
+    console.log(`📊 Remaining duplicates after fix: ${remainingDuplicateCount}`);
 
     // Step 5: Get summary statistics
     const { data: totalDistributions } = await supabaseAdmin
@@ -124,8 +121,9 @@ export async function POST(request: NextRequest) {
       summary: {
         total_distributions: totalDistributions?.length || 0,
         unique_users: uniqueUsers?.length || 0,
-        duplicates_before: duplicates?.length || 0,
-        duplicates_after: remainingDuplicates?.length || 0,
+        duplicates_before: duplicateGroups.size,
+        duplicates_after: remainingDuplicateCount,
+        records_deleted: deletedCount,
         constraint_added: !constraintError || constraintError.message?.includes('already exists')
       }
     });
@@ -142,36 +140,33 @@ export async function POST(request: NextRequest) {
 // GET - Check current status of token_distributions table
 export async function GET() {
   try {
-    // Check for duplicates
-    const { data: duplicates } = await supabaseAdmin
+    // Get all distributions to check for duplicates
+    const { data: allDistributions } = await supabaseAdmin
       .from('token_distributions')
-      .select('user_email, subscription_id, distribution_date, count(*)')
-      .group('user_email, subscription_id, distribution_date')
-      .having('count(*) > 1');
+      .select('user_email, subscription_id, distribution_date')
+      .order('user_email, subscription_id, distribution_date');
+
+    // Find duplicates
+    const duplicateGroups = new Map<string, number>();
+    for (const dist of allDistributions || []) {
+      const key = `${dist.user_email}-${dist.subscription_id}-${dist.distribution_date}`;
+      duplicateGroups.set(key, (duplicateGroups.get(key) || 0) + 1);
+    }
+
+    const duplicateCount = Array.from(duplicateGroups.values()).filter(count => count > 1).length;
 
     // Get total count
     const { data: total } = await supabaseAdmin
       .from('token_distributions')
       .select('id', { count: 'exact' });
 
-    // Check if constraint exists
-    const constraintCheckSQL = `
-      SELECT constraint_name 
-      FROM information_schema.table_constraints 
-      WHERE table_name = 'token_distributions' 
-      AND constraint_type = 'UNIQUE'
-      AND constraint_name LIKE '%subscription%';
-    `;
-
-    const { data: constraints } = await supabaseAdmin.rpc('exec_sql', {
-      sql_query: constraintCheckSQL
-    });
-
     return NextResponse.json({
       total_distributions: total?.length || 0,
-      duplicate_groups: duplicates?.length || 0,
-      constraint_exists: constraints && constraints.length > 0,
-      duplicates: duplicates || []
+      duplicate_groups: duplicateCount,
+      constraint_exists: false, // We'll update this after adding the constraint
+      duplicates_detail: Array.from(duplicateGroups.entries())
+        .filter(([_, count]) => count > 1)
+        .map(([key, count]) => ({ key, count }))
     });
 
   } catch (error) {
