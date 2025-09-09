@@ -113,17 +113,18 @@ export async function POST(request: NextRequest) {
       .from('token_distributions')
       .select('id', { count: 'exact' });
 
-    const { data: uniqueUsers } = await supabaseAdmin
+    const { data: allUsers } = await supabaseAdmin
       .from('token_distributions')
-      .select('user_email')
-      .group('user_email');
+      .select('user_email');
+
+    const uniqueUsers = [...new Set(allUsers?.map(u => u.user_email) || [])];
 
     return NextResponse.json({
       success: true,
       message: 'Token distributions constraint fix completed',
       summary: {
         total_distributions: totalDistributions?.length || 0,
-        unique_users: uniqueUsers?.length || 0,
+        unique_users: uniqueUsers.length,
         duplicates_before: duplicateGroups.size,
         duplicates_after: remainingDuplicateCount,
         records_deleted: deletedCount,
