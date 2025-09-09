@@ -115,12 +115,12 @@ export async function GET() {
         vip: {
           correct_count: analysis.plan_analysis.vip.correct,
           incorrect_count: analysis.plan_analysis.vip.incorrect,
-          unique_amounts: [...new Set(analysis.plan_analysis.vip.amounts)].sort((a, b) => b - a)
+          unique_amounts: Array.from(new Set(analysis.plan_analysis.vip.amounts)).sort((a, b) => b - a)
         },
         starter: {
           correct_count: analysis.plan_analysis.starter.correct,
           incorrect_count: analysis.plan_analysis.starter.incorrect,
-          unique_amounts: [...new Set(analysis.plan_analysis.starter.amounts)].sort((a, b) => b - a)
+          unique_amounts: Array.from(new Set(analysis.plan_analysis.starter.amounts)).sort((a, b) => b - a)
         }
       },
       sample_incorrect_records: sampleIncorrectRecords,
