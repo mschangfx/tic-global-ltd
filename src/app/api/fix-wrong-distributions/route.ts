@@ -8,11 +8,13 @@ export async function POST(request: NextRequest) {
     
     const currentTime = new Date().toISOString();
     
-    // Step 1: Find all distributions with amounts over 100 TIC (these are definitely wrong)
+    // Step 1: Find all distributions with wrong amounts
+    // VIP should be ~18.90 TIC, Starter should be ~1.37 TIC
+    // Any amount over 50 TIC is definitely wrong
     const { data: wrongDistributions, error: findError } = await supabaseAdmin
       .from('token_distributions')
       .select('*')
-      .gt('token_amount', 100);
+      .gt('token_amount', 50);
 
     if (findError) {
       throw new Error(`Failed to find wrong distributions: ${findError.message}`);
@@ -106,11 +108,11 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Checking for distributions with wrong amounts...');
     
-    // Find all distributions with amounts over 100 TIC
+    // Find all distributions with wrong amounts (over 50 TIC)
     const { data: wrongDistributions, error } = await supabaseAdmin
       .from('token_distributions')
       .select('*')
-      .gt('token_amount', 100)
+      .gt('token_amount', 50)
       .order('distribution_date', { ascending: false })
       .limit(50);
 
