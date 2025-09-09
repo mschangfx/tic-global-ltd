@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!activeSubscriptions || activeSubscriptions.length === 0) {
+    if (!activeSubscriptions || activeSubscriptions?.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'No active subscriptions found',
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     const distributionResults = [];
 
-    for (const subscription of activeSubscriptions) {
+    for (const subscription of (activeSubscriptions || [])) {
       const dailyTokens = getDailyTokenAmount(subscription.plan_id);
       
       if (dailyTokens <= 0) {
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Daily token distribution completed`,
       date: today,
-      total_subscriptions: activeSubscriptions.length,
+      total_subscriptions: activeSubscriptions?.length || 0,
       distributions_processed: distributionResults.length,
       results: distributionResults
     });
