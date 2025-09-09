@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get unique user emails
-    const uniqueUsers = [...new Set(usersWithDistributions.map(u => u.user_email))];
+    const userEmailSet = new Set(usersWithDistributions.map(u => u.user_email));
+    const uniqueUsers = Array.from(userEmailSet);
     console.log(`📋 Found ${uniqueUsers.length} unique users with TIC distributions`);
 
     // Process each user
