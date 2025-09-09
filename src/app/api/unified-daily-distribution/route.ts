@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         results.push({
           user_email: userEmail,
           status: 'error',
-          error: userError instanceof Error ? userError.message : 'Unknown error'
+          error: userError instanceof Error ? (userError as Error).message : 'Unknown error'
         });
       }
     }
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Unified distribution failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Failed to check status',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

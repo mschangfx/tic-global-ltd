@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         results.errors.push(`Fetch user_referral_codes error: ${fetchError?.message}`);
       }
     } catch (error) {
-      results.errors.push(`user_referral_codes exception: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      results.errors.push(`user_referral_codes exception: ${error instanceof Error ? (error as Error).message : 'Unknown error'}`);
     }
 
     // Approach 2: Update user_profiles table
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         results.errors.push(`Fetch user_profiles error: ${profileFetchError?.message}`);
       }
     } catch (error) {
-      results.errors.push(`user_profiles exception: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      results.errors.push(`user_profiles exception: ${error instanceof Error ? (error as Error).message : 'Unknown error'}`);
     }
 
     // Determine success
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

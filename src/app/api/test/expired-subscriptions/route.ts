@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in expired subscription test:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error', details: error instanceof Error ? (error as Error).message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error checking expired subscription status:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error', details: error instanceof Error ? (error as Error).message : 'Unknown error' },
       { status: 500 }
     );
   }

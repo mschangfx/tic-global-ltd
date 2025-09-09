@@ -464,7 +464,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating withdrawal:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Internal server error', details: error instanceof Error ? (error as Error).message : String(error) },
       { status: 500 }
     );
   }

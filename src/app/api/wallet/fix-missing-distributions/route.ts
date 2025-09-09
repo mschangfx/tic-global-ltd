@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
         walletUpdateResults.push({
           user_email: user_email,
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? (error as Error).message : 'Unknown error'
         });
       }
     }
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

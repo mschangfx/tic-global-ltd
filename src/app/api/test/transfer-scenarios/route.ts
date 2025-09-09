@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Transfer scenario test error:', error);
     return NextResponse.json(
-      { success: false, message: 'Transfer scenario test failed', error: error instanceof Error ? error.message : 'Unknown error' },
+      { success: false, message: 'Transfer scenario test failed', error: error instanceof Error ? (error as Error).message : 'Unknown error' },
       { status: 500 }
     );
   }

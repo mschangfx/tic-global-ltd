@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to upload document. Please try again.',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

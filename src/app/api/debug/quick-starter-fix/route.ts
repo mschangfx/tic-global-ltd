@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         distributions.push({
           date: distributionDate,
           status: 'error',
-          error: insertError instanceof Error ? insertError.message : 'Unknown error'
+          error: insertError instanceof Error ? (insertError as Error).message : 'Unknown error'
         });
       }
     }
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

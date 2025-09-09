@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

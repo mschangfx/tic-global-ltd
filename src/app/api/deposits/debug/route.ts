@@ -54,7 +54,7 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       error: 'Debug check failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? (error as Error).message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Debug POST failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? (error as Error).message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

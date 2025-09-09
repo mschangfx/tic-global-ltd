@@ -464,7 +464,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Error in between-accounts transfer API:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const errorMessage = error instanceof Error ? (error as Error).message : 'Internal server error';
     return NextResponse.json(
       { success: false, message: errorMessage, error: error instanceof Error ? error.stack : String(error) },
       { status: 500 }

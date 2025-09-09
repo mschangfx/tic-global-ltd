@@ -46,7 +46,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       message: 'Connection test failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

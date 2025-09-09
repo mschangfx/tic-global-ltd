@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
           plan_id: subscription.plan_id,
           status: 'error',
           reason: 'Unexpected error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? (error as Error).message : 'Unknown error'
         });
       }
     }
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

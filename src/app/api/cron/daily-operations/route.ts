@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ TIC distribution error:', error);
       results.tic_distribution = {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error in TIC distribution',
+        message: error instanceof Error ? (error as Error).message : 'Unknown error in TIC distribution',
         details: null
       };
     }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Expired subscriptions error:', error);
       results.expired_subscriptions = {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error in expired subscriptions',
+        message: error instanceof Error ? (error as Error).message : 'Unknown error in expired subscriptions',
         details: null
       };
     }
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Rank maintenance error:', error);
       results.rank_maintenance = {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error in rank maintenance',
+        message: error instanceof Error ? (error as Error).message : 'Unknown error in rank maintenance',
         details: null
       };
     }
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       message: 'Daily operations cron job failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as Error).message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

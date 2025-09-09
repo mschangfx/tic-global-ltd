@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Overall Login error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during login';
+    const errorMessage = error instanceof Error ? (error as Error).message : 'An unexpected error occurred during login';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

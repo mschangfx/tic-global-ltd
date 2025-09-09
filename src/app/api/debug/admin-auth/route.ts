@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.error('Debug admin auth error:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as Error).message : 'Unknown error',
       debug: {
         hasSession: false,
         userEmail: null,

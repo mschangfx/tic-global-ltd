@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Simple test failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? (error as Error).message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

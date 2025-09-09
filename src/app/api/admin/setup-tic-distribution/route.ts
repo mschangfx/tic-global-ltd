@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
           statement_number: i + 1,
           statement: statement.substring(0, 200) + '...',
           success: false,
-          error: err instanceof Error ? err.message : 'Unknown error'
+          error: err instanceof Error ? (err as Error).message : 'Unknown error'
         });
         errorCount++;
       }
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           message: 'Database setup failed',
-          error: altError instanceof Error ? altError.message : 'Unknown error',
+          error: altError instanceof Error ? (altError as Error).message : 'Unknown error',
           manual_setup_required: true
         });
       }
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? (error as Error).message : 'Unknown error',
         manual_setup_required: true,
         instructions: [
           'Automatic setup failed. Please run the setup manually:',

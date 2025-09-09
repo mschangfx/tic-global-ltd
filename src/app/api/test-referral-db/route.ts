@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: 'error',
       message: 'Failed to test database structure',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as Error).message : 'Unknown error'
     });
   }
 }

@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     console.error('Notification error:', error);
     return NextResponse.json({ 
       error: 'Failed to send notification',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }
@@ -205,7 +205,7 @@ export async function GET(request: NextRequest) {
     console.error('Error checking pending transactions:', error);
     return NextResponse.json({ 
       error: 'Failed to check pending transactions',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

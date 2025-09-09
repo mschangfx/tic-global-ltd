@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       functionExists = { exists: true, error: null };
       funcError = error;
     } catch (error) {
-      functionExists = { exists: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      functionExists = { exists: false, error: error instanceof Error ? (error as Error).message : 'Unknown error' };
       funcError = error instanceof Error ? error : new Error('Unknown error');
     }
 
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

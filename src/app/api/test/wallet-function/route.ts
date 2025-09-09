@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? (error as Error).message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }

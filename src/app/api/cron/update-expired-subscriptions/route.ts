@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
           user_email: subscription.user_email,
           plan_name: subscription.plan_name,
           action: 'processing_failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? (error as Error).message : 'Unknown error'
         });
       }
     }
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

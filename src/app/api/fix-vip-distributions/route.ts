@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false,
         error: 'Redirect to comprehensive fix failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       { 
         success: false,
         error: 'Status check redirect failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

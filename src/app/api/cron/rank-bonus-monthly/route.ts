@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         
       } catch (error) {
         results.failed++;
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? (error as Error).message : 'Unknown error';
         results.errors.push(`${userEmail}: ${errorMessage}`);
         
         results.details.push({
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error during monthly distribution',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }
@@ -217,7 +217,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         results.push({
           user_email: userEmail,
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? (error as Error).message : 'Unknown error'
         });
       }
     }
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false,
         error: 'TIC balance sync failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -249,7 +249,7 @@ export async function GET(request: NextRequest) {
       { 
         success: false,
         error: 'TIC sync status check failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

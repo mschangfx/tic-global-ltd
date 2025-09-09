@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         migrationResults.details.push(userDetail);
 
       } catch (error) {
-        const errorMsg = `Error processing user ${user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const errorMsg = `Error processing user ${user.email}: ${error instanceof Error ? (error as Error).message : 'Unknown error'}`;
         migrationResults.errors.push(errorMsg);
         console.error(errorMsg);
       }
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
           }
 
         } catch (error) {
-          const errorMsg = `Error fixing relationship ${relationship.id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          const errorMsg = `Error fixing relationship ${relationship.id}: ${error instanceof Error ? (error as Error).message : 'Unknown error'}`;
           migrationResults.errors.push(errorMsg);
         }
       }
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Migration failed', 
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? (error as Error).message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }

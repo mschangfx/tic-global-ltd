@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       message: 'Critical error in direct API',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as Error).message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     }, { status: 500 });
@@ -190,7 +190,7 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       message: 'API test failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }

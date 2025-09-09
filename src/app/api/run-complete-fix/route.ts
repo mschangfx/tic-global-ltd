@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error('❌ Step 1 ERROR:', error);
-      results.errors.push(`Step 1 error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      results.errors.push(`Step 1 error: ${error instanceof Error ? (error as Error).message : 'Unknown error'}`);
     }
 
     // Step 2: Create today's distributions
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error('❌ Step 2 ERROR:', error);
-      results.errors.push(`Step 2 error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      results.errors.push(`Step 2 error: ${error instanceof Error ? (error as Error).message : 'Unknown error'}`);
     }
 
     // Determine overall success
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       message: 'Complete fix failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as Error).message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

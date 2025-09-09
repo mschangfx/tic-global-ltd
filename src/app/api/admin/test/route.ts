@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
             env_vars: 'present',
             supabase_client: 'created',
             supabase_query: 'exception',
-            error: queryError instanceof Error ? queryError.message : 'Unknown query error'
+            error: queryError instanceof Error ? (queryError as Error).message : 'Unknown query error'
           }
         }, { status: 500 });
       }
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
           admin_auth: 'passed',
           env_vars: 'present',
           supabase_client: 'failed',
-          error: clientError instanceof Error ? clientError.message : 'Unknown client error'
+          error: clientError instanceof Error ? (clientError as Error).message : 'Unknown client error'
         }
       }, { status: 500 });
     }
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: false,
       test_results: {
-        general_error: error instanceof Error ? error.message : 'Unknown error'
+        general_error: error instanceof Error ? (error as Error).message : 'Unknown error'
       }
     }, { status: 500 });
   }

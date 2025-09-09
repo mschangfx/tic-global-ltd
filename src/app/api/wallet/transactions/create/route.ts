@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error in wallet transactions create API:', error);
     return NextResponse.json(
-      { success: false, message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' },
+      { success: false, message: 'Internal server error', error: error instanceof Error ? (error as Error).message : 'Unknown error' },
       { status: 500 }
     );
   }

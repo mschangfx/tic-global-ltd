@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Database connection failed',
-          details: connError instanceof Error ? connError.message : 'Unknown connection error'
+          details: connError instanceof Error ? (connError as Error).message : 'Unknown connection error'
         },
         { status: 500 }
       );
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
             date: distributionDate,
             plan: subscription.plan_name,
             status: 'error',
-            error: insertError instanceof Error ? insertError.message : 'Unknown error'
+            error: insertError instanceof Error ? (insertError as Error).message : 'Unknown error'
           });
         }
       }
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? (error as Error).message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }

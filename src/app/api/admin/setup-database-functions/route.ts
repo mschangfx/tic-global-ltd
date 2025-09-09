@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         message: 'Could not verify database function status',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? (error as Error).message : 'Unknown error',
         instructions: [
           '1. Check if the increment_tic_balance_daily_distribution function exists in Supabase',
           '2. If not, execute the SQL from CREATE_TIC_DISTRIBUTION_FUNCTION.sql',
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: false,
         function_exists: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? (error as Error).message : 'Unknown error',
         checked_by: authCheck.email || 'test-user',
         timestamp: new Date().toISOString()
       });
@@ -264,7 +264,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

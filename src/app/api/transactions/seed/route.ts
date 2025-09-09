@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         results.push({
           table: transaction.table,
           success: false,
-          error: err instanceof Error ? err.message : 'Unknown error'
+          error: err instanceof Error ? (err as Error).message : 'Unknown error'
         });
       }
     }
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to seed transactions',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

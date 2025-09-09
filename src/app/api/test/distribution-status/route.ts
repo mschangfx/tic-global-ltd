@@ -112,7 +112,7 @@ export async function GET() {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? (error as Error).message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }

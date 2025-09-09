@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
             plan: subscription.plan_id,
             amount: dailyTokens,
             status: 'failed',
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? (error as Error).message : 'Unknown error'
           });
         }
       }
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false,
         error: 'Backfill failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
       { 
         success: false,
         error: 'Check failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? (error as Error).message : 'Unknown error'
       },
       { status: 500 }
     );

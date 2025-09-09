@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         };
       } catch (walletError) {
         walletTest = {
-          error: walletError instanceof Error ? walletError.message : 'Unknown wallet error'
+          error: walletError instanceof Error ? (walletError as Error).message : 'Unknown wallet error'
         };
       }
     }
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     console.error('Debug auth error:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as Error).message : 'Unknown error',
       timestamp: new Date().toISOString()
     });
   }

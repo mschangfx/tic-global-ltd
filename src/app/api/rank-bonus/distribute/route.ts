@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }
@@ -135,7 +135,7 @@ async function processSingleUserBonus(userEmail: string, month: string) {
     console.error(`Error processing bonus for ${userEmail}:`, error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as Error).message : 'Unknown error',
       data: { userEmail, month }
     };
   }
@@ -188,7 +188,7 @@ async function processAllUsersBonus(month: string) {
         results.failed++;
         results.details.push({
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? (error as Error).message : 'Unknown error',
           data: { userEmail, month }
         });
       }
@@ -204,7 +204,7 @@ async function processAllUsersBonus(month: string) {
     console.error('Error processing all users bonus:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as Error).message : 'Unknown error'
     };
   }
 }
@@ -268,7 +268,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? (error as Error).message : 'Unknown error'
     }, { status: 500 });
   }
 }
