@@ -33,7 +33,6 @@ import { FaPlus, FaListUl, FaThLarge, FaBoxOpen, FaCheckCircle, FaTimesCircle, F
 import Link from 'next/link'; // Added
 import { useRouter } from 'next/navigation'; // Added
 import TokenDistributionCard from '@/components/TokenDistributionCard'; // Added
-import AutomatedTicDistribution from '@/components/AutomatedTicDistribution'; // Added
 import { useSession } from 'next-auth/react'; // Added
 
 // Data for plans (copied from app/(routes)/plan/page.tsx)
@@ -184,13 +183,6 @@ export default function MyAccountsPage() {
                   ) : userSubscriptions.length > 0 ? (
                     // Display user's active subscriptions in single consolidated cards
                     <VStack spacing={6} align="stretch">
-                      {/* Automated TIC Distribution System */}
-                      {session?.user?.email && (
-                        <AutomatedTicDistribution
-                          userEmail={session.user.email}
-                          showAdminControls={false}
-                        />
-                      )}
 
                       {userSubscriptions.map((subscription) => (
                         <Card key={subscription.id} bg={cardBgColor} borderRadius="lg" shadow="md">
