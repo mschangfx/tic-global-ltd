@@ -76,119 +76,107 @@ export async function POST(request: NextRequest) {
     const userEmails = Object.keys(subscriptionsByUser);
     console.log(`👤 Processing ${userEmails.length} unique users`);
 
-    // Step 3: Check which users already have distributions for today
-    const { data: existingDistributions } = await supabaseAdmin
-      .from('token_distributions')
-      .select('user_email, token_amount')
-      .eq('distribution_date', today);
-
-    const usersWithDistributions = new Set(
-      (existingDistributions || []).map(d => d.user_email)
-    );
-
-    console.log(`📊 ${usersWithDistributions.size} users already have distributions for today`);
-
-    // Step 4: Process each user
+    // Step 3: Process each user with proper subscription-level duplicate checking
     let distributionsCreated = 0;
     let distributionsSkipped = 0;
     const results = [];
 
     for (const userEmail of userEmails) {
       try {
-        // Skip if user already has distribution for today
-        if (usersWithDistributions.has(userEmail)) {
-          console.log(`⏭️ Skipping ${userEmail} - already has distribution for today`);
-          distributionsSkipped++;
-          continue;
-        }
-
         const userSubscriptions = subscriptionsByUser[userEmail];
-        
-        // Calculate total daily tokens for ALL user's active subscriptions
-        let totalDailyTokens = 0;
-        const planNames: string[] = [];
 
+        // Process each subscription individually to avoid duplicates
         for (const subscription of userSubscriptions) {
-          const dailyTokens = getDailyTokenAmount(subscription.plan_id);
-          if (dailyTokens > 0) {
-            totalDailyTokens += dailyTokens;
-            if (!planNames.includes(subscription.plan_name)) {
-              planNames.push(subscription.plan_name);
-            }
+          // Check if this specific subscription already has a distribution today
+          const { data: existingDistribution, error: checkError } = await supabaseAdmin
+            .from('token_distributions')
+            .select('id, token_amount')
+            .eq('user_email', userEmail)
+            .eq('subscription_id', subscription.id)
+            .eq('distribution_date', today)
+            .maybeSingle();
+
+          if (checkError) {
+            console.error(`❌ Error checking existing distribution for ${userEmail} subscription ${subscription.id}:`, checkError);
+            continue;
           }
-        }
 
-        if (totalDailyTokens <= 0) {
-          console.log(`⚠️ Skipping ${userEmail} - no token allocation`);
-          continue;
-        }
+          if (existingDistribution) {
+            console.log(`⏭️ Skipping ${userEmail} subscription ${subscription.id} - already has distribution for today (${existingDistribution.token_amount} TIC)`);
+            distributionsSkipped++;
+            continue;
+          }
 
-        // Use the primary subscription for the distribution record
-        const primarySubscription = userSubscriptions[0];
+          const dailyTokens = getDailyTokenAmount(subscription.plan_id);
+          if (dailyTokens <= 0) {
+            console.log(`⚠️ Skipping ${userEmail} subscription ${subscription.id} - no token allocation for plan ${subscription.plan_id}`);
+            continue;
+          }
 
-        // Create distribution record with random time between 8-12 AM
-        const distributionTime = new Date();
-        distributionTime.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0, 0);
+          // Create distribution record with random time between 8-12 AM
+          const distributionTime = new Date();
+          distributionTime.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0, 0);
 
-        const { data: distribution, error: distError } = await supabaseAdmin
-          .from('token_distributions')
-          .insert({
-            user_email: userEmail,
-            subscription_id: primarySubscription.id,
-            plan_id: primarySubscription.plan_id,
-            plan_name: planNames.length > 1 ? planNames.join(' + ') : planNames[0],
-            token_amount: totalDailyTokens,
-            distribution_date: today,
-            status: 'completed',
-            created_at: distributionTime.toISOString()
-          })
-          .select()
-          .single();
+          const { data: distribution, error: distError } = await supabaseAdmin
+            .from('token_distributions')
+            .insert({
+              user_email: userEmail,
+              subscription_id: subscription.id,
+              plan_id: subscription.plan_id,
+              plan_name: subscription.plan_name,
+              token_amount: dailyTokens,
+              distribution_date: today,
+              status: 'completed',
+              created_at: distributionTime.toISOString()
+            })
+            .select()
+            .single();
 
-        if (distError) {
-          console.error(`❌ Error creating distribution for ${userEmail}:`, distError);
+          if (distError) {
+            console.error(`❌ Error creating distribution for ${userEmail} subscription ${subscription.id}:`, distError);
+            results.push({
+              user_email: userEmail,
+              subscription_id: subscription.id,
+              plan_id: subscription.plan_id,
+              status: 'error',
+              error: distError.message
+            });
+            continue;
+          }
+
+          console.log(`✅ Created distribution for ${userEmail} subscription ${subscription.id}: ${dailyTokens.toFixed(4)} TIC`);
+
+          // Update user's wallet balance
+          const transactionId = `unified_daily_tic_${subscription.plan_id}_${today}_${subscription.id}`;
+          const description = `Daily TIC Distribution - ${subscription.plan_name} (${dailyTokens.toFixed(4)} TIC)`;
+
+          const { error: walletError } = await supabaseAdmin
+            .rpc('increment_tic_balance_daily_distribution', {
+              user_email_param: userEmail,
+              amount_param: dailyTokens,
+              transaction_id_param: transactionId,
+              description_param: description,
+              plan_type_param: subscription.plan_id
+            });
+
+          if (walletError) {
+            console.error(`⚠️ Wallet update failed for ${userEmail} subscription ${subscription.id}:`, walletError);
+            // Don't fail the distribution, just log the error
+          } else {
+            console.log(`💰 Updated wallet balance for ${userEmail}: +${dailyTokens.toFixed(4)} TIC`);
+          }
+
+          distributionsCreated++;
           results.push({
             user_email: userEmail,
-            status: 'error',
-            error: distError.message
+            subscription_id: subscription.id,
+            plan_id: subscription.plan_id,
+            status: 'success',
+            tokens_distributed: dailyTokens,
+            plan_name: subscription.plan_name,
+            distribution_id: distribution.id
           });
-          continue;
         }
-
-        console.log(`✅ Created distribution for ${userEmail}: ${totalDailyTokens.toFixed(4)} TIC`);
-
-        // Update user's wallet balance
-        const transactionId = `unified_daily_tic_${today}_${userEmail.replace('@', '_').replace('.', '_')}`;
-        const description = `Daily TIC Distribution - ${planNames.join(' + ')} (${totalDailyTokens.toFixed(4)} TIC)`;
-
-        const { error: walletError } = await supabaseAdmin
-          .rpc('increment_tic_balance_daily_distribution', {
-            user_email_param: userEmail,
-            amount_param: totalDailyTokens,
-            transaction_id_param: transactionId,
-            description_param: description,
-            plan_type_param: primarySubscription.plan_id
-          });
-
-        if (walletError) {
-          console.error(`⚠️ Wallet update failed for ${userEmail}:`, walletError);
-          // Don't fail the distribution, just log the error
-        } else {
-          console.log(`💰 Updated wallet balance for ${userEmail}: +${totalDailyTokens.toFixed(4)} TIC`);
-        }
-
-        distributionsCreated++;
-        results.push({
-          user_email: userEmail,
-          status: 'success',
-          tokens_distributed: totalDailyTokens,
-          plans: planNames.join(' + '),
-          distribution_id: distribution.id,
-          expected_amounts: {
-            vip_daily: getDailyTokenAmount('vip'),
-            starter_daily: getDailyTokenAmount('starter')
-          }
-        });
 
       } catch (userError) {
         console.error(`❌ Error processing user ${userEmail}:`, userError);
