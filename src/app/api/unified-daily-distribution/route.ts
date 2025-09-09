@@ -16,6 +16,14 @@ const getDailyTokenAmount = (planId: string): number => {
 // UNIFIED DAILY DISTRIBUTION SYSTEM
 // This function ensures ALL users (existing and new) get their daily TIC tokens
 export async function POST(request: NextRequest) {
+  // DISABLED: This API is disabled to prevent duplicate distributions
+  // Use /api/cron/daily-tic-distribution instead
+  return NextResponse.json({
+    error: 'This API is disabled to prevent duplicate distributions',
+    message: 'Use /api/cron/daily-tic-distribution instead',
+    status: 'disabled'
+  }, { status: 410 });
+
   try {
     console.log('🚀 UNIFIED DAILY DISTRIBUTION: Starting for all users...');
     

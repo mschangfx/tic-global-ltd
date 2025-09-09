@@ -16,6 +16,13 @@ const getDailyTokenAmount = (planId: string): number => {
 
 // POST - Fix missing TIC distributions for all users with multiple active subscriptions
 export async function POST(request: NextRequest) {
+  // DISABLED: This API is disabled to prevent duplicate distributions
+  return NextResponse.json({
+    error: 'This API is disabled to prevent duplicate distributions',
+    message: 'Use /api/cron/daily-tic-distribution instead',
+    status: 'disabled'
+  }, { status: 410 });
+
   try {
     console.log('🔧 Starting comprehensive fix for missing TIC distributions...');
 

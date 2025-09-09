@@ -17,6 +17,14 @@ const getDailyTokenAmount = (planId: string): number => {
 
 // POST - Distribute daily tokens to all active subscribers
 export async function POST(request: NextRequest) {
+  // DISABLED: This API is disabled to prevent duplicate distributions
+  // Use /api/cron/daily-tic-distribution instead
+  return NextResponse.json({
+    error: 'This API is disabled to prevent duplicate distributions',
+    message: 'Use /api/cron/daily-tic-distribution instead',
+    status: 'disabled'
+  }, { status: 410 });
+
   try {
     const { adminKey } = await request.json();
 

@@ -17,6 +17,13 @@ const getDailyTokenAmount = (planId: string): number => {
 
 // POST - Test endpoint to distribute TIC tokens to current user
 export async function POST(request: NextRequest) {
+  // DISABLED: This API is disabled to prevent duplicate distributions
+  return NextResponse.json({
+    error: 'This API is disabled to prevent duplicate distributions',
+    message: 'Use /api/cron/daily-tic-distribution instead',
+    status: 'disabled'
+  }, { status: 410 });
+
   try {
     // Get current user from session
     const session = await getServerSession(authOptions);
