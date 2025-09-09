@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
           results.push({
             user_email: userEmail,
             status: 'error',
-            error: distError.message
+            error: distError?.message || 'Unknown error'
           });
         } else {
           console.log(`✅ Created TODAY'S distribution for ${userEmail}: ${totalDailyTokens.toFixed(4)} TIC`);
