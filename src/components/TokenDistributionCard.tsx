@@ -115,11 +115,6 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         setDistributions(sortedDistributions);
 
         // Calculate total tokens received from THIS specific plan only
-        const currentPlanId = subscription.plan_id?.toLowerCase();
-        const planSpecificDistributions = allDistributions.filter((dist: TokenDistribution) =>
-          dist.plan_id?.toLowerCase() === currentPlanId
-        );
-
         const totalTokens = planSpecificDistributions.reduce(
           (sum: number, dist: TokenDistribution) => sum + parseFloat(dist.token_amount.toString()),
           0
