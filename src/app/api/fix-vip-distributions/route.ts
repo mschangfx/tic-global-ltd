@@ -13,23 +13,36 @@ const getDailyTokenAmount = (planId: string): number => {
   return yearlyAmount / 365; // VIP: 18.904109589, Starter: 1.369863014
 };
 
-// FIX VIP DISTRIBUTION AMOUNTS - EMERGENCY FIX
+// COMPREHENSIVE FIX: Clean duplicates and fix wrong amounts for ALL dates
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚨 EMERGENCY FIX: Correcting VIP distribution amounts...');
-    
-    const today = new Date().toISOString().split('T')[0];
-    const currentTime = new Date().toISOString();
-    
-    console.log(`📅 Fixing distributions for: ${today}`);
+    console.log('🚨 COMPREHENSIVE FIX: Cleaning duplicates and fixing wrong amounts...');
 
-    // Step 1: Find all wrong distributions (810 TIC instead of 18.9 TIC)
-    const { data: wrongDistributions, error: wrongError } = await supabaseAdmin
+    const currentTime = new Date().toISOString();
+
+    // Get date range to fix (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    console.log(`📅 Fixing distributions from ${startDateStr} to ${endDateStr}`);
+
+    // Step 1: Find ALL wrong distributions (any amount over 100 TIC or duplicates)
+    const { data: allDistributions, error: allError } = await supabaseAdmin
       .from('token_distributions')
       .select('*')
-      .eq('distribution_date', today)
-      .eq('plan_id', 'vip')
-      .gt('token_amount', 100); // Any amount over 100 is wrong (should be ~18.9)
+      .gte('distribution_date', startDateStr)
+      .lte('distribution_date', endDateStr)
+      .order('distribution_date', { ascending: false })
+      .order('user_email', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (allError) {
+      throw new Error(`Failed to fetch distributions: ${allError.message}`);
+    }
 
     if (wrongError) {
       console.error('❌ Error finding wrong distributions:', wrongError);
