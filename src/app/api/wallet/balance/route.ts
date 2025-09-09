@@ -67,8 +67,29 @@ async function getWalletBalance(userEmail: string) {
 
   const baseTotalBalance = parseFloat(calculatedTotalBalance || '0');
 
-  // Get token balances from user_wallets or default to 0
-  const ticBalance = parseFloat(walletData?.tic_balance?.toString() || '0');
+  // Calculate TIC balance directly from ALL token distributions (real-time calculation)
+  const { data: allDistributions, error: distError } = await supabaseAdmin
+    .from('token_distributions')
+    .select('token_amount')
+    .eq('user_email', userEmail)
+    .eq('status', 'completed');
+
+  if (distError) {
+    console.warn('⚠️ Error fetching TIC distributions for', userEmail, ':', distError);
+  }
+
+  const realTimeTicBalance = allDistributions?.reduce((sum, dist) => {
+    return sum + parseFloat(dist.token_amount.toString());
+  }, 0) || 0;
+
+  console.log('🔍 Real-time TIC calculation for', userEmail, ':', {
+    distributionsFound: allDistributions?.length || 0,
+    realTimeTicBalance,
+    storedTicBalance: parseFloat(walletData?.tic_balance?.toString() || '0')
+  });
+
+  // Use real-time calculated TIC balance instead of stored value
+  const ticBalance = realTimeTicBalance;
   const gicBalance = parseFloat(walletData?.gic_balance?.toString() || '0');
   const stakingBalance = parseFloat(walletData?.staking_balance?.toString() || '0');
 
