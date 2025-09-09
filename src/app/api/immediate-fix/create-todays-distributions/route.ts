@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`👥 Found ${activeSubscriptions.length} active subscriptions`);
+    console.log(`👥 Found ${activeSubscriptions?.length || 0} active subscriptions`);
 
     // Delete ALL existing distributions for today to start fresh
     console.log('🗑️ Cleaning existing distributions for today...');
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Group subscriptions by user email
-    const subscriptionsByUser = activeSubscriptions.reduce((acc: any, sub: any) => {
+    const subscriptionsByUser = (activeSubscriptions || []).reduce((acc: any, sub: any) => {
       if (!acc[sub.user_email]) {
         acc[sub.user_email] = [];
       }
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       message: `IMMEDIATE FIX: Created ${distributionsCreated} distributions for TODAY`,
       date: today,
       current_time: now.toISOString(),
-      total_active_subscriptions: activeSubscriptions.length,
+      total_active_subscriptions: activeSubscriptions?.length || 0,
       unique_users: userEmails.length,
       distributions_created: distributionsCreated,
       results: results.slice(0, 20) // Show first 20 results
