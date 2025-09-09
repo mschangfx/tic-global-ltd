@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     const userResults = [];
 
-    for (const userEmail of userAnalysis.keys()) {
+    for (const userEmail of Array.from(userAnalysis.keys())) {
       const userData = userAnalysis.get(userEmail);
       if (!userData) continue;
 
