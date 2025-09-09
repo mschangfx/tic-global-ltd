@@ -112,7 +112,10 @@ export async function GET(request: NextRequest) {
 
     const userResults = [];
 
-    for (const [userEmail, userData] of userAnalysis) {
+    for (const userEmail of userAnalysis.keys()) {
+      const userData = userAnalysis.get(userEmail);
+      if (!userData) continue;
+
       // Group distributions by date (like UI does)
       const distributionsByDate = new Map<string, number>();
       for (const dist of userData.distributions) {

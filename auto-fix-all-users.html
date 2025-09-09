@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Fix All Users TIC Distributions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.danger {
+            background-color: #dc3545;
+        }
+        .button.danger:hover {
+            background-color: #c82333;
+        }
+        .button.success {
+            background-color: #28a745;
+        }
+        .button.success:hover {
+            background-color: #218838;
+        }
+        .results {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Automatic Fix for ALL Users' TIC Distributions</h1>
+        <div class="highlight">
+            <strong>⚡ FULLY AUTOMATED SOLUTION</strong><br>
+            This tool will automatically fix TIC distribution issues for ALL users without manual checking:
+            <ul>
+                <li>✅ <strong>Consolidate multiple distributions</strong> per date into single correct amounts</li>
+                <li>✅ <strong>Fix incorrect amounts</strong> based on user's total subscriptions</li>
+                <li>✅ <strong>Remove duplicates</strong> and add database constraints</li>
+                <li>✅ <strong>Process all users</strong> automatically - no manual intervention needed</li>
+            </ul>
+        </div>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="button" onclick="analyzeWhatWillBeFixed()">🔍 Analyze What Will Be Fixed</button>
+            <button class="button danger" onclick="executeAutoFix()">🚀 Execute Auto-Fix for ALL Users</button>
+            <button class="button success" onclick="verifyResults()">✅ Verify Results</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://ticgloballtd.com';
+
+        async function analyzeWhatWillBeFixed() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="warning">🔍 Analyzing what will be fixed for all users...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/auto-fix-all-users-distributions`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = '<div class="success">✅ Analysis Complete</div>';
+                    html += '<div class="results">';
+                    html += `WHAT WILL BE FIXED:\n\n`;
+                    html += `Total Users: ${data.analysis.total_users}\n`;
+                    html += `Users Needing Fix: ${data.analysis.users_needing_fix}\n`;
+                    html += `Duplicates to Remove: ${data.analysis.duplicates_to_remove}\n`;
+                    html += `Incorrect Amounts to Fix: ${data.analysis.incorrect_amounts_to_fix}\n\n`;
+                    
+                    html += `RECOMMENDATION:\n${data.recommendation}\n\n`;
+                    
+                    html += `WHAT WILL BE FIXED:\n`;
+                    data.what_will_be_fixed.forEach(item => {
+                        html += `- ${item}\n`;
+                    });
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function executeAutoFix() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="warning">🚀 Executing automatic fix for ALL users... This may take several minutes...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/auto-fix-all-users-distributions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    let html = '<div class="success">✅ Automatic Fix Completed Successfully!</div>';
+                    html += '<div class="results">';
+                    html += `AUTOMATIC FIX RESULTS:\n\n`;
+                    html += `Users Processed: ${data.summary.users_processed}\n`;
+                    html += `Distributions Fixed: ${data.summary.distributions_fixed}\n`;
+                    html += `Duplicates Removed: ${data.summary.duplicates_removed}\n`;
+                    html += `Amounts Corrected: ${data.summary.amounts_corrected}\n`;
+                    html += `Consolidations Made: ${data.summary.consolidations_made}\n`;
+                    html += `Errors: ${data.summary.errors_count}\n\n`;
+                    
+                    html += `EXPLANATION:\n`;
+                    html += `What was fixed: ${data.explanation.what_was_fixed}\n`;
+                    html += `Why users had high amounts: ${data.explanation.why_users_had_high_amounts}\n`;
+                    html += `New behavior: ${data.explanation.new_behavior}\n\n`;
+                    
+                    html += `EXPECTED AMOUNTS AFTER FIX:\n`;
+                    html += `- Single VIP: ${data.explanation.expected_amounts.single_vip}\n`;
+                    html += `- Single Starter: ${data.explanation.expected_amounts.single_starter}\n`;
+                    html += `- Multiple Plans: ${data.explanation.expected_amounts.multiple_plans}\n\n`;
+                    
+                    if (data.sample_fixes && data.sample_fixes.length > 0) {
+                        html += `SAMPLE USER FIXES (First 10):\n`;
+                        data.sample_fixes.forEach(fix => {
+                            html += `\nUser: ${fix.user_email}\n`;
+                            html += `- Subscriptions: ${fix.subscription_count} (${fix.plan_breakdown})\n`;
+                            html += `- Expected Daily: ${fix.expected_daily_tic} TIC\n`;
+                            if (fix.actions_taken.length > 0) {
+                                html += `- Actions Taken:\n`;
+                                fix.actions_taken.forEach(action => {
+                                    html += `  ${action}\n`;
+                                });
+                            }
+                        });
+                    }
+                    
+                    if (data.errors && data.errors.length > 0) {
+                        html += `\nERRORS (First 5):\n`;
+                        data.errors.forEach(error => {
+                            html += `- ${error}\n`;
+                        });
+                    }
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Auto-Fix Failed: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function verifyResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="warning">🔍 Verifying fix results...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/diagnose-distribution-amounts`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = '<div class="success">✅ Verification Complete</div>';
+                    html += '<div class="results">';
+                    html += `FINAL VERIFICATION:\n\n`;
+                    html += `Total Distributions: ${data.summary.total_distributions}\n`;
+                    html += `Correct Amounts: ${data.summary.correct_amounts}\n`;
+                    html += `Incorrect Amounts: ${data.summary.incorrect_amounts}\n`;
+                    html += `Accuracy: ${data.summary.accuracy_percentage}%\n\n`;
+                    
+                    html += `Expected Amounts:\n`;
+                    html += `- VIP: ${data.expected_amounts.vip.toFixed(2)} TIC per day\n`;
+                    html += `- Starter: ${data.expected_amounts.starter.toFixed(2)} TIC per day\n\n`;
+                    
+                    if (data.summary.incorrect_amounts === 0) {
+                        html += `🎉 SUCCESS: All distribution amounts are now correct!\n\n`;
+                        html += `WHAT USERS WILL NOW SEE:\n`;
+                        html += `- Users with 1 VIP plan: +18.90 TIC per day\n`;
+                        html += `- Users with 1 Starter plan: +1.37 TIC per day\n`;
+                        html += `- Users with multiple plans: Sum of all their plans\n`;
+                        html += `- No duplicates - one clean entry per date\n`;
+                        html += `- Correct consolidation of multiple subscriptions`;
+                    } else {
+                        html += `⚠️ WARNING: ${data.summary.incorrect_amounts} incorrect amounts still exist.\n`;
+                        html += `You may need to run the auto-fix again.`;
+                    }
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Verification Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-analyze on page load
+        window.onload = function() {
+            analyzeWhatWillBeFixed();
+        };
+    </script>
+</body>
+</html>

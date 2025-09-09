@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Process each user automatically
-    for (const [userEmail, subscriptions] of userSubscriptions) {
+    for (const userEmail of userSubscriptions.keys()) {
+      const subscriptions = userSubscriptions.get(userEmail) || [];
       try {
         results.users_processed++;
         const userFix = {
@@ -109,7 +110,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Fix each date's distributions
-        for (const [date, dateDists] of distributionsByDate) {
+        for (const date of distributionsByDate.keys()) {
+          const dateDists = distributionsByDate.get(date) || [];
           if (dateDists.length > 1) {
             // Multiple distributions for same date - consolidate them
             userFix.issues_found.push(`${date}: ${dateDists.length} distributions`);
@@ -272,7 +274,9 @@ export async function GET() {
     let duplicatesFound = 0;
     let incorrectAmounts = 0;
 
-    for (const [userEmail, data] of userAnalysis) {
+    for (const userEmail of userAnalysis.keys()) {
+      const data = userAnalysis.get(userEmail);
+      if (!data) continue;
       // Group distributions by date
       const distributionsByDate = new Map<string, any[]>();
       for (const dist of data.distributions) {
@@ -286,7 +290,8 @@ export async function GET() {
       let userNeedsFix = false;
       
       // Check for duplicates and incorrect amounts
-      for (const [date, dateDists] of distributionsByDate) {
+      for (const date of distributionsByDate.keys()) {
+        const dateDists = distributionsByDate.get(date) || [];
         if (dateDists.length > 1) {
           duplicatesFound += dateDists.length - 1;
           userNeedsFix = true;
