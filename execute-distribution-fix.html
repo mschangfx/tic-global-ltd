@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execute TIC Distribution Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.danger {
+            background-color: #dc3545;
+        }
+        .button.danger:hover {
+            background-color: #c82333;
+        }
+        .results {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 TIC Distribution Fix Executor</h1>
+        <p>This tool will execute the comprehensive fix for TIC distribution issues:</p>
+        <ul>
+            <li>✅ Remove duplicate distributions</li>
+            <li>✅ Correct incorrect amounts (81.08 TIC → 18.90 TIC for VIP)</li>
+            <li>✅ Add database constraint to prevent future issues</li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>Step 1: Diagnose Current Issues</h2>
+        <button class="button" onclick="diagnoseIssues()">Check Current Problems</button>
+        <div id="diagnoseResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>Step 2: Execute Comprehensive Fix</h2>
+        <button class="button danger" onclick="executeFix()">🚀 Fix All Distribution Issues</button>
+        <div id="fixResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>Step 3: Verify Fix</h2>
+        <button class="button" onclick="verifyFix()">Verify Fix Completed</button>
+        <div id="verifyResults"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://ticgloballtd.com';
+
+        async function diagnoseIssues() {
+            const resultsDiv = document.getElementById('diagnoseResults');
+            resultsDiv.innerHTML = '<div class="warning">🔍 Diagnosing current distribution issues...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/fix-all-distribution-issues`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = '<div class="success">✅ Diagnosis Complete</div>';
+                    html += '<div class="results">';
+                    html += `Issues Found:\n`;
+                    html += `- Duplicates: ${data.issues_found.duplicates}\n`;
+                    html += `- Incorrect Amounts: ${data.issues_found.incorrect_amounts}\n\n`;
+                    
+                    if (data.sample_incorrect_amounts.length > 0) {
+                        html += `Sample Incorrect Amounts:\n`;
+                        data.sample_incorrect_amounts.forEach(item => {
+                            html += `- ${item.plan_id}: ${item.amount} TIC (should be ${item.expected.toFixed(2)} TIC)\n`;
+                        });
+                        html += `\n`;
+                    }
+                    
+                    html += `Expected Amounts:\n`;
+                    html += `- VIP: ${data.expected_amounts.vip.toFixed(2)} TIC per day\n`;
+                    html += `- Starter: ${data.expected_amounts.starter.toFixed(2)} TIC per day\n\n`;
+                    html += `Recommendation: ${data.recommendation}`;
+                    html += '</div>';
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function executeFix() {
+            const resultsDiv = document.getElementById('fixResults');
+            resultsDiv.innerHTML = '<div class="warning">🚀 Executing comprehensive fix... This may take a few moments...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/fix-all-distribution-issues`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    let html = '<div class="success">✅ Comprehensive Fix Completed Successfully!</div>';
+                    html += '<div class="results">';
+                    html += `Fix Results:\n\n`;
+                    
+                    // Step 1 Results
+                    html += `Step 1 - Duplicate Removal:\n`;
+                    html += `- Success: ${data.results.step1_duplicates.success}\n`;
+                    html += `- Message: ${data.results.step1_duplicates.message}\n`;
+                    if (data.results.step1_duplicates.details.duplicates_removed) {
+                        html += `- Duplicates Removed: ${data.results.step1_duplicates.details.duplicates_removed}\n`;
+                    }
+                    html += `\n`;
+                    
+                    // Step 2 Results
+                    html += `Step 2 - Amount Correction:\n`;
+                    html += `- Success: ${data.results.step2_amounts.success}\n`;
+                    html += `- Message: ${data.results.step2_amounts.message}\n`;
+                    if (data.results.step2_amounts.details.corrections_made) {
+                        html += `- Corrections Made: ${data.results.step2_amounts.details.corrections_made}\n`;
+                        html += `- Expected VIP: ${data.results.step2_amounts.details.expected_amounts.vip.toFixed(2)} TIC\n`;
+                        html += `- Expected Starter: ${data.results.step2_amounts.details.expected_amounts.starter.toFixed(2)} TIC\n`;
+                    }
+                    html += `\n`;
+                    
+                    // Step 3 Results
+                    html += `Step 3 - Database Constraint:\n`;
+                    html += `- Success: ${data.results.step3_constraint.success}\n`;
+                    html += `- Message: ${data.results.step3_constraint.message}\n\n`;
+                    
+                    // Summary
+                    html += `Final Summary:\n`;
+                    html += `- Total Distributions: ${data.results.summary.total_distributions}\n`;
+                    html += `- Unique Users: ${data.results.summary.unique_users}\n`;
+                    html += `- All Steps Successful: ${data.results.summary.all_steps_successful}\n\n`;
+                    html += `Expected Daily Amounts:\n`;
+                    html += `- VIP: ${data.results.summary.expected_amounts.vip}\n`;
+                    html += `- Starter: ${data.results.summary.expected_amounts.starter}`;
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Fix Failed: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function verifyFix() {
+            const resultsDiv = document.getElementById('verifyResults');
+            resultsDiv.innerHTML = '<div class="warning">🔍 Verifying fix completion...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/diagnose-distribution-amounts`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = '<div class="success">✅ Verification Complete</div>';
+                    html += '<div class="results">';
+                    html += `Final Status:\n`;
+                    html += `- Total Distributions: ${data.summary.total_distributions}\n`;
+                    html += `- Correct Amounts: ${data.summary.correct_amounts}\n`;
+                    html += `- Incorrect Amounts: ${data.summary.incorrect_amounts}\n`;
+                    html += `- Accuracy: ${data.summary.accuracy_percentage}%\n\n`;
+                    
+                    html += `Expected Amounts:\n`;
+                    html += `- VIP: ${data.expected_amounts.vip.toFixed(2)} TIC per day\n`;
+                    html += `- Starter: ${data.expected_amounts.starter.toFixed(2)} TIC per day\n\n`;
+                    
+                    if (data.summary.incorrect_amounts === 0) {
+                        html += `🎉 SUCCESS: All distribution amounts are now correct!\n`;
+                        html += `Users will now see:\n`;
+                        html += `- VIP Plans: +18.90 TIC per day\n`;
+                        html += `- Starter Plans: +1.37 TIC per day\n`;
+                        html += `- No duplicates\n`;
+                        html += `- One entry per date`;
+                    } else {
+                        html += `⚠️ WARNING: ${data.summary.incorrect_amounts} incorrect amounts still exist.\n`;
+                        html += `You may need to run the fix again.`;
+                    }
+                    
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ Verification Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-diagnose on page load
+        window.onload = function() {
+            diagnoseIssues();
+        };
+    </script>
+</body>
+</html>
