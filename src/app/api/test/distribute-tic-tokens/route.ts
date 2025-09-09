@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userEmail = session.user.email;
+    const userEmail = session?.user?.email;
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
     console.log(`🧪 Testing TIC distribution for user: ${userEmail}`);
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userEmail = session.user.email;
+    const userEmail = session?.user?.email;
 
     // Get wallet balance
     const { data: wallet, error: walletError } = await supabaseAdmin
