@@ -42,16 +42,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`📊 Found ${activeSubscriptions.length} active subscriptions`);
+    console.log(`📊 Found ${activeSubscriptions?.length ?? 0} active subscriptions`);
 
     // Group subscriptions by user
-    const subscriptionsByUser = activeSubscriptions.reduce((acc, sub) => {
+    const subscriptionsByUser = (activeSubscriptions ?? []).reduce((acc, sub) => {
       if (!acc[sub.user_email]) {
         acc[sub.user_email] = [];
       }
-      acc[sub.user_email].push(sub);
+      acc[sub.user_email]?.push(sub);
       return acc;
-    }, {} as Record<string, typeof activeSubscriptions>);
+    }, {} as Record<string, any[]>);
 
     const uniqueUsers = Object.keys(subscriptionsByUser);
     console.log(`👥 Found ${uniqueUsers.length} users with active subscriptions`);
@@ -77,13 +77,13 @@ export async function POST(request: NextRequest) {
       }
 
       const distributedSubscriptions = new Set(todayDistributions?.map(d => d.subscription_id) || []);
-      const missingSubscriptions = userSubscriptions.filter(sub => !distributedSubscriptions.has(sub.id));
+      const missingSubscriptions = (userSubscriptions ?? []).filter(sub => !distributedSubscriptions.has(sub.id));
 
       if (missingSubscriptions.length > 0) {
-        console.log(`🚨 ${userEmail}: ${missingSubscriptions.length}/${userSubscriptions.length} subscriptions missing distributions`);
+        console.log(`🚨 ${userEmail}: ${missingSubscriptions.length}/${userSubscriptions?.length ?? 0} subscriptions missing distributions`);
         usersWithMissingDistributions.push({
           user_email: userEmail,
-          total_subscriptions: userSubscriptions.length,
+          total_subscriptions: userSubscriptions?.length ?? 0,
           missing_subscriptions: missingSubscriptions.length,
           missing_subs: missingSubscriptions
         });
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
                 plan_id: subscription.plan_id,
                 distribution_date: distributionDate,
                 status: 'error',
-                error: createError.message
+                error: createError?.message ?? 'Unknown error'
               });
             } else {
               totalCreated++;
@@ -208,8 +208,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const currentTicBalance = parseFloat(currentWallet.tic_balance.toString()) || 0;
-        const currentTotalBalance = parseFloat(currentWallet.total_balance.toString()) || 0;
+        const currentTicBalance = parseFloat(currentWallet?.tic_balance?.toString() ?? '0') || 0;
+        const currentTotalBalance = parseFloat(currentWallet?.total_balance?.toString() ?? '0') || 0;
 
         // Calculate USD values and balance adjustment
         const newTicUsdValue = totalTicEarned * TIC_PRICE;
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
           walletUpdateResults.push({
             user_email: user_email,
             status: 'error',
-            error: updateError.message
+            error: updateError?.message ?? 'Unknown error'
           });
         } else {
           walletUpdateResults.push({
