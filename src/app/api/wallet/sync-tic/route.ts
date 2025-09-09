@@ -68,11 +68,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Update TIC balance to match total distributions
+    // Calculate USD value of TIC tokens (TIC price = $0.02)
+    const TIC_PRICE = 0.02;
+    const ticUsdValue = totalTicEarned * TIC_PRICE;
+
+    // Get current wallet data to preserve other balances
+    const { data: currentWallet, error: walletError } = await supabaseAdmin
+      .from('user_wallets')
+      .select('total_balance, gic_balance, staking_balance, partner_wallet_balance')
+      .eq('user_email', userEmail)
+      .single();
+
+    if (walletError) {
+      console.error('Error getting current wallet:', walletError);
+      return NextResponse.json(
+        { error: 'Failed to get current wallet data' },
+        { status: 500 }
+      );
+    }
+
+    // Calculate new total balance including TIC USD value
+    const currentTotalBalance = parseFloat(currentWallet.total_balance.toString()) || 0;
+    const currentTicUsdValue = currentTicBalance * TIC_PRICE;
+    const balanceAdjustment = ticUsdValue - currentTicUsdValue;
+    const newTotalBalance = currentTotalBalance + balanceAdjustment;
+
+    // Update TIC balance and adjust total balance to include TIC USD value
     const { error: updateError } = await supabaseAdmin
       .from('user_wallets')
       .update({
         tic_balance: totalTicEarned,
+        total_balance: newTotalBalance,
         last_updated: new Date().toISOString()
       })
       .eq('user_email', userEmail);
@@ -85,14 +111,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ TIC balance synced successfully');
+    console.log('✅ TIC balance and wallet total synced successfully');
 
     return NextResponse.json({
       success: true,
-      message: 'TIC balance synced successfully',
-      previousBalance: currentTicBalance,
-      newBalance: totalTicEarned,
-      difference: totalTicEarned - currentTicBalance,
+      message: 'TIC balance and wallet total synced successfully',
+      previousTicBalance: currentTicBalance,
+      newTicBalance: totalTicEarned,
+      ticDifference: totalTicEarned - currentTicBalance,
+      ticUsdValue: ticUsdValue,
+      balanceAdjustment: balanceAdjustment,
+      newTotalBalance: newTotalBalance,
       totalDistributions: distributions?.length || 0,
       syncNeeded: true
     });

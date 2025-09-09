@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { TOKEN_PRICES } from '@/lib/constants/tokens';
 // TODO: Re-enable after debugging auth issues
 // import { getServerSession } from 'next-auth/next';
 // import { authOptions } from '@/lib/auth-config';
@@ -64,17 +65,29 @@ async function getWalletBalance(userEmail: string) {
     ? calculatedBalance[0].total_balance?.toString()
     : null;
 
-  const totalBalance = calculatedTotalBalance || '0';
+  const baseTotalBalance = parseFloat(calculatedTotalBalance || '0');
 
-  console.log('🔍 Balance source (transaction-based) for:', userEmail, {
+  // Get token balances from user_wallets or default to 0
+  const ticBalance = parseFloat(walletData?.tic_balance?.toString() || '0');
+  const gicBalance = parseFloat(walletData?.gic_balance?.toString() || '0');
+  const stakingBalance = parseFloat(walletData?.staking_balance?.toString() || '0');
+
+  // Calculate TIC token USD value and add to total balance
+  const TIC_PRICE = TOKEN_PRICES.TIC; // $0.02 per TIC
+  const ticUsdValue = ticBalance * TIC_PRICE;
+
+  // Total balance includes: transaction-based balance + TIC USD value
+  // (GIC and staking balances are already included in transaction-based balance if they were earned)
+  const totalBalance = (baseTotalBalance + ticUsdValue).toFixed(8);
+
+  console.log('🔍 Balance source (transaction-based + TIC USD) for:', userEmail, {
     calculatedTotalBalance,
+    ticBalance,
+    ticUsdValue,
     finalTotalBalance: totalBalance
   });
 
-  // Get token balances from user_wallets or default to 0
-  const ticBalance = walletData?.tic_balance?.toString() || '0';
-  const gicBalance = walletData?.gic_balance?.toString() || '0';
-  const stakingBalance = walletData?.staking_balance?.toString() || '0';
+  // Get partner wallet balance (not included in TIC calculation above)
   const partnerWalletBalance = walletData?.partner_wallet_balance?.toString() || '0';
 
   console.log('🔍 Wallet API: Extracted balances:', {
@@ -87,22 +100,24 @@ async function getWalletBalance(userEmail: string) {
     (calculatedBalance && calculatedBalance.length > 0 && calculatedBalance[0].last_transaction_date) ||
     new Date().toISOString();
 
-  console.log('✅ Combined balance result for:', userEmail, {
+  console.log('✅ Combined balance result (including TIC USD) for:', userEmail, {
     total_balance: totalBalance,
-    tic_balance: ticBalance,
-    gic_balance: gicBalance,
-    staking_balance: stakingBalance,
+    tic_balance: ticBalance.toFixed(8),
+    tic_usd_value: ticUsdValue.toFixed(8),
+    gic_balance: gicBalance.toFixed(8),
+    staking_balance: stakingBalance.toFixed(8),
     partner_wallet_balance: partnerWalletBalance
   });
 
-  // Return the combined balance
+  // Return the combined balance with TIC USD value included in total
   return {
     user_email: userEmail,
     total_balance: totalBalance,
-    tic_balance: ticBalance,
-    gic_balance: gicBalance,
-    staking_balance: stakingBalance,
+    tic_balance: ticBalance.toFixed(8),
+    gic_balance: gicBalance.toFixed(8),
+    staking_balance: stakingBalance.toFixed(8),
     partner_wallet_balance: partnerWalletBalance,
+    tic_usd_value: ticUsdValue.toFixed(8), // Include TIC USD value for transparency
     last_updated: typeof lastUpdated === 'string' ? lastUpdated : lastUpdated.toISOString()
   };
 }
