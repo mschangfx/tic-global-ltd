@@ -122,21 +122,6 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
           amount: d.token_amount,
           status: d.status
         })));
-
-        // Debug: Check for potential duplicates by date
-        const distributionsByDate = sortedDistributions.reduce((acc: any, dist: TokenDistribution) => {
-          const date = dist.distribution_date;
-          if (!acc[date]) acc[date] = [];
-          acc[date].push(dist);
-          return acc;
-        }, {});
-
-        console.log(`🔍 Distribution grouping debug:`, Object.entries(distributionsByDate).map(([date, dists]: [string, any]) => ({
-          date,
-          count: dists.length,
-          total_amount: dists.reduce((sum: number, d: any) => sum + parseFloat(d.token_amount.toString()), 0),
-          individual_amounts: dists.map((d: any) => parseFloat(d.token_amount.toString()))
-        })));
       } else {
         console.error('❌ Distribution API error:', data.error);
         setDistributions([]);
@@ -313,12 +298,6 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
               const groupedArray = Object.values(groupedByDate).sort((a: any, b: any) =>
                 new Date(b.date).getTime() - new Date(a.date).getTime()
               );
-
-              console.log(`🎯 UI Grouping Result:`, groupedArray.slice(0, 5).map((group: any) => ({
-                date: group.date,
-                total_amount: group.total_amount,
-                count: group.count
-              })));
 
               return groupedArray.slice(0, 5).map((group: any, index: number) => (
                 <HStack key={`${group.date}-${index}`} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
