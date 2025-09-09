@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       const subscriptions = userSubscriptions.get(userEmail) || [];
       try {
         results.users_processed++;
-        const userFix = {
+        const userFix: any = {
           user_email: userEmail,
           subscription_count: subscriptions.length,
           issues_found: [] as string[],
