@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    if (!activeSubscriptions || activeSubscriptions.length === 0) {
+    if (!activeSubscriptions || activeSubscriptions?.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'No active subscriptions found',
