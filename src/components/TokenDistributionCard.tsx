@@ -274,48 +274,38 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         <Divider />
         <VStack spacing={2} align="stretch">
           <Text fontSize="sm" fontWeight="medium" color={textColor}>
-            Recent Distributions (Last 5)
+            Recent Distributions (Per Plan)
           </Text>
           {distributions.length > 0 ? (
             (() => {
-              // Group distributions by date and sum the amounts
-              const groupedByDate = distributions.reduce((acc: any, dist: any) => {
-                const date = dist.distribution_date;
-                if (!acc[date]) {
-                  acc[date] = {
-                    date: date,
-                    total_amount: 0,
-                    status: dist.status,
-                    count: 0
-                  };
-                }
-                acc[date].total_amount += parseFloat(dist.token_amount.toString());
-                acc[date].count += 1;
-                return acc;
-              }, {});
+              // Show individual distributions per plan (not grouped by date)
+              // Sort by date (newest first) and show individual plan distributions
+              const sortedDistributions = distributions
+                .sort((a: any, b: any) => new Date(b.distribution_date).getTime() - new Date(a.distribution_date).getTime())
+                .slice(0, 10); // Show more entries since they're individual plans
 
-              // Convert to array and sort by date (newest first)
-              const groupedArray = Object.values(groupedByDate).sort((a: any, b: any) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime()
-              );
-
-              return groupedArray.slice(0, 5).map((group: any, index: number) => (
-                <HStack key={`${group.date}-${index}`} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
+              return sortedDistributions.map((dist: any, index: number) => (
+                <HStack key={`${dist.id}-${index}`} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
                   <HStack spacing={2}>
                     <Icon as={FaCalendarAlt} color={subtleTextColor} boxSize={3} />
-                    <Text fontSize="xs" color={subtleTextColor}>
-                      {new Date(group.date).toLocaleDateString()}
-                    </Text>
+                    <VStack spacing={0} align="start">
+                      <Text fontSize="xs" color={subtleTextColor}>
+                        {new Date(dist.distribution_date).toLocaleDateString()}
+                      </Text>
+                      <Text fontSize="2xs" color={subtleTextColor} opacity={0.7}>
+                        {dist.plan_id?.toUpperCase() || 'PLAN'} Plan
+                      </Text>
+                    </VStack>
                   </HStack>
                   <HStack spacing={2}>
                     <Text fontSize="xs" fontWeight="medium" color={textColor}>
-                      +{group.total_amount.toFixed(2)} TIC
+                      +{parseFloat(dist.token_amount.toString()).toFixed(2)} TIC
                     </Text>
                     <Badge
                       size="sm"
-                      colorScheme={group.status === 'completed' ? 'green' : 'red'}
+                      colorScheme={dist.status === 'completed' ? 'green' : 'red'}
                     >
-                      {group.status}
+                      {dist.status}
                     </Badge>
                   </HStack>
                 </HStack>
