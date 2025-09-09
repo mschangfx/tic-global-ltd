@@ -117,7 +117,8 @@ export async function POST(request: NextRequest) {
       .from('token_distributions')
       .select('user_email');
 
-    const uniqueUsers = [...new Set(allUsers?.map(u => u.user_email) || [])];
+    const userEmailSet = new Set(allUsers?.map(u => u.user_email) || []);
+    const uniqueUsers = Array.from(userEmailSet);
 
     return NextResponse.json({
       success: true,
