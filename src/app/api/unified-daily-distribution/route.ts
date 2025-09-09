@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch active subscriptions',
-        details: subsError.message
+        details: subsError?.message || 'Unknown error'
       }, { status: 500 });
     }
 
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
               subscription_id: subscription.id,
               plan_id: subscription.plan_id,
               status: 'error',
-              error: distError.message
+              error: distError?.message || 'Unknown error'
             });
             continue;
           }
