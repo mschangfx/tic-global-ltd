@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
           plan_name: subscription.plan_name,
           status: 'error',
           reason: 'Failed to create distribution record',
-          error: distError.message
+          error: distError?.message || 'Unknown error'
         });
         continue;
       }
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
           plan_name: subscription.plan_name,
           status: 'error',
           reason: 'Failed to update TIC balance',
-          error: walletError.message
+          error: walletError?.message || 'Unknown error'
         });
         continue;
       }
