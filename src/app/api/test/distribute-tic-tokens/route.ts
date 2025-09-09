@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!activeSubscriptions || activeSubscriptions.length === 0) {
+    if (!activeSubscriptions || activeSubscriptions?.length === 0) {
       return NextResponse.json({
         success: false,
         message: 'No active subscriptions found for user',
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       message: `Test TIC distribution completed for ${userEmail}`,
       userEmail,
       date: today,
-      subscriptions: activeSubscriptions.length,
+      subscriptions: activeSubscriptions?.length || 0,
       results,
       updatedWallet: updatedWallet || null,
       note: 'This is a test distribution. Check your wallet balance in the navbar dropdown.',
