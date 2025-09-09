@@ -102,21 +102,31 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
 
         console.log(`📊 Found ${allDistributions.length} total distributions for user`);
 
-        // Sort distributions by date (newest first)
-        const sortedDistributions = allDistributions.sort((a: TokenDistribution, b: TokenDistribution) =>
+        // Filter and sort distributions for this specific plan only
+        const currentPlanId = subscription.plan_id?.toLowerCase();
+        const planSpecificDistributions = allDistributions.filter((dist: TokenDistribution) =>
+          dist.plan_id?.toLowerCase() === currentPlanId
+        );
+
+        const sortedDistributions = planSpecificDistributions.sort((a: TokenDistribution, b: TokenDistribution) =>
           new Date(b.distribution_date).getTime() - new Date(a.distribution_date).getTime()
         );
 
         setDistributions(sortedDistributions);
 
-        // Calculate total tokens received from ALL subscriptions
-        const totalTokens = allDistributions.reduce(
+        // Calculate total tokens received from THIS specific plan only
+        const currentPlanId = subscription.plan_id?.toLowerCase();
+        const planSpecificDistributions = allDistributions.filter((dist: TokenDistribution) =>
+          dist.plan_id?.toLowerCase() === currentPlanId
+        );
+
+        const totalTokens = planSpecificDistributions.reduce(
           (sum: number, dist: TokenDistribution) => sum + parseFloat(dist.token_amount.toString()),
           0
         );
         setTotalTokensReceived(totalTokens);
 
-        console.log(`💰 Total TIC tokens received from all subscriptions: ${totalTokens}`);
+        console.log(`💰 Total TIC tokens received from ${subscription.plan_name || subscription.plan_id} plan: ${totalTokens}`);
         console.log(`📋 Recent distributions:`, sortedDistributions.slice(0, 5).map((d: TokenDistribution) => ({
           date: d.distribution_date,
           amount: d.token_amount,
@@ -274,28 +284,21 @@ const TokenDistributionCard: React.FC<TokenDistributionCardProps> = ({ userEmail
         <Divider />
         <VStack spacing={2} align="stretch">
           <Text fontSize="sm" fontWeight="medium" color={textColor}>
-            Recent Distributions (Per Plan)
+            Recent Distributions ({subscription.plan_name || subscription.plan_id?.toUpperCase() || 'This Plan'})
           </Text>
           {distributions.length > 0 ? (
             (() => {
-              // Show individual distributions per plan (not grouped by date)
-              // Sort by date (newest first) and show individual plan distributions
-              const sortedDistributions = distributions
-                .sort((a: any, b: any) => new Date(b.distribution_date).getTime() - new Date(a.distribution_date).getTime())
-                .slice(0, 10); // Show more entries since they're individual plans
+              // Distributions are already filtered for this specific plan
+              // Just slice to show the most recent 10 distributions
+              const recentDistributions = distributions.slice(0, 10);
 
-              return sortedDistributions.map((dist: any, index: number) => (
+              return recentDistributions.map((dist: any, index: number) => (
                 <HStack key={`${dist.id}-${index}`} justify="space-between" p={2} bg={distributionItemBg} borderRadius="md">
                   <HStack spacing={2}>
                     <Icon as={FaCalendarAlt} color={subtleTextColor} boxSize={3} />
-                    <VStack spacing={0} align="start">
-                      <Text fontSize="xs" color={subtleTextColor}>
-                        {new Date(dist.distribution_date).toLocaleDateString()}
-                      </Text>
-                      <Text fontSize="2xs" color={subtleTextColor} opacity={0.7}>
-                        {dist.plan_id?.toUpperCase() || 'PLAN'} Plan
-                      </Text>
-                    </VStack>
+                    <Text fontSize="xs" color={subtleTextColor}>
+                      {new Date(dist.distribution_date).toLocaleDateString()}
+                    </Text>
                   </HStack>
                   <HStack spacing={2}>
                     <Text fontSize="xs" fontWeight="medium" color={textColor}>
