@@ -200,7 +200,6 @@ export async function POST(request: NextRequest) {
       summary: {
         total_active_subscriptions: activeSubscriptions.length,
         unique_users: userEmails.length,
-        users_with_existing_distributions: usersWithDistributions.size,
         distributions_created: distributionsCreated,
         distributions_skipped: distributionsSkipped
       },
