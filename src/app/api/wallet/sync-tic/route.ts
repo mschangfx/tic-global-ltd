@@ -73,14 +73,14 @@ export async function POST(request: NextRequest) {
     const ticUsdValue = totalTicEarned * TIC_PRICE;
 
     // Get current wallet data to preserve other balances
-    const { data: currentWallet, error: walletError } = await supabaseAdmin
+    const { data: currentWallet, error: currentWalletError } = await supabaseAdmin
       .from('user_wallets')
       .select('total_balance, gic_balance, staking_balance, partner_wallet_balance')
       .eq('user_email', userEmail)
       .single();
 
-    if (walletError) {
-      console.error('Error getting current wallet:', walletError);
+    if (currentWalletError) {
+      console.error('Error getting current wallet:', currentWalletError);
       return NextResponse.json(
         { error: 'Failed to get current wallet data' },
         { status: 500 }
