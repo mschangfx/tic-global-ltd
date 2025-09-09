@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const results = [];
 
-    for (const subscription of activeSubscriptions) {
+    for (const subscription of (activeSubscriptions || [])) {
       const dailyTokens = getDailyTokenAmount(subscription.plan_id);
       
       if (dailyTokens <= 0) {
