@@ -55,11 +55,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch active subscriptions',
-        details: subsError?.message || 'Unknown error'
+        details: subsError?.message ?? 'Unknown error'
       }, { status: 500 });
     }
 
-    if (!activeSubscriptions || activeSubscriptions.length === 0) {
+    if (!activeSubscriptions || activeSubscriptions?.length === 0) {
       console.log('⚠️ No active subscriptions found');
       return NextResponse.json({
         success: true,
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`👥 Found ${activeSubscriptions.length} active subscriptions`);
+    console.log(`👥 Found ${activeSubscriptions?.length ?? 0} active subscriptions`);
 
     // Step 2: Group subscriptions by user email (handle multiple plans per user)
-    const subscriptionsByUser = activeSubscriptions.reduce((acc: any, sub: any) => {
+    const subscriptionsByUser = (activeSubscriptions ?? []).reduce((acc: any, sub: any) => {
       if (!acc[sub.user_email]) {
         acc[sub.user_email] = [];
       }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
           }
 
           if (existingDistribution) {
-            console.log(`⏭️ Skipping ${userEmail} subscription ${subscription.id} - already has distribution for today (${existingDistribution.token_amount} TIC)`);
+            console.log(`⏭️ Skipping ${userEmail} subscription ${subscription.id} - already has distribution for today (${existingDistribution?.token_amount ?? 0} TIC)`);
             distributionsSkipped++;
             continue;
           }
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
       date: today,
       timestamp: currentTime,
       summary: {
-        total_active_subscriptions: activeSubscriptions.length,
+        total_active_subscriptions: activeSubscriptions?.length ?? 0,
         unique_users: userEmails.length,
         distributions_created: distributionsCreated,
         distributions_skipped: distributionsSkipped
