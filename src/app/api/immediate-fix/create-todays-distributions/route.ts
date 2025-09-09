@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch active subscriptions',
-        details: subsError.message
+        details: subsError?.message || 'Unknown error'
       }, { status: 500 });
     }
 
