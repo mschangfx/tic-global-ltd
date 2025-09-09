@@ -208,9 +208,9 @@ export default function DebugBalancesPage() {
                       <VStack align="start">
                         <Text fontWeight="bold" color="green.500">TIC Wallet</Text>
                         <Text fontSize="2xl" fontWeight="bold">
-                          ${walletBalance.tic.toFixed(2)}
+                          {walletBalance.tic.toFixed(2)} TIC
                         </Text>
-                        <Text fontSize="sm" color="gray.500">tic_balance</Text>
+                        <Text fontSize="sm" color="gray.500">${(walletBalance.tic * 0.02).toFixed(2)} USD</Text>
                       </VStack>
                     </CardBody>
                   </Card>

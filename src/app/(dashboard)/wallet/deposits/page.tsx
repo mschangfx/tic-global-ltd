@@ -313,7 +313,8 @@ export default function UserDepositsPage() {
                   </Stat>
                   <Stat textAlign="center">
                     <StatLabel>TIC Balance</StatLabel>
-                    <StatNumber color="blue.500">${(wallet.tic_balance * 0.02).toFixed(2)}</StatNumber>
+                    <StatNumber color="blue.500">{parseFloat(wallet.tic_balance.toString()).toFixed(2)} TIC</StatNumber>
+                    <Text fontSize="xs" color="gray.500">${(wallet.tic_balance * 0.02).toFixed(2)} USD</Text>
                   </Stat>
                   <Stat textAlign="center">
                     <StatLabel>GIC Balance</StatLabel>
