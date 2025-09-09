@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
     // Step 2: Clean up duplicates by deleting older records, keeping only the latest one
     let deletedCount = 0;
 
-    for (const [key, duplicates] of duplicateGroups) {
+    // Convert Map to array for iteration
+    const duplicateEntries = Array.from(duplicateGroups.entries());
+
+    for (const [key, duplicates] of duplicateEntries) {
       // Sort by created_at descending and delete all but the first (latest)
       duplicates.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
