@@ -51,6 +51,67 @@ export async function POST(request: NextRequest) {
     if (subsError) {
       console.error('❌ Error fetching active subscriptions:', subsError);
       return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to fetch active subscriptions',
+          details: subsError.message
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!activeSubscriptions || activeSubscriptions.length === 0) {
+      console.log('ℹ️ No active subscriptions found for distribution');
+      return NextResponse.json({
+        success: true,
+        message: 'No active subscriptions found',
+        date: today,
+        distributions_created: 0,
+        total_tokens_distributed: 0
+      });
+    }
+
+    console.log(`📊 Found ${activeSubscriptions.length} active subscriptions`);
+
+    // Check for existing distributions today to prevent duplicates
+    const { data: existingDistributions, error: existingError } = await supabaseAdmin
+      .from('token_distributions')
+      .select('subscription_id, user_email')
+      .eq('distribution_date', today)
+      .eq('status', 'completed');
+
+    if (existingError) {
+      console.error('❌ Error checking existing distributions:', existingError);
+    }
+
+    const existingDistributionSet = new Set(
+      existingDistributions?.map(d => d.subscription_id) || []
+    );
+
+    console.log(`📋 Found ${existingDistributions?.length || 0} existing distributions for today`);
+
+    // Filter out subscriptions that already have distributions today
+    const subscriptionsToProcess = activeSubscriptions.filter(
+      sub => !existingDistributionSet.has(sub.id)
+    );
+
+    console.log(`🔄 Processing ${subscriptionsToProcess.length} subscriptions (${activeSubscriptions.length - subscriptionsToProcess.length} already distributed)`);
+
+    if (subscriptionsToProcess.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'All subscriptions already have distributions for today',
+        date: today,
+        total_subscriptions: activeSubscriptions.length,
+        already_distributed: activeSubscriptions.length,
+        distributions_created: 0,
+        total_tokens_distributed: 0
+      });
+    }
+
+    if (subsError) {
+      console.error('❌ Error fetching active subscriptions:', subsError);
+      return NextResponse.json(
         { error: 'Failed to fetch active subscriptions', details: subsError.message },
         { status: 500 }
       );

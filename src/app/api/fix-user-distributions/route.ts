@@ -1,20 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-// Fix distributions for a specific user - handles multiple subscriptions efficiently
+// Fix distributions for a specific user OR all users - handles multiple subscriptions efficiently
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userEmail } = body;
+    const { userEmail, fixAllUsers = false } = body;
 
-    if (!userEmail) {
+    if (!userEmail && !fixAllUsers) {
       return NextResponse.json(
-        { error: 'User email is required' },
+        { error: 'User email is required, or set fixAllUsers: true' },
         { status: 400 }
       );
     }
 
-    console.log('🔧 Fixing distributions for user:', userEmail);
+    if (fixAllUsers) {
+      console.log('🔧 Fixing distributions for ALL USERS...');
+      return await fixAllUsersDistributions();
+    } else {
+      console.log('🔧 Fixing distributions for user:', userEmail);
+      return await fixSingleUserDistributions(userEmail);
+    }
+
+  } catch (error: any) {
+    console.error('❌ Error fixing distributions:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to fix distributions'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Fix distributions for all users with missing distributions
+async function fixAllUsersDistributions() {
+  try {
+    console.log('🌍 Starting comprehensive fix for all users...');
+
+    // Get all users with missing distributions
+    const { data: usersWithMissing, error: analysisError } = await supabaseAdmin.rpc('analyze_missing_distributions');
+
+    if (analysisError) {
+      console.error('Error analyzing missing distributions:', analysisError);
+      // Fallback to manual analysis
+      const { data: allUsers, error: userError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select('user_email')
+        .eq('status', 'active')
+        .neq('user_email', null);
+
+      if (userError) {
+        throw new Error(`Failed to fetch users: ${userError.message}`);
+      }
+
+      const uniqueUsers = [...new Set(allUsers?.map(u => u.user_email) || [])];
+      console.log(`📊 Found ${uniqueUsers.length} users with active subscriptions`);
+
+      const results = [];
+      let totalFixed = 0;
+
+      // Process each user
+      for (const email of uniqueUsers) {
+        try {
+          console.log(`🔄 Processing user: ${email}`);
+          const userResult = await fixSingleUserDistributions(email, false);
+
+          if (userResult.success) {
+            results.push({
+              user_email: email,
+              status: 'fixed',
+              distributions_created: userResult.total_distributions_created || 0,
+              tokens_distributed: userResult.total_tokens_distributed || 0
+            });
+            totalFixed += userResult.total_distributions_created || 0;
+          } else {
+            results.push({
+              user_email: email,
+              status: 'error',
+              error: userResult.error
+            });
+          }
+
+          // Add small delay to prevent overwhelming the database
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        } catch (userError) {
+          console.error(`Error processing user ${email}:`, userError);
+          results.push({
+            user_email: email,
+            status: 'error',
+            error: userError.message
+          });
+        }
+      }
+
+      // Sync all wallet balances after fixing distributions
+      try {
+        const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/wallet/sync-all-tic-balances`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          console.log('✅ All wallet balances synced successfully');
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Wallet balance sync failed:', syncError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Comprehensive fix completed for all users`,
+        total_users_processed: uniqueUsers.length,
+        total_distributions_created: totalFixed,
+        results: results.slice(0, 20), // Limit response size
+        timestamp: new Date().toISOString()
+      });
+    }
+
+  } catch (error: any) {
+    console.error('❌ Error in comprehensive fix:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to fix all users distributions'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Fix distributions for a single user
+async function fixSingleUserDistributions(userEmail: string, returnResponse = true) {
+  try {
 
     // Get all active subscriptions for the user
     const { data: subscriptions, error: subError } = await supabaseAdmin
