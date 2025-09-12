@@ -86,12 +86,12 @@ async function fixAllUsersDistributions() {
           // Add small delay to prevent overwhelming the database
           await new Promise(resolve => setTimeout(resolve, 100));
 
-        } catch (userError) {
+        } catch (userError: any) {
           console.error(`Error processing user ${email}:`, userError);
           results.push({
             user_email: email,
             status: 'error',
-            error: userError.message
+            error: userError?.message || 'Unknown error occurred'
           });
         }
       }
