@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Failed to fetch active subscriptions',
-          details: subsError.message
+          details: (subsError as any)?.message || 'Unknown error'
         },
         { status: 500 }
       );
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     if (subsError) {
       console.error('❌ Error fetching active subscriptions:', subsError);
       return NextResponse.json(
-        { error: 'Failed to fetch active subscriptions', details: subsError.message },
+        { error: 'Failed to fetch active subscriptions', details: (subsError as any)?.message || 'Unknown error' },
         { status: 500 }
       );
     }
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
             plan_id: subscription.plan_id,
             status: 'error',
             reason: 'Failed to check existing distribution',
-            error: checkError.message
+            error: (checkError as any)?.message || 'Unknown error'
           });
           continue;
         }
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
             plan_id: subscription.plan_id,
             status: 'error',
             reason: 'Failed to create distribution record',
-            error: distError.message
+            error: (distError as any)?.message || 'Unknown error'
           });
           continue;
         }
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
             plan_id: subscription.plan_id,
             status: 'error',
             reason: 'Failed to update TIC balance',
-            error: walletError.message
+            error: (walletError as any)?.message || 'Unknown error'
           });
           continue;
         }
@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
         console.error('❌ Error updating expired subscriptions:', expiredError);
         additionalOperations.expired_subscriptions = {
           success: false,
-          message: expiredError.message,
+          message: (expiredError as any)?.message || 'Unknown error',
           count: 0
         };
       } else {
