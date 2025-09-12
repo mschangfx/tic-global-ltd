@@ -160,11 +160,8 @@ async function fixUserDistributions(userEmail: string) {
       const subscriptionStart = new Date(subscription.created_at);
       const today = new Date();
       
-      // Start from subscription date or August 26, 2025 (whichever is later)
-      const distributionStart = new Date(Math.max(
-        subscriptionStart.getTime(),
-        new Date('2025-08-26').getTime()
-      ));
+      // Start from actual subscription date (not limited to August 26)
+      const distributionStart = new Date(subscriptionStart);
 
       // Calculate token amount and plan name based on plan
       const tokenAmount = subscription.plan_id === 'vip' ? 18.904109589 : 1.369863014;
