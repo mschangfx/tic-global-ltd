@@ -133,6 +133,7 @@ async function fixAllUsersDistributions() {
 }
 
 // Fix distributions for a single user (API endpoint version - always returns NextResponse)
+// This function ensures proper NextResponse return type for API route compliance
 async function fixSingleUserDistributions(userEmail: string): Promise<NextResponse> {
   const result = await fixSingleUserDistributionsInternal(userEmail);
   if ('status' in result) {
