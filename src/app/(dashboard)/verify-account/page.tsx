@@ -219,6 +219,8 @@ export default function VerifyAccountPage() {
     address: '',
   });
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [profileJustCompleted, setProfileJustCompleted] = useState(false);
+  const [identityJustUploaded, setIdentityJustUploaded] = useState(false);
 
   // Identity verification
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -241,6 +243,9 @@ export default function VerifyAccountPage() {
   // Load user data and verification status
   useEffect(() => {
     if (sessionStatus !== 'loading') {
+      // Reset flags when page loads
+      setProfileJustCompleted(false);
+      setIdentityJustUploaded(false);
       loadUserData();
     }
   }, [sessionStatus]);
@@ -254,7 +259,7 @@ export default function VerifyAccountPage() {
 
   // Auto-open next step modal when page loads if previous steps are completed
   useEffect(() => {
-    if (!isLoading && sessionStatus === 'authenticated') {
+    if (!isLoading && sessionStatus === 'authenticated' && !isSubmittingProfile && !isUploadingDocument && !profileJustCompleted && !identityJustUploaded) {
       // Small delay to ensure state is properly set
       const timer = setTimeout(() => {
         // If email is verified but profile is not completed, open profile modal
@@ -271,7 +276,7 @@ export default function VerifyAccountPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen]);
+  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen, isSubmittingProfile, isUploadingDocument, profileJustCompleted, identityJustUploaded]);
 
   // Handle completion of all verification steps - ONLY when identity is actually approved
   useEffect(() => {
@@ -592,6 +597,7 @@ export default function VerifyAccountPage() {
       if (response.ok) {
         // Update verification status immediately for instant visual feedback
         setVerificationStatus(prev => ({ ...prev, profileCompleted: true }));
+        setProfileJustCompleted(true);
 
         // Close the profile modal
         onProfileModalClose();
@@ -609,13 +615,16 @@ export default function VerifyAccountPage() {
         setTimeout(async () => {
           await loadUserData();
 
-          // Auto-advance to next step after data is refreshed
+          // Auto-advance to next step after data is refreshed - only if not already uploading identity
           setTimeout(() => {
-            if (!verificationStatus.identityDocumentUploaded) {
+            if (!verificationStatus.identityDocumentUploaded && !isUploadingDocument) {
+              setProfileJustCompleted(false); // Reset flag before opening next modal
               onIdentityModalOpen();
+            } else {
+              setProfileJustCompleted(false); // Reset flag if not opening next modal
             }
           }, 500);
-        }, 1000);
+        }, 1500); // Increased delay to ensure database update is complete
 
       } else {
         throw new Error(data.error || 'Failed to complete profile');
@@ -669,6 +678,7 @@ export default function VerifyAccountPage() {
           identityDocumentUploaded: true,
           identityStatus: 'pending'
         }));
+        setIdentityJustUploaded(true);
 
         // Reset form
         setSelectedFile(null);
@@ -690,7 +700,8 @@ export default function VerifyAccountPage() {
         // Small delay to ensure database update is processed, then refresh data
         setTimeout(async () => {
           await loadUserData();
-        }, 1000);
+          setIdentityJustUploaded(false); // Reset flag after data refresh
+        }, 1500);
 
       } else {
         throw new Error(data.error || 'Failed to upload document');
