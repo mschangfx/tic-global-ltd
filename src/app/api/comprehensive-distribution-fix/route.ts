@@ -56,12 +56,12 @@ export async function POST(request: NextRequest) {
           await new Promise(resolve => setTimeout(resolve, 200));
         }
 
-      } catch (userError) {
+      } catch (userError: any) {
         console.error(`Error processing user ${userEmail}:`, userError);
         results.push({
           user_email: userEmail,
           status: 'error',
-          error: userError.message
+          error: userError?.message || 'Unknown error occurred'
         });
         usersProcessed++;
       }
