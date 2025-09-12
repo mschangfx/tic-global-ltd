@@ -62,9 +62,10 @@ export async function GET(request: NextRequest) {
       latestDocument = docData;
     }
 
-    console.log('Verification status API - Email:', email);
-    console.log('Verification status API - User data:', user);
-    console.log('Verification status API - Error:', error);
+    console.log('🔍 Verification status API - Email:', email);
+    console.log('🔍 Verification status API - User data:', user);
+    console.log('🔍 Verification status API - Error:', error);
+    console.log('🔍 Verification status API - Profile completed from DB:', user?.profile_completed);
 
     if (error) {
       console.error('Error fetching user verification status:', error);
@@ -136,7 +137,8 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    console.log('Verification status API - Response:', response);
+    console.log('🔍 Verification status API - Final response:', response);
+    console.log('🔍 Verification status API - Profile completed in response:', response.user.profile_completed);
 
     return NextResponse.json(response, {
       status: 200,

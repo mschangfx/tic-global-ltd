@@ -263,9 +263,17 @@ export default function VerifyAccountPage() {
       // Small delay to ensure state is properly set
       const timer = setTimeout(() => {
         // If email is verified but profile is not completed, open profile modal
-        if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !isProfileModalOpen) {
+        // Also check if profile form has data (additional safety check)
+        const hasProfileData = profileForm.firstName && profileForm.lastName && profileForm.dateOfBirth;
+        if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !hasProfileData && !isProfileModalOpen) {
           console.log('🚀 Auto-opening profile completion modal on page load');
+          console.log('🔍 Current verification status:', verificationStatus);
+          console.log('🔍 Profile form data:', profileForm);
           onProfileModalOpen();
+        } else if (verificationStatus.profileCompleted || hasProfileData) {
+          console.log('✅ Profile already completed or has data, not opening modal');
+          console.log('🔍 Profile completed:', verificationStatus.profileCompleted);
+          console.log('🔍 Has profile data:', hasProfileData);
         }
         // If profile is completed but identity is not uploaded, open identity modal
         else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen) {
