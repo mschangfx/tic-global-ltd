@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return await fixAllUsersDistributions();
     } else {
       console.log('🔧 Fixing distributions for user:', userEmail);
-      return await fixSingleUserDistributions(userEmail, true);
+      return await fixSingleUserDistributions(userEmail);
     }
 
   } catch (error: any) {
@@ -65,7 +65,7 @@ async function fixAllUsersDistributions() {
       for (const email of uniqueUsers) {
         try {
           console.log(`🔄 Processing user: ${email}`);
-          const userResult = await fixSingleUserDistributions(email, false);
+          const userResult = await fixSingleUserDistributionsInternal(email);
 
           if (userResult.success) {
             results.push({
@@ -132,8 +132,17 @@ async function fixAllUsersDistributions() {
   }
 }
 
-// Fix distributions for a single user
-async function fixSingleUserDistributions(userEmail: string, returnResponse = true) {
+// Fix distributions for a single user (API endpoint version - always returns NextResponse)
+async function fixSingleUserDistributions(userEmail: string): Promise<NextResponse> {
+  const result = await fixSingleUserDistributionsInternal(userEmail);
+  if ('status' in result) {
+    return NextResponse.json(result.data, { status: result.status });
+  }
+  return NextResponse.json(result);
+}
+
+// Internal function for fixing distributions (can return plain objects)
+async function fixSingleUserDistributionsInternal(userEmail: string) {
   try {
 
     // Get all active subscriptions for the user
@@ -149,11 +158,10 @@ async function fixSingleUserDistributions(userEmail: string, returnResponse = tr
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      const result = {
+      return {
         success: false,
         message: 'No active subscriptions found for user'
       };
-      return returnResponse ? NextResponse.json(result) : result;
     }
 
     console.log(`📊 Found ${subscriptions.length} active subscriptions for ${userEmail}`);
@@ -263,7 +271,7 @@ async function fixSingleUserDistributions(userEmail: string, returnResponse = tr
       console.warn('⚠️ Wallet balance sync failed:', syncError);
     }
 
-    const result = {
+    return {
       success: true,
       message: `Successfully processed distributions for ${userEmail}`,
       user_email: userEmail,
@@ -273,15 +281,14 @@ async function fixSingleUserDistributions(userEmail: string, returnResponse = tr
       details: results,
       timestamp: new Date().toISOString()
     };
-    return returnResponse ? NextResponse.json(result) : result;
 
   } catch (error: any) {
     console.error('❌ Error fixing user distributions:', error);
-    const result = {
+    return {
       success: false,
-      error: error.message || 'Failed to fix user distributions'
+      error: error.message || 'Failed to fix user distributions',
+      status: 500
     };
-    return returnResponse ? NextResponse.json(result, { status: 500 }) : result;
   }
 }
 
