@@ -149,10 +149,11 @@ async function fixSingleUserDistributions(userEmail: string, returnResponse = tr
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      return NextResponse.json({
+      const result = {
         success: false,
         message: 'No active subscriptions found for user'
-      });
+      };
+      return returnResponse ? NextResponse.json(result) : result;
     }
 
     console.log(`📊 Found ${subscriptions.length} active subscriptions for ${userEmail}`);
@@ -262,7 +263,7 @@ async function fixSingleUserDistributions(userEmail: string, returnResponse = tr
       console.warn('⚠️ Wallet balance sync failed:', syncError);
     }
 
-    return NextResponse.json({
+    const result = {
       success: true,
       message: `Successfully processed distributions for ${userEmail}`,
       user_email: userEmail,
@@ -271,17 +272,16 @@ async function fixSingleUserDistributions(userEmail: string, returnResponse = tr
       total_tokens_distributed: totalTokensDistributed.toFixed(8),
       details: results,
       timestamp: new Date().toISOString()
-    });
+    };
+    return returnResponse ? NextResponse.json(result) : result;
 
   } catch (error: any) {
     console.error('❌ Error fixing user distributions:', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: error.message || 'Failed to fix user distributions' 
-      },
-      { status: 500 }
-    );
+    const result = {
+      success: false,
+      error: error.message || 'Failed to fix user distributions'
+    };
+    return returnResponse ? NextResponse.json(result, { status: 500 }) : result;
   }
 }
 
