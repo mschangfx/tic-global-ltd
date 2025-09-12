@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return await fixAllUsersDistributions();
     } else {
       console.log('🔧 Fixing distributions for user:', userEmail);
-      return await fixSingleUserDistributions(userEmail);
+      return await fixSingleUserDistributions(userEmail, true);
     }
 
   } catch (error: any) {
