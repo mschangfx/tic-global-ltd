@@ -55,7 +55,7 @@ async function fixAllUsersDistributions() {
         throw new Error(`Failed to fetch users: ${userError.message}`);
       }
 
-      const uniqueUsers = [...new Set(allUsers?.map(u => u.user_email) || [])];
+      const uniqueUsers = Array.from(new Set(allUsers?.map(u => u.user_email) || []));
       console.log(`📊 Found ${uniqueUsers.length} users with active subscriptions`);
 
       const results = [];
