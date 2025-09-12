@@ -137,7 +137,8 @@ async function fixAllUsersDistributions() {
 async function fixSingleUserDistributions(userEmail: string): Promise<NextResponse> {
   const result = await fixSingleUserDistributionsInternal(userEmail);
   if ('status' in result) {
-    return NextResponse.json(result.data, { status: result.status });
+    const { status, ...data } = result;
+    return NextResponse.json(data, { status });
   }
   return NextResponse.json(result);
 }
