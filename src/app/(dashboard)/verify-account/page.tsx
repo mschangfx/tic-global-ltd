@@ -221,6 +221,7 @@ export default function VerifyAccountPage() {
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [profileJustCompleted, setProfileJustCompleted] = useState(false);
   const [identityJustUploaded, setIdentityJustUploaded] = useState(false);
+  const [modalDismissed, setModalDismissed] = useState(false);
 
   // Identity verification
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -246,9 +247,14 @@ export default function VerifyAccountPage() {
       // Reset flags when page loads
       setProfileJustCompleted(false);
       setIdentityJustUploaded(false);
+
+      // Check if user has dismissed the modal before
+      const dismissed = localStorage.getItem(`profile-modal-dismissed-${session?.user?.email}`);
+      setModalDismissed(dismissed === 'true');
+
       loadUserData();
     }
-  }, [sessionStatus]);
+  }, [sessionStatus, session?.user?.email]);
 
   // Update active step based on verification status
   useEffect(() => {
@@ -265,15 +271,17 @@ export default function VerifyAccountPage() {
         // If email is verified but profile is not completed, open profile modal
         // Also check if profile form has data (additional safety check)
         const hasProfileData = profileForm.firstName && profileForm.lastName && profileForm.dateOfBirth;
-        if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !hasProfileData && !isProfileModalOpen) {
+        if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !hasProfileData && !isProfileModalOpen && !modalDismissed) {
           console.log('🚀 Auto-opening profile completion modal on page load');
           console.log('🔍 Current verification status:', verificationStatus);
           console.log('🔍 Profile form data:', profileForm);
+          console.log('🔍 Modal dismissed:', modalDismissed);
           onProfileModalOpen();
-        } else if (verificationStatus.profileCompleted || hasProfileData) {
-          console.log('✅ Profile already completed or has data, not opening modal');
+        } else if (verificationStatus.profileCompleted || hasProfileData || modalDismissed) {
+          console.log('✅ Profile already completed, has data, or modal dismissed - not opening modal');
           console.log('🔍 Profile completed:', verificationStatus.profileCompleted);
           console.log('🔍 Has profile data:', hasProfileData);
+          console.log('🔍 Modal dismissed:', modalDismissed);
         }
         // If profile is completed but identity is not uploaded, open identity modal
         else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen) {
@@ -284,7 +292,7 @@ export default function VerifyAccountPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen, isSubmittingProfile, isUploadingDocument, profileJustCompleted, identityJustUploaded]);
+  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen, isSubmittingProfile, isUploadingDocument, profileJustCompleted, identityJustUploaded, modalDismissed, profileForm.firstName, profileForm.lastName, profileForm.dateOfBirth]);
 
   // Handle completion of all verification steps - ONLY when identity is actually approved
   useEffect(() => {
@@ -607,8 +615,12 @@ export default function VerifyAccountPage() {
         setVerificationStatus(prev => ({ ...prev, profileCompleted: true }));
         setProfileJustCompleted(true);
 
-        // Close the profile modal
+        // Close the profile modal and mark as dismissed
         onProfileModalClose();
+        if (userEmail) {
+          localStorage.setItem(`profile-modal-dismissed-${userEmail}`, 'true');
+          setModalDismissed(true);
+        }
 
         // Show success message
         toast({
@@ -1192,7 +1204,13 @@ export default function VerifyAccountPage() {
       </Modal>
 
       {/* Profile Completion Modal */}
-      <Modal isOpen={isProfileModalOpen} onClose={onProfileModalClose} size="xl" closeOnOverlayClick={false}>
+      <Modal isOpen={isProfileModalOpen} onClose={() => {
+        onProfileModalClose();
+        if (userEmail) {
+          localStorage.setItem(`profile-modal-dismissed-${userEmail}`, 'true');
+          setModalDismissed(true);
+        }
+      }} size="xl" closeOnOverlayClick={false}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
