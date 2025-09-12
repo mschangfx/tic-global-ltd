@@ -2164,18 +2164,6 @@ export default function DashboardOverviewPage() {
                   >
                     Male
                   </Button>
-                  <Button
-                    variant={profileForm.gender === 'Other' ? 'solid' : 'outline'}
-                    bg={profileForm.gender === 'Other' ? '#14c3cb' : 'transparent'}
-                    color={profileForm.gender === 'Other' ? 'white' : 'black'}
-                    borderColor="#14c3cb"
-                    _hover={{ bg: profileForm.gender === 'Other' ? '#0891b2' : '#f0fdfe' }}
-                    onClick={() => setProfileForm(prev => ({ ...prev, gender: 'Other' }))}
-                    size="sm"
-                    borderRadius="full"
-                  >
-                    Other
-                  </Button>
                 </HStack>
               </FormControl>
 

@@ -401,7 +401,7 @@ export default function ProfilePage() {
           countryOfBirth: profileForm.countryOfBirth || userProfile?.country || '',
           // Keep existing values for required fields if not provided
           dateOfBirth: profileForm.dateOfBirth || '1990-01-01',
-          gender: profileForm.gender || 'prefer-not-to-say',
+          gender: profileForm.gender || 'male',
           address: profileForm.address || 'Not provided',
         }),
       });
@@ -869,7 +869,6 @@ export default function ProfilePage() {
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="prefer-not-to-say">Prefer not to say</option>
                   </Select>
                 </FormControl>
               </HStack>
