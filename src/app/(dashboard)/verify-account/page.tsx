@@ -713,18 +713,31 @@ export default function VerifyAccountPage() {
 
         // Show success message
         toast({
-          title: 'Document Uploaded Successfully!',
-          description: 'Your identity document has been uploaded and is under review. You will receive an email notification once the review is complete.',
+          title: 'Identity Document Uploaded Successfully! ✅',
+          description: 'Your document has been submitted for review. You will be notified once verification is complete.',
           status: 'success',
-          duration: 7000,
+          duration: 5000,
           isClosable: true,
         });
 
-        // Small delay to ensure database update is processed, then refresh data
+        // Small delay to ensure database update is processed, then refresh data and show completion
         setTimeout(async () => {
           await loadUserData();
-          setIdentityJustUploaded(false); // Reset flag after data refresh
-        }, 1500);
+
+          // Show completion status briefly
+          setTimeout(() => {
+            setIdentityJustUploaded(false); // Reset flag after showing completion
+
+            // Show final completion message if all steps are done
+            toast({
+              title: 'Identity Verification Complete! 🎉',
+              description: 'All verification steps completed. Your documents are now under review and you will be notified of the results.',
+              status: 'info',
+              duration: 6000,
+              isClosable: true,
+            });
+          }, 1000); // Show completed status for 1 second
+        }, 2000); // Wait 2 seconds for database update and user to see success message
 
       } else {
         throw new Error(data.error || 'Failed to upload document');
@@ -1050,9 +1063,17 @@ export default function VerifyAccountPage() {
                     <Alert status="success" borderRadius="md" maxW="md" mx="auto">
                       <AlertIcon />
                       <Box>
-                        <AlertTitle>Step Completed!</AlertTitle>
+                        <AlertTitle>
+                          {currentStep.id === 'email' ? 'Email Verified!' :
+                           currentStep.id === 'profile' ? 'Profile Completed!' :
+                           currentStep.id === 'identity' ? 'Documents Uploaded!' :
+                           'Step Completed!'}
+                        </AlertTitle>
                         <AlertDescription>
-                          This verification step has been completed successfully.
+                          {currentStep.id === 'email' ? 'Your email address has been successfully verified.' :
+                           currentStep.id === 'profile' ? 'Your profile information has been completed and saved.' :
+                           currentStep.id === 'identity' ? 'Your identity documents have been uploaded and are under review.' :
+                           'This verification step has been completed successfully.'}
                         </AlertDescription>
                       </Box>
                     </Alert>
