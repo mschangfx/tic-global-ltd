@@ -222,6 +222,7 @@ export default function VerifyAccountPage() {
   const [profileJustCompleted, setProfileJustCompleted] = useState(false);
   const [identityJustUploaded, setIdentityJustUploaded] = useState(false);
   const [modalDismissed, setModalDismissed] = useState(false);
+  const [identityModalDismissed, setIdentityModalDismissed] = useState(false);
 
   // Identity verification
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -248,9 +249,12 @@ export default function VerifyAccountPage() {
       setProfileJustCompleted(false);
       setIdentityJustUploaded(false);
 
-      // Check if user has dismissed the modal before
-      const dismissed = localStorage.getItem(`profile-modal-dismissed-${session?.user?.email}`);
-      setModalDismissed(dismissed === 'true');
+      // Check if user has dismissed the modals before
+      const profileDismissed = localStorage.getItem(`profile-modal-dismissed-${session?.user?.email}`);
+      setModalDismissed(profileDismissed === 'true');
+
+      const identityDismissed = localStorage.getItem(`identity-modal-dismissed-${session?.user?.email}`);
+      setIdentityModalDismissed(identityDismissed === 'true');
 
       loadUserData();
     }
@@ -281,9 +285,15 @@ export default function VerifyAccountPage() {
             console.log('✅ Profile already completed, has data, or modal dismissed - not opening modal');
           }
           // If profile is completed but identity is not uploaded, open identity modal
-          else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen) {
-            console.log('🚀 Auto-opening identity verification modal on page load');
-            onIdentityModalOpen();
+          else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen && !identityModalDismissed) {
+            // Additional safety check - verify if identity documents exist
+            const hasIdentityData = verificationStatus.identityStatus === 'pending' || verificationStatus.identityStatus === 'approved';
+            if (!hasIdentityData) {
+              console.log('🚀 Auto-opening identity verification modal on page load');
+              onIdentityModalOpen();
+            } else {
+              console.log('✅ Identity documents already exist, not opening modal');
+            }
           }
         } else {
           console.log('🔄 In transition state, not auto-opening modals');
@@ -292,7 +302,7 @@ export default function VerifyAccountPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen, isSubmittingProfile, isUploadingDocument, profileJustCompleted, identityJustUploaded, modalDismissed, profileForm.firstName, profileForm.lastName, profileForm.dateOfBirth]);
+  }, [isLoading, sessionStatus, verificationStatus.emailVerified, verificationStatus.profileCompleted, verificationStatus.identityDocumentUploaded, isProfileModalOpen, isIdentityModalOpen, onProfileModalOpen, onIdentityModalOpen, isSubmittingProfile, isUploadingDocument, profileJustCompleted, identityJustUploaded, modalDismissed, identityModalDismissed, profileForm.firstName, profileForm.lastName, profileForm.dateOfBirth, verificationStatus.identityStatus]);
 
   // Handle completion of all verification steps - ONLY when identity is actually approved
   useEffect(() => {
@@ -708,8 +718,12 @@ export default function VerifyAccountPage() {
         setDocumentType('');
         setIssuingCountry('');
 
-        // Close the identity modal
+        // Close the identity modal and mark as dismissed
         onIdentityModalClose();
+        if (userEmail) {
+          localStorage.setItem(`identity-modal-dismissed-${userEmail}`, 'true');
+          setIdentityModalDismissed(true);
+        }
 
         // Show success message
         toast({
@@ -1362,7 +1376,13 @@ export default function VerifyAccountPage() {
       </Modal>
 
       {/* Identity Verification Modal */}
-      <Modal isOpen={isIdentityModalOpen} onClose={onIdentityModalClose} size="xl" closeOnOverlayClick={false}>
+      <Modal isOpen={isIdentityModalOpen} onClose={() => {
+        onIdentityModalClose();
+        if (userEmail) {
+          localStorage.setItem(`identity-modal-dismissed-${userEmail}`, 'true');
+          setIdentityModalDismissed(true);
+        }
+      }} size="xl" closeOnOverlayClick={false}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
