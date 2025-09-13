@@ -268,25 +268,25 @@ export default function VerifyAccountPage() {
     if (!isLoading && sessionStatus === 'authenticated' && !isSubmittingProfile && !isUploadingDocument && !profileJustCompleted && !identityJustUploaded) {
       // Small delay to ensure state is properly set
       const timer = setTimeout(() => {
-        // If email is verified but profile is not completed, open profile modal
-        // Also check if profile form has data (additional safety check)
-        const hasProfileData = profileForm.firstName && profileForm.lastName && profileForm.dateOfBirth;
-        if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !hasProfileData && !isProfileModalOpen && !modalDismissed) {
-          console.log('🚀 Auto-opening profile completion modal on page load');
-          console.log('🔍 Current verification status:', verificationStatus);
-          console.log('🔍 Profile form data:', profileForm);
-          console.log('🔍 Modal dismissed:', modalDismissed);
-          onProfileModalOpen();
-        } else if (verificationStatus.profileCompleted || hasProfileData || modalDismissed) {
-          console.log('✅ Profile already completed, has data, or modal dismissed - not opening modal');
-          console.log('🔍 Profile completed:', verificationStatus.profileCompleted);
-          console.log('🔍 Has profile data:', hasProfileData);
-          console.log('🔍 Modal dismissed:', modalDismissed);
-        }
-        // If profile is completed but identity is not uploaded, open identity modal
-        else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen) {
-          console.log('🚀 Auto-opening identity verification modal on page load');
-          onIdentityModalOpen();
+        // Only auto-open modals if not in a transition state
+        if (!profileJustCompleted && !identityJustUploaded) {
+          // If email is verified but profile is not completed, open profile modal
+          // Also check if profile form has data (additional safety check)
+          const hasProfileData = profileForm.firstName && profileForm.lastName && profileForm.dateOfBirth;
+          if (verificationStatus.emailVerified && !verificationStatus.profileCompleted && !hasProfileData && !isProfileModalOpen && !modalDismissed) {
+            console.log('🚀 Auto-opening profile completion modal on page load');
+            console.log('🔍 Current verification status:', verificationStatus);
+            onProfileModalOpen();
+          } else if (verificationStatus.profileCompleted || hasProfileData || modalDismissed) {
+            console.log('✅ Profile already completed, has data, or modal dismissed - not opening modal');
+          }
+          // If profile is completed but identity is not uploaded, open identity modal
+          else if (verificationStatus.profileCompleted && !verificationStatus.identityDocumentUploaded && !isIdentityModalOpen) {
+            console.log('🚀 Auto-opening identity verification modal on page load');
+            onIdentityModalOpen();
+          }
+        } else {
+          console.log('🔄 In transition state, not auto-opening modals');
         }
       }, 500);
 
@@ -624,27 +624,30 @@ export default function VerifyAccountPage() {
 
         // Show success message
         toast({
-          title: 'Profile Completed Successfully!',
-          description: 'Your profile has been completed. You can now proceed to identity verification.',
+          title: 'Profile Completed Successfully! ✅',
+          description: 'Your profile information has been saved. Proceeding to identity verification...',
           status: 'success',
-          duration: 5000,
+          duration: 3000,
           isClosable: true,
         });
 
-        // Small delay to ensure database update is processed, then refresh data
+        // Small delay to ensure database update is processed, then refresh data and auto-advance
         setTimeout(async () => {
           await loadUserData();
 
-          // Auto-advance to next step after data is refreshed - only if not already uploading identity
+          // Show completion status briefly, then auto-advance to identity verification
           setTimeout(() => {
+            setProfileJustCompleted(false); // Reset flag
+
+            // Auto-advance to identity verification if not already uploaded
             if (!verificationStatus.identityDocumentUploaded && !isUploadingDocument) {
-              setProfileJustCompleted(false); // Reset flag before opening next modal
+              console.log('🚀 Auto-advancing to identity verification after profile completion');
               onIdentityModalOpen();
             } else {
-              setProfileJustCompleted(false); // Reset flag if not opening next modal
+              console.log('✅ Identity already uploaded, verification flow complete');
             }
-          }, 500);
-        }, 1500); // Increased delay to ensure database update is complete
+          }, 1000); // Show completed status for 1 second before advancing
+        }, 2000); // Wait 2 seconds for database update and user to see success message
 
       } else {
         throw new Error(data.error || 'Failed to complete profile');
